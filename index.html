@@ -2,62 +2,36 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="一級建築士">
-  <meta name="theme-color" content="#000000">
-  <title>一級建築士 学習アプリ</title>
-  <link rel="manifest" href="manifest.json">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>一級建築士</title>
   <style>
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{background:#000;overscroll-behavior:none;font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif}
-    #root{min-height:100vh}
-    input,textarea,select{outline:none}
-    button{cursor:pointer}
-    ::-webkit-scrollbar{display:none}
-    input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+    body{background:#000;color:#fff;font-family:sans-serif;margin:0;padding:20px}
   </style>
 </head>
 <body>
-  <div id="root">
-    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;color:rgba(255,255,255,0.3);font-size:14px">
-      読み込み中...
-    </div>
-  </div>
-
-  <!-- 1. React -->
+  <div id="root">読み込み中...</div>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <!-- 2. ReactDOM -->
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- 3. Recharts -->
-  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
-  <!-- 4. App (同期読み込み) -->
-  <script src="app.js"></script>
-  <!-- 5. マウント -->
+  <script crossorigin src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
   <script>
-    (function() {
-      function mount() {
-        try {
-          if (typeof window.App === 'undefined') {
-            document.getElementById('root').innerHTML =
-              '<div style="color:#f87171;padding:24px;font-size:13px">App が見つかりません。ページを再読み込みしてください。</div>';
-            return;
-          }
-          var root = ReactDOM.createRoot(document.getElementById('root'));
-          root.render(React.createElement(window.App));
-        } catch(e) {
-          document.getElementById('root').innerHTML =
-            '<div style="color:#f87171;padding:24px;font-size:13px">エラー: ' + e.message + '</div>';
-        }
+    // app.jsを動的に読み込んで、完了後にマウント
+    var s = document.createElement('script');
+    s.src = 'app.js';
+    s.onload = function() {
+      console.log('app.js loaded, App=', typeof window.App);
+      try {
+        var root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(window.App));
+      } catch(e) {
+        document.getElementById('root').innerHTML =
+          '<pre style="color:#f87171;font-size:12px">' + e.stack + '</pre>';
       }
-      // DOMContentLoaded後に実行
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', mount);
-      } else {
-        mount();
-      }
-    })();
+    };
+    s.onerror = function() {
+      document.getElementById('root').innerHTML =
+        '<p style="color:#f87171">app.js の読み込みに失敗しました</p>';
+    };
+    document.head.appendChild(s);
   </script>
 </body>
 </html>

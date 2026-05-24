@@ -2,18 +2,19 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="一級建築士">
   <meta name="theme-color" content="#000000">
   <title>一級建築士 学習アプリ</title>
-  <link rel="manifest" href="manifest.json">
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Noto Sans JP',sans-serif;overscroll-behavior:none}
+    body{background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,sans-serif;overscroll-behavior:none}
     #root{min-height:100vh}
-    button{cursor:pointer}
+    button{cursor:pointer;border:none}
+    input,textarea,select{outline:none}
     ::-webkit-scrollbar{display:none}
     input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
   </style>
@@ -22,16 +23,16 @@
   <div id="root">
     <div style="display:flex;align-items:center;justify-content:center;height:100vh;color:rgba(255,255,255,0.3);font-size:14px">読み込み中...</div>
   </div>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="app.js"></script>
   <script>
-    try {
+    try{
       ReactDOM.createRoot(document.getElementById('root'))
         .render(React.createElement(window.App));
-    } catch(e) {
-      document.getElementById('root').innerHTML =
-        '<pre style="color:#f87171;font-size:11px;padding:20px;white-space:pre-wrap">'+e.stack+'</pre>';
+    }catch(e){
+      document.getElementById('root').innerHTML=
+        '<pre style="color:#f87171;padding:20px;font-size:11px;white-space:pre-wrap">'+e.stack+'</pre>';
     }
   </script>
 </body>

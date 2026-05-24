@@ -5,31 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>一級建築士</title>
   <style>
-    body{background:#000;color:#fff;font-family:sans-serif;margin:0;padding:20px}
+    body{background:#000;color:#fff;font-family:-apple-system,sans-serif;margin:0;padding:0}
+    #root{min-height:100vh}
   </style>
 </head>
 <body>
-  <div id="root">読み込み中...</div>
+  <div id="root">
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;color:rgba(255,255,255,0.3);font-size:14px">読み込み中...</div>
+  </div>
+
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  <!-- Rechartsを新しいバージョンに変更 -->
+  <script src="https://unpkg.com/recharts@2.5.0/umd/Recharts.js"></script>
+
+  <!-- React/Rechartsをグローバルに展開してからapp.jsを読む -->
   <script>
-    // app.jsを動的に読み込んで、完了後にマウント
-    var s = document.createElement('script');
-    s.src = 'app.js';
-    s.onload = function() {
-      console.log('app.js loaded, App=', typeof window.App);
-      try {
-        var root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(window.App));
-      } catch(e) {
-        document.getElementById('root').innerHTML =
-          '<pre style="color:#f87171;font-size:12px">' + e.stack + '</pre>';
+    const{useState,useMemo,useEffect,useRef,useCallback}=React;
+    const{BarChart,Bar,XAxis,YAxis,Tooltip,ResponsiveContainer}=Recharts;
+  </script>
+
+  <script>
+    var s=document.createElement('script');
+    s.src='app.js';
+    s.onload=function(){
+      console.log('App type:', typeof window.App);
+      try{
+        ReactDOM.createRoot(document.getElementById('root'))
+          .render(React.createElement(window.App));
+      }catch(e){
+        document.getElementById('root').innerHTML=
+          '<pre style="color:#f87171;font-size:11px;padding:20px">'+e.stack+'</pre>';
       }
     };
-    s.onerror = function() {
-      document.getElementById('root').innerHTML =
-        '<p style="color:#f87171">app.js の読み込みに失敗しました</p>';
+    s.onerror=function(){
+      document.getElementById('root').innerHTML=
+        '<p style="color:#f87171;padding:20px">app.js 読み込み失敗</p>';
     };
     document.head.appendChild(s);
   </script>

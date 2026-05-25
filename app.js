@@ -2233,7 +2233,7 @@ function QuizTab(_ref0) {
     if (!q) return;
     setHintLoading(true);
     setShowHint(true);
-    const text = await callClaude("あなたは一級建築士試験の専門講師です。以下の形式で答えてください。\n🔑 考え方: [1行で方向性]\n• [着目すべきポイント1]\n• [着目すべきポイント2]\n答えは言わず100字以内で。", `問題: ${q.q}\n選択肢: ${q.opts.map((o, i) => `${i + 1}.${o}`).join("\n")}`);
+    const text = await callClaude("あなたは一級建築士試験の専門講師です。【厳守】正解の選択肢番号・どの選択肢が正しいか・誤りかを絶対に言ってはいけません。考え方の方向性だけを示してください。\n形式:\n🔑 着目点: [1行]\n• [法的な観点1]\n• [法的な観点2]\n100字以内。", `問題: ${q.q}\n選択肢: ${q.opts.map((o, i) => `${i + 1}.${o}`).join("\n")}`);
     setAiHint(text);
     setHintLoading(false);
   };

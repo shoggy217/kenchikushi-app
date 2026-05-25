@@ -1152,7 +1152,8 @@ function App() {
     addXp: addXp
   }), tab === "log" && /*#__PURE__*/React.createElement(LogTab, {
     logs: logs,
-    setLogs: setLogs
+    setLogs: setLogs,
+    questions: questions
   }), tab === "ai" && /*#__PURE__*/React.createElement(AITab, {
     questions: questions,
     weakQuestions: weakQuestions
@@ -2961,7 +2962,8 @@ function FilterBar(_ref13) {
 // ── LOG TAB ────────────────────────────────────────────────
 function LogTab(_ref16) {
   let logs = _ref16.logs,
-    setLogs = _ref16.setLogs;
+    setLogs = _ref16.setLogs,
+    questions = _ref16.questions;
   const _useState57 = useState({}),
     _useState58 = _slicedToArray(_useState57, 2),
     inputs = _useState58[0],
@@ -2969,12 +2971,64 @@ function LogTab(_ref16) {
   const today = todayStr();
   const todayLog = logs[today] || {};
   const todayMin = Object.values(todayLog).reduce((a, b) => a + b, 0);
+
+  // 週別正答率グラフ用データ（過去8週）
+  const weeklyStats = useMemo(() => {
+    const weeks = [];
+    for (let w = 7; w >= 0; w--) {
+      const start = new Date();
+      start.setDate(start.getDate() - w * 7 - 6);
+      const end = new Date();
+      end.setDate(end.getDate() - w * 7);
+      const startStr = start.toISOString().slice(0, 10);
+      const endStr = end.toISOString().slice(0, 10);
+      let correct = 0,
+        total = 0;
+      (questions || []).forEach(q => {
+        (q.history || []).forEach((h, i) => {
+          // historyの長さとlastAnsweredから大まかに日付を推定
+          // より正確には各回答に日付が必要だが、簡易的に週ごとに集計
+        });
+      });
+      // 学習ログから学習時間を集計
+      let studyMin = 0;
+      Object.entries(logs).forEach(_ref17 => {
+        let _ref18 = _slicedToArray(_ref17, 2),
+          date = _ref18[0],
+          dayLog = _ref18[1];
+        if (date >= startStr && date <= endStr) {
+          studyMin += Object.values(dayLog).reduce((a, b) => a + b, 0);
+        }
+      });
+      const label = `${start.getMonth() + 1}/${start.getDate()}`;
+      weeks.push({
+        label,
+        studyMin
+      });
+    }
+    return weeks;
+  }, [logs, questions]);
+
+  // 科目別正答率（全期間）
+  const subjectAccuracy = useMemo(() => {
+    return (questions || []).reduce((acc, q) => {
+      const h = q.history || [];
+      if (!h.length) return acc;
+      if (!acc[q.subject]) acc[q.subject] = {
+        correct: 0,
+        total: 0
+      };
+      acc[q.subject].correct += h.filter(x => x === "○").length;
+      acc[q.subject].total += h.length;
+      return acc;
+    }, {});
+  }, [questions]);
   const save_ = () => {
     const cleaned = {};
-    Object.entries(inputs).forEach(_ref17 => {
-      let _ref18 = _slicedToArray(_ref17, 2),
-        k = _ref18[0],
-        v = _ref18[1];
+    Object.entries(inputs).forEach(_ref19 => {
+      let _ref20 = _slicedToArray(_ref19, 2),
+        k = _ref20[0],
+        v = _ref20[1];
       const n = parseInt(v) || 0;
       if (n > 0) cleaned[k] = n;
     });
@@ -3094,9 +3148,9 @@ function LogTab(_ref16) {
 }
 
 // ── AI TAB ─────────────────────────────────────────────────
-function AITab(_ref19) {
-  let questions = _ref19.questions,
-    weakQuestions = _ref19.weakQuestions;
+function AITab(_ref21) {
+  let questions = _ref21.questions,
+    weakQuestions = _ref21.weakQuestions;
   const _useState59 = useState("analysis"),
     _useState60 = _slicedToArray(_useState59, 2),
     mode = _useState60[0],
@@ -3284,15 +3338,126 @@ function AITab(_ref19) {
         transition: "width 0.6s"
       }
     })));
+  }))), (() => {
+    // 過去8週の正答率を計算
+    const weekData = Array.from({
+      length: 8
+    }, (_, w) => {
+      const end = new Date();
+      end.setDate(end.getDate() - w * 7);
+      const start = new Date(end);
+      start.setDate(start.getDate() - 6);
+      const endStr = end.toISOString().slice(0, 10);
+      const startStr = start.toISOString().slice(0, 10);
+      let studyMin = 0;
+      Object.entries(logs).forEach(_ref22 => {
+        let _ref23 = _slicedToArray(_ref22, 2),
+          date = _ref23[0],
+          dayLog = _ref23[1];
+        if (date >= startStr && date <= endStr) {
+          studyMin += Object.values(dayLog).reduce((a, b) => a + b, 0);
+        }
+      });
+      return {
+        label: `${start.getMonth() + 1}/${start.getDate()}`,
+        studyMin
+      };
+    }).reverse();
+    const maxMin = Math.max(...weekData.map(d => d.studyMin), 1);
+    const hasData = weekData.some(d => d.studyMin > 0);
+    if (!hasData) return null;
+    return /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u9031\u5225\u5B66\u7FD2\u6642\u9593\uFF08\u6642\u9593\uFF09"), /*#__PURE__*/React.createElement("svg", {
+      viewBox: "0 0 300 80",
+      style: {
+        width: "100%",
+        height: 80
+      }
+    }, weekData.map((d, i) => {
+      const bh = Math.max(d.studyMin / maxMin * 55, d.studyMin > 0 ? 2 : 0);
+      const x = 10 + i * (280 / 8);
+      const bw = 28;
+      return /*#__PURE__*/React.createElement("g", {
+        key: i
+      }, /*#__PURE__*/React.createElement("rect", {
+        x: x,
+        y: 60 - bh,
+        width: bw,
+        height: bh,
+        fill: "#5B9FFF",
+        rx: 2,
+        opacity: 0.8
+      }), /*#__PURE__*/React.createElement("text", {
+        x: x + bw / 2,
+        y: 75,
+        textAnchor: "middle",
+        fill: "rgba(255,255,255,0.3)",
+        fontSize: 7
+      }, d.label), d.studyMin > 0 && /*#__PURE__*/React.createElement("text", {
+        x: x + bw / 2,
+        y: 56 - bh,
+        textAnchor: "middle",
+        fill: "rgba(255,255,255,0.5)",
+        fontSize: 7
+      }, (d.studyMin / 60).toFixed(1), "h"));
+    })));
+  })(), Object.keys(subjectAccuracy).length > 0 && /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u79D1\u76EE\u5225\u6B63\u7B54\u7387"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 10
+    }
+  }, SUBJECTS.filter(s => subjectAccuracy[s.id]).map(s => {
+    const acc = subjectAccuracy[s.id];
+    const rate = Math.round(acc.correct / acc.total * 100);
+    return /*#__PURE__*/React.createElement("div", {
+      key: s.id
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        fontSize: 12,
+        marginBottom: 5
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "rgba(255,255,255,0.7)"
+      }
+    }, s.name), /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: rate >= 70 ? "#34D399" : rate >= 50 ? "#FBBF24" : "#F87171",
+        fontWeight: 600
+      }
+    }, rate, "%", /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "rgba(255,255,255,0.3)",
+        fontWeight: 400,
+        marginLeft: 6,
+        fontSize: 11
+      }
+    }, acc.correct, "/", acc.total, "\u56DE"))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        height: 5,
+        background: "rgba(255,255,255,0.07)",
+        borderRadius: 99
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        height: "100%",
+        width: `${rate}%`,
+        background: rate >= 70 ? "#34D399" : rate >= 50 ? "#FBBF24" : "#F87171",
+        borderRadius: 99,
+        transition: "width 0.6s"
+      }
+    })));
   }))));
 }
 
 // ── MANAGE TAB ─────────────────────────────────────────────
-function ManageTab(_ref20) {
-  let questions = _ref20.questions,
-    setQuestions = _ref20.setQuestions,
-    pendingCount = _ref20.pendingCount,
-    importPending = _ref20.importPending;
+function ManageTab(_ref24) {
+  let questions = _ref24.questions,
+    setQuestions = _ref24.setQuestions,
+    pendingCount = _ref24.pendingCount,
+    importPending = _ref24.importPending;
   const _useState67 = useState(false),
     _useState68 = _slicedToArray(_useState67, 2),
     importing = _useState68[0],
@@ -3574,10 +3739,10 @@ function ManageTab(_ref20) {
       color: "rgba(255,255,255,0.35)",
       lineHeight: 1.8
     }
-  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref21 => {
-    let _ref22 = _slicedToArray(_ref21, 2),
-      n = _ref22[0],
-      t = _ref22[1];
+  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref25 => {
+    let _ref26 = _slicedToArray(_ref25, 2),
+      n = _ref26[0],
+      t = _ref26[1];
     return /*#__PURE__*/React.createElement("div", {
       key: n,
       style: {

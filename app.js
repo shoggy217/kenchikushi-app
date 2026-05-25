@@ -1156,7 +1156,8 @@ function App() {
     questions: questions
   }), tab === "ai" && /*#__PURE__*/React.createElement(AITab, {
     questions: questions,
-    weakQuestions: weakQuestions
+    weakQuestions: weakQuestions,
+    logs: logs
   }), tab === "manage" && /*#__PURE__*/React.createElement(ManageTab, {
     questions: questions,
     setQuestions: setQuestions,
@@ -3417,7 +3418,8 @@ function LogTab(_ref18) {
 // ── AI TAB ─────────────────────────────────────────────────
 function AITab(_ref23) {
   let questions = _ref23.questions,
-    weakQuestions = _ref23.weakQuestions;
+    weakQuestions = _ref23.weakQuestions,
+    logs = _ref23.logs;
   const _useState69 = useState("analysis"),
     _useState70 = _slicedToArray(_useState69, 2),
     mode = _useState70[0],

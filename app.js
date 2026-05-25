@@ -3607,124 +3607,13 @@ function AITab(_ref23) {
         transition: "width 0.6s"
       }
     })));
-  }))), (() => {
-    // 過去8週の正答率を計算
-    const weekData = Array.from({
-      length: 8
-    }, (_, w) => {
-      const end = new Date();
-      end.setDate(end.getDate() - w * 7);
-      const start = new Date(end);
-      start.setDate(start.getDate() - 6);
-      const endStr = end.toISOString().slice(0, 10);
-      const startStr = start.toISOString().slice(0, 10);
-      let studyMin = 0;
-      Object.entries(logs).forEach(_ref24 => {
-        let _ref25 = _slicedToArray(_ref24, 2),
-          date = _ref25[0],
-          dayLog = _ref25[1];
-        if (date >= startStr && date <= endStr) {
-          studyMin += Object.values(dayLog).reduce((a, b) => a + b, 0);
-        }
-      });
-      return {
-        label: `${start.getMonth() + 1}/${start.getDate()}`,
-        studyMin
-      };
-    }).reverse();
-    const maxMin = Math.max(...weekData.map(d => d.studyMin), 1);
-    const hasData = weekData.some(d => d.studyMin > 0);
-    if (!hasData) return null;
-    return /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u9031\u5225\u5B66\u7FD2\u6642\u9593\uFF08\u6642\u9593\uFF09"), /*#__PURE__*/React.createElement("svg", {
-      viewBox: "0 0 300 80",
-      style: {
-        width: "100%",
-        height: 80
-      }
-    }, weekData.map((d, i) => {
-      const bh = Math.max(d.studyMin / maxMin * 55, d.studyMin > 0 ? 2 : 0);
-      const x = 10 + i * (280 / 8);
-      const bw = 28;
-      return /*#__PURE__*/React.createElement("g", {
-        key: i
-      }, /*#__PURE__*/React.createElement("rect", {
-        x: x,
-        y: 60 - bh,
-        width: bw,
-        height: bh,
-        fill: "#5B9FFF",
-        rx: 2,
-        opacity: 0.8
-      }), /*#__PURE__*/React.createElement("text", {
-        x: x + bw / 2,
-        y: 75,
-        textAnchor: "middle",
-        fill: "rgba(255,255,255,0.3)",
-        fontSize: 7
-      }, d.label), d.studyMin > 0 && /*#__PURE__*/React.createElement("text", {
-        x: x + bw / 2,
-        y: 56 - bh,
-        textAnchor: "middle",
-        fill: "rgba(255,255,255,0.5)",
-        fontSize: 7
-      }, (d.studyMin / 60).toFixed(1), "h"));
-    })));
-  })(), Object.keys(subjectAccuracy).length > 0 && /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u79D1\u76EE\u5225\u6B63\u7B54\u7387"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 10
-    }
-  }, SUBJECTS.filter(s => subjectAccuracy[s.id]).map(s => {
-    const acc = subjectAccuracy[s.id];
-    const rate = Math.round(acc.correct / acc.total * 100);
-    return /*#__PURE__*/React.createElement("div", {
-      key: s.id
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        justifyContent: "space-between",
-        fontSize: 12,
-        marginBottom: 5
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: "rgba(255,255,255,0.7)"
-      }
-    }, s.name), /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: rate >= 70 ? "#34D399" : rate >= 50 ? "#FBBF24" : "#F87171",
-        fontWeight: 600
-      }
-    }, rate, "%", /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: "rgba(255,255,255,0.3)",
-        fontWeight: 400,
-        marginLeft: 6,
-        fontSize: 11
-      }
-    }, acc.correct, "/", acc.total, "\u56DE"))), /*#__PURE__*/React.createElement("div", {
-      style: {
-        height: 5,
-        background: "rgba(255,255,255,0.07)",
-        borderRadius: 99
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      style: {
-        height: "100%",
-        width: `${rate}%`,
-        background: rate >= 70 ? "#34D399" : rate >= 50 ? "#FBBF24" : "#F87171",
-        borderRadius: 99,
-        transition: "width 0.6s"
-      }
-    })));
   }))));
 }
 
 // ── HISTORY EDITOR ─────────────────────────────────────────
-function HistoryEditor(_ref26) {
-  let questions = _ref26.questions,
-    setQuestions = _ref26.setQuestions;
+function HistoryEditor(_ref24) {
+  let questions = _ref24.questions,
+    setQuestions = _ref24.setQuestions;
   const _useState77 = useState(""),
     _useState78 = _slicedToArray(_useState77, 2),
     search = _useState78[0],
@@ -3940,11 +3829,11 @@ function HistoryEditor(_ref26) {
 }
 
 // ── MANAGE TAB ─────────────────────────────────────────────
-function ManageTab(_ref27) {
-  let questions = _ref27.questions,
-    setQuestions = _ref27.setQuestions,
-    pendingCount = _ref27.pendingCount,
-    importPending = _ref27.importPending;
+function ManageTab(_ref25) {
+  let questions = _ref25.questions,
+    setQuestions = _ref25.setQuestions,
+    pendingCount = _ref25.pendingCount,
+    importPending = _ref25.importPending;
   const _useState81 = useState(false),
     _useState82 = _slicedToArray(_useState81, 2),
     importing = _useState82[0],
@@ -4229,10 +4118,10 @@ function ManageTab(_ref27) {
       color: "rgba(255,255,255,0.35)",
       lineHeight: 1.8
     }
-  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref28 => {
-    let _ref29 = _slicedToArray(_ref28, 2),
-      n = _ref29[0],
-      t = _ref29[1];
+  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref26 => {
+    let _ref27 = _slicedToArray(_ref26, 2),
+      n = _ref27[0],
+      t = _ref27[1];
     return /*#__PURE__*/React.createElement("div", {
       key: n,
       style: {

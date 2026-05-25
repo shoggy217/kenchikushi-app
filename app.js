@@ -628,11 +628,13 @@ const CHAPTERS = {
 const SUPABASE_URL = "https://nypugenklrsnhqjtyccc.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55cHVnZW5rbHJzbmhxanR5Y2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2ODU1MzAsImV4cCI6MjA5NTI2MTUzMH0.zWE458sdO1ktBL86pIXUN55UOESd-D5YdMdfLRsKoMY";
 const USER_ID = "shoggy217";
-const SB_HEADERS = {
+const SB_GET_HEADERS = {
   "apikey": SUPABASE_KEY,
-  "Authorization": "Bearer " + SUPABASE_KEY,
-  "Content-Type": "application/json",
-  "Prefer": "resolution=merge-duplicates,return=minimal"
+  "Authorization": "Bearer " + SUPABASE_KEY
+};
+const SB_MOD_HEADERS = {
+  ...SB_GET_HEADERS,
+  "Content-Type": "application/json"
 };
 let _store = null;
 let _saveTimer = null;
@@ -641,13 +643,12 @@ const _loadAll = () => {
   if (_loadPromise) return _loadPromise;
   _loadPromise = (async () => {
     try {
+      // localStorageから先に復元(高速表示)
       const local = localStorage.getItem("store_v1");
       if (local) _store = JSON.parse(local);
-      const res = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&select=data&limit=1", {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": "Bearer " + SUPABASE_KEY
-        }
+      // Supabaseから最新を取得(updated_at降順で1件)
+      const res = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&order=updated_at.desc&limit=1&select=data", {
+        headers: SB_GET_HEADERS
       });
       if (res.ok) {
         const rows = await res.json();
@@ -668,26 +669,54 @@ const load = async (key, fb) => {
   const store = await _loadAll();
   return store[key] !== undefined ? store[key] : fb;
 };
+
+// 既存行があればUPDATE、なければINSERT
+let _rowExists = null;
+const _flush = async () => {
+  if (!_store) return;
+  try {
+    const body = JSON.stringify({
+      user_id: USER_ID,
+      data: _store,
+      updated_at: new Date().toISOString()
+    });
+    if (_rowExists === null) {
+      // 行の存在確認
+      const check = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&select=id&limit=1", {
+        headers: SB_GET_HEADERS
+      });
+      const rows = check.ok ? await check.json() : [];
+      _rowExists = rows.length > 0;
+    }
+    if (_rowExists) {
+      // UPDATE
+      await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID, {
+        method: "PATCH",
+        headers: SB_MOD_HEADERS,
+        body
+      });
+    } else {
+      // INSERT
+      await fetch(SUPABASE_URL + "/rest/v1/study_data", {
+        method: "POST",
+        headers: {
+          ...SB_MOD_HEADERS,
+          "Prefer": "return=minimal"
+        },
+        body
+      });
+      _rowExists = true;
+    }
+  } catch (e) {
+    console.error("save error", e);
+  }
+};
 const save = async (key, val) => {
   if (!_store) _store = {};
   _store[key] = val;
   localStorage.setItem("store_v1", JSON.stringify(_store));
   clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(async () => {
-    try {
-      await fetch(SUPABASE_URL + "/rest/v1/study_data", {
-        method: "POST",
-        headers: SB_HEADERS,
-        body: JSON.stringify({
-          user_id: USER_ID,
-          data: _store,
-          updated_at: new Date().toISOString()
-        })
-      });
-    } catch (e) {
-      console.error("save error", e);
-    }
-  }, 800);
+  _saveTimer = setTimeout(_flush, 800);
 };
 
 // ── CLAUDE API ─────────────────────────────────────────────

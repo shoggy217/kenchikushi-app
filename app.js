@@ -713,33 +713,33 @@ const save = async (key, val) => {
 };
 
 // ── CLAUDE API ─────────────────────────────────────────────
-// AIキャッシュ(クレジット節約)
+// AIキャッシュ(無駄な呼び出しを省く)
 const _aiCache = {};
+const EDGE_URL = "https://nypugenklrsnhqjtyccc.supabase.co/functions/v1/claude-proxy";
+const EDGE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55cHVnZW5rbHJzbmhxanR5Y2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2ODU1MzAsImV4cCI6MjA5NTI2MTUzMH0.zWE458sdO1ktBL86pIXUN55UOESd-D5YdMdfLRsKoMY";
 const callClaude = async (systemPrompt, userPrompt) => {
   const cacheKey = systemPrompt.slice(0, 20) + userPrompt.slice(0, 50);
   if (_aiCache[cacheKey]) return _aiCache[cacheKey];
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch(EDGE_URL, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + EDGE_KEY,
+        "apikey": EDGE_KEY
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 400,
         system: systemPrompt,
-        messages: [{
-          role: "user",
-          content: userPrompt
-        }]
+        user: userPrompt,
+        max_tokens: 400
       })
     });
     const data = await res.json();
-    const text = data.content?.[0]?.text || "";
+    const text = data.text || "";
     if (text) _aiCache[cacheKey] = text;
     return text;
   } catch (e) {
-    console.error("Claude API error:", e);
+    console.error("AI API error:", e);
     return "";
   }
 };

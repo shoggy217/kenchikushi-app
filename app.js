@@ -2079,13 +2079,42 @@ function QuizTab(_ref0) {
       color: "rgba(255,255,255,0.4)"
     }
   }, "\u7BA1\u7406\u30BF\u30D6\u304B\u3089\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044"));
-  if (!pool.length) return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+  if (!pool.length) return /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
-      gap: 8,
-      marginBottom: 4
+      flexDirection: "column",
+      gap: 12
     }
-  }, [["srs", "🔄 間隔反復", "今日の復習問題を優先"], ["new", "📖 新規勉強", "未着手から順番に"]].map(_ref1 => {
+  }, /*#__PURE__*/React.createElement(FilterBar, {
+    questions: questions,
+    subj: subj,
+    mode: mode,
+    reset: reset,
+    course: course
+  }), /*#__PURE__*/React.createElement(Card, {
+    style: {
+      textAlign: "center",
+      padding: "48px 20px"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "rgba(255,255,255,0.4)"
+    }
+  }, course === "srs" ? "🎉 今日の復習は完了！" : "該当問題なし")));
+  const acc = session.total > 0 ? (session.correct / session.total * 100).toFixed(0) : null;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8
+    }
+  }, [["srs", "🔄 間隔反復", "今日の復習"], ["new", "📖 新規勉強", "未着手優先"]].map(_ref1 => {
     let _ref10 = _slicedToArray(_ref1, 3),
       id = _ref10[0],
       label = _ref10[1],
@@ -2154,30 +2183,6 @@ function QuizTab(_ref0) {
     mode: mode,
     reset: reset,
     course: course
-  }), /*#__PURE__*/React.createElement(Card, {
-    style: {
-      textAlign: "center",
-      padding: "48px 20px",
-      marginTop: 12
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      color: "rgba(255,255,255,0.4)"
-    }
-  }, "\u8A72\u5F53\u554F\u984C\u306A\u3057")));
-  const acc = session.total > 0 ? (session.correct / session.total * 100).toFixed(0) : null;
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 12
-    }
-  }, /*#__PURE__*/React.createElement(FilterBar, {
-    questions: questions,
-    subj: subj,
-    mode: mode,
-    reset: reset
   }), (() => {
     const today = todayStr();
     const solvedToday = questions.filter(q => q.lastAnswered === today).length;
@@ -2789,7 +2794,8 @@ function FilterBar(_ref11) {
   let questions = _ref11.questions,
     subj = _ref11.subj,
     mode = _ref11.mode,
-    reset = _ref11.reset;
+    reset = _ref11.reset,
+    course = _ref11.course;
   const pillStyle = (active, color) => ({
     padding: "6px 14px",
     borderRadius: 99,
@@ -2826,7 +2832,7 @@ function FilterBar(_ref11) {
       style: pillStyle(subj === s.id, s.color),
       onClick: () => reset(s.id, undefined)
     }, s.name, " ", cnt);
-  })), /*#__PURE__*/React.createElement("div", {
+  })), course !== "srs" && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,

@@ -3241,7 +3241,10 @@ function QuizTab(_ref10) {
       border: "none",
       cursor: "pointer"
     }
-  }, "\u6B21\u306E\u554F\u984C \u2192"))));
+  }, "\u6B21\u306E\u554F\u984C \u2192"))), activeTerm && /*#__PURE__*/React.createElement(TermPopup, {
+    term: activeTerm,
+    onClose: () => setActiveTerm(null)
+  }));
 }
 function FilterBar(_ref17) {
   let questions = _ref17.questions,
@@ -3306,10 +3309,7 @@ function FilterBar(_ref17) {
       },
       onClick: () => reset(undefined, v)
     }, l);
-  })), activeTerm && /*#__PURE__*/React.createElement(TermPopup, {
-    term: activeTerm,
-    onClose: () => setActiveTerm(null)
-  }));
+  })));
 }
 
 // ── LOG TAB ────────────────────────────────────────────────

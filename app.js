@@ -86,6 +86,26 @@ const RANK_COLOR = {
 };
 const EXAM_DATE = new Date("2027-07-25");
 const todayStr = () => new Date().toISOString().slice(0, 10);
+
+// ── 間隔反復 ────────────────────────────────────────────────
+const SRS_INTERVALS = [1, 2, 4, 7, 14, 30, 60];
+const getSrsNextDate = q => {
+  if (!q.lastAnswered) return null;
+  const h = q.history || [];
+  let streak = 0;
+  for (let i = h.length - 1; i >= 0; i--) {
+    if (h[i] === "○") streak++;else break;
+  }
+  const interval = SRS_INTERVALS[Math.min(streak, SRS_INTERVALS.length - 1)];
+  const last = new Date(q.lastAnswered);
+  last.setDate(last.getDate() + interval);
+  return last.toISOString().slice(0, 10);
+};
+const isDueToday = q => {
+  if (!q.lastAnswered) return true;
+  const next = getSrsNextDate(q);
+  return !next || next <= todayStr();
+};
 const fmtMD = d => `${d.getMonth() + 1}/${d.getDate()}`;
 const BUNDLED_QUESTIONS = [{
   id: "q_H30_01",
@@ -656,9 +676,7 @@ const _loadAll = () => {
           localStorage.setItem("store_v1", JSON.stringify(_store));
         }
       }
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) {}
     if (!_store) _store = {};
     return _store;
   })();
@@ -1005,30 +1023,6 @@ function App() {
       fontSize: 13
     }
   }, "\u8AAD\u307F\u8FBC\u307F\u4E2D..."));
-
-  // ── 間隔反復 (Spaced Repetition) ──────────────────────────
-  // 正解回数に応じた次回出題日を計算
-  const SRS_INTERVALS = [1, 2, 4, 7, 14, 30, 60]; // 日数
-  const getSrsNextDate = q => {
-    const h = q.history || [];
-    if (!h.length) return null; // 未着手
-    // 連続正解数をカウント
-    let streak = 0;
-    for (let i = h.length - 1; i >= 0; i--) {
-      if (h[i] === "○") streak++;else break;
-    }
-    const interval = SRS_INTERVALS[Math.min(streak, SRS_INTERVALS.length - 1)];
-    const last = new Date(q.lastAnswered || new Date());
-    const next = new Date(last);
-    next.setDate(next.getDate() + interval);
-    return next.toISOString().slice(0, 10);
-  };
-  const isDueToday = q => {
-    if (!q.lastAnswered) return true; // 未着手は常に対象
-    const next = getSrsNextDate(q);
-    if (!next) return true;
-    return next <= todayStr();
-  };
   const TABS = [{
     id: "home",
     icon: "🏠",

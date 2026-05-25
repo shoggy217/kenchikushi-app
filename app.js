@@ -2217,7 +2217,7 @@ function QuizTab(_ref0) {
   const askAI = async () => {
     if (!aiQuestion.trim() || !q) return;
     setAiQLoading(true);
-    const text = await callClaude("あなたは一級建築士試験の専門講師です。受験生の質問に日本語で簡潔に答えてください。300字以内で。", `問題: ${q.q}
+    const text = await callClaude("あなたは一級建築士試験の専門講師です。以下の形式で日本語で答えてください。\n📌 結論: [1行]\n• [根拠・補足1]\n• [根拠・補足2]\n150字以内で簡潔に。", `問題: ${q.q}
 
 解説: ${q.explain || ""}
 
@@ -2233,7 +2233,7 @@ function QuizTab(_ref0) {
     if (!q) return;
     setHintLoading(true);
     setShowHint(true);
-    const text = await callClaude("あなたは一級建築士試験の専門講師です。問題のヒントを日本語で簡潔に200字以内で提供してください。答えは直接言わず、考え方の方向性を示してください。", `問題: ${q.q}\n選択肢: ${q.opts.map((o, i) => `${i + 1}.${o}`).join("\n")}`);
+    const text = await callClaude("あなたは一級建築士試験の専門講師です。以下の形式で答えてください。\n🔑 考え方: [1行で方向性]\n• [着目すべきポイント1]\n• [着目すべきポイント2]\n答えは言わず100字以内で。", `問題: ${q.q}\n選択肢: ${q.opts.map((o, i) => `${i + 1}.${o}`).join("\n")}`);
     setAiHint(text);
     setHintLoading(false);
   };

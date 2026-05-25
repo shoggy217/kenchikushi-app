@@ -625,90 +625,65 @@ const CHAPTERS = {
   kouzou: [],
   sekou: []
 };
-
-// ── Supabase ストレージ ──────────────────────────────────────
 const SUPABASE_URL = "https://nypugenklrsnhqjtyccc.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55cHVnZW5rbHJzbmhxanR5Y2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2ODU1MzAsImV4cCI6MjA5NTI2MTUzMH0.zWE458sdO1ktBL86pIXUN55UOESd-D5YdMdfLRsKoMY";
 const USER_ID = "shoggy217";
-const sbFetch = async (method, body) => {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/study_data`, {
-    method,
-    headers: {
-      "apikey": SUPABASE_KEY,
-      "Authorization": `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      "Prefer": method === "POST" ? "resolution=merge-duplicates,return=minimal" : "return=minimal"
-    },
-    body: body ? JSON.stringify(body) : undefined
-  });
-  return res;
-};
-
-// キーごとにローカルキャッシュ+Supabaseに保存
 const _cache = {};
+const _saveTimer = {};
+const sbHeaders = {
+  "apikey": SUPABASE_KEY,
+  "Authorization": "Bearer " + SUPABASE_KEY,
+  "Content-Type": "application/json"
+};
 const load = async (key, fb) => {
   if (_cache[key] !== undefined) return _cache[key];
   try {
-    // まずlocalStorageから高速取得
     const local = localStorage.getItem("sb_" + key);
-    if (local) {
-      _cache[key] = JSON.parse(local);
-    }
-    // バックグラウンドでSupabaseから最新を取得
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/study_data?user_id=eq.${USER_ID}&select=data&limit=1`, {
-      headers: {
-        "apikey": SUPABASE_KEY,
-        "Authorization": `Bearer ${SUPABASE_KEY}`
-      }
+    if (local) _cache[key] = JSON.parse(local);
+    const res = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&select=data&limit=1", {
+      headers: sbHeaders
     });
     if (res.ok) {
       const rows = await res.json();
       if (rows.length > 0 && rows[0].data) {
         const remote = rows[0].data;
-        if (remote[key] !== undefined) {
-          _cache[key] = remote[key];
-          localStorage.setItem("sb_" + key, JSON.stringify(remote[key]));
-          return remote[key];
-        }
+        Object.keys(remote).forEach(k => {
+          _cache[k] = remote[k];
+          localStorage.setItem("sb_" + k, JSON.stringify(remote[k]));
+        });
+        if (remote[key] !== undefined) return remote[key];
       }
     }
-    return _cache[key] !== undefined ? _cache[key] : fb;
-  } catch {
-    return _cache[key] !== undefined ? _cache[key] : fb;
+  } catch (e) {
+    console.error("load error", e);
+  }
+  return _cache[key] !== undefined ? _cache[key] : fb;
+};
+const _flushSave = async () => {
+  try {
+    const allData = {};
+    Object.keys(_cache).forEach(k => allData[k] = _cache[k]);
+    await fetch(SUPABASE_URL + "/rest/v1/study_data", {
+      method: "POST",
+      headers: {
+        ...sbHeaders,
+        "Prefer": "resolution=merge-duplicates,return=minimal"
+      },
+      body: JSON.stringify({
+        user_id: USER_ID,
+        data: allData,
+        updated_at: new Date().toISOString()
+      })
+    });
+  } catch (e) {
+    console.error("save error", e);
   }
 };
-
-// 全データをまとめて1行に保存
-const _saveTimer = {};
 const save = async (key, val) => {
   _cache[key] = val;
   localStorage.setItem("sb_" + key, JSON.stringify(val));
-  // 500ms debounceしてSupabaseに保存
-  clearTimeout(_saveTimer[key]);
-  _saveTimer[key] = setTimeout(async () => {
-    try {
-      // 現在のデータを取得してマージ
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/study_data?user_id=eq.${USER_ID}&select=data&limit=1`, {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`
-        }
-      });
-      let current = {};
-      if (res.ok) {
-        const rows = await res.json();
-        if (rows.length > 0 && rows[0].data) current = rows[0].data;
-      }
-      current[key] = val;
-      await sbFetch("POST", {
-        user_id: USER_ID,
-        data: current,
-        updated_at: new Date().toISOString()
-      });
-    } catch (e) {
-      console.error("Supabase save error:", e);
-    }
-  }, 500);
+  clearTimeout(_saveTimer._global);
+  _saveTimer._global = setTimeout(_flushSave, 800);
 };
 
 // ── CLAUDE API ─────────────────────────────────────────────
@@ -792,21 +767,18 @@ function App() {
           }
         }
       }
-      let mergedQs = Array.from(existingMap.values());
-      let finalQs = mergedQs;
-      if (bv !== BUNDLE_VER) {
-        // バンドル問題を追加する際、既存にあればhistory/starredを引き継ぐ
-        for (const bq of BUNDLED_QUESTIONS) {
-          if (!existingMap.has(bq.id)) {
-            existingMap.set(bq.id, bq);
-          }
-          // 既存にある場合はそのまま(historyを上書きしない)
+      // バンドル問題を常にマージ(historyは既存を優先)
+      for (const bq of BUNDLED_QUESTIONS) {
+        if (!existingMap.has(bq.id)) {
+          existingMap.set(bq.id, bq);
         }
-        finalQs = Array.from(existingMap.values());
+        // 既存にある場合はそのまま(historyを上書きしない)
+      }
+      let finalQs = Array.from(existingMap.values());
+      // バージョンが変わった場合のみ保存
+      if (bv !== BUNDLE_VER || finalQs.length !== qs.length) {
         await save("questions_v3", finalQs);
         await save("bver", BUNDLE_VER);
-      } else if (mergedQs.length > qs.length) {
-        await save("questions_v3", finalQs);
       }
       setQuestions(finalQs);
       setLogs(lg);

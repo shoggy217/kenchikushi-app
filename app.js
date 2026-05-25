@@ -1304,13 +1304,134 @@ function HomeTab(_ref4) {
       total: questions.length
     };
   }, [questions]);
+
+  // 学習ペース計算
+  const EXAM_DATE = new Date("2027-07-25");
+  const daysLeft = Math.ceil((EXAM_DATE - new Date()) / 86400000);
+  const dueToday = questions.filter(q => isDueToday(q)).length;
+  const untried = questions.filter(q => !(q.history || []).length).length;
+  const dailyNeeded = untried > 0 ? Math.ceil(untried / daysLeft) : 0;
+  const todaySrsLimit = Math.min(dueToday, 20);
+  const todaySrsDone = questions.filter(q => q.lastAnswered === todayStr() && !isDueToday(q)).length;
+
+  // 科目別1周進捗
+  const subjectProgress = SUBJECTS.map(s => {
+    const qs = questions.filter(q => q.subject === s.id);
+    const done = qs.filter(q => (q.history || []).length > 0).length;
+    return {
+      ...s,
+      total: qs.length,
+      done
+    };
+  }).filter(s => s.total > 0);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
       gap: 16
     }
+  }, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4ECA\u65E5\u306E\u30CE\u30EB\u30DE"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      fontSize: 12,
+      marginBottom: 6
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "rgba(255,255,255,0.6)"
+    }
+  }, "\uD83D\uDD04 \u9593\u9694\u53CD\u5FA9\uFF08\u4E0A\u965020\u554F\uFF09"), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: todaySrsDone >= todaySrsLimit ? "#34D399" : "#fff",
+      fontVariantNumeric: "tabular-nums"
+    }
+  }, todaySrsDone, " / ", todaySrsLimit, "\u554F")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 6,
+      background: "rgba(255,255,255,0.07)",
+      borderRadius: 99
+    }
   }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: "100%",
+      width: `${Math.min(todaySrsDone / Math.max(todaySrsLimit, 1) * 100, 100)}%`,
+      background: todaySrsDone >= todaySrsLimit ? "#34D399" : "#5B9FFF",
+      borderRadius: 99,
+      transition: "width 0.4s"
+    }
+  }))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "8px 12px",
+      background: "rgba(255,255,255,0.04)",
+      borderRadius: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "rgba(255,255,255,0.5)",
+      lineHeight: 1.8
+    }
+  }, /*#__PURE__*/React.createElement("div", null, "\u8A66\u9A13\u307E\u3067 ", /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#fff"
+    }
+  }, daysLeft, "\u65E5")), untried > 0 && /*#__PURE__*/React.createElement("div", null, "\u672A\u7740\u624B ", /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#FBBF24"
+    }
+  }, untried, "\u554F"), " \u2014 1\u65E5 ", /*#__PURE__*/React.createElement("b", {
+    style: {
+      color: "#fff"
+    }
+  }, dailyNeeded, "\u554F"), " \u89E3\u3051\u3070\u8A66\u9A13\u524D\u306B1\u5468\u5B8C\u4E86"), untried === 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: "#34D399"
+    }
+  }, "\u2713 \u5168\u554F\u984C\u30921\u5468\u5B8C\u4E86\uFF01"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 6
+    }
+  }, subjectProgress.map(s => /*#__PURE__*/React.createElement("div", {
+    key: s.id
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      fontSize: 11,
+      marginBottom: 3
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: "rgba(255,255,255,0.5)"
+    }
+  }, s.name), /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: s.done === s.total ? "#34D399" : "rgba(255,255,255,0.4)",
+      fontVariantNumeric: "tabular-nums"
+    }
+  }, s.done, "/", s.total, "\u554F ", s.done === s.total ? "✓" : "")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: 3,
+      background: "rgba(255,255,255,0.07)",
+      borderRadius: 99
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      height: "100%",
+      width: `${s.total > 0 ? s.done / s.total * 100 : 0}%`,
+      background: s.color,
+      borderRadius: 99
+    }
+  }))))))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
       gridTemplateColumns: "1fr 1fr",

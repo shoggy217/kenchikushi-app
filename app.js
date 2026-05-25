@@ -628,62 +628,66 @@ const CHAPTERS = {
 const SUPABASE_URL = "https://nypugenklrsnhqjtyccc.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55cHVnZW5rbHJzbmhxanR5Y2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2ODU1MzAsImV4cCI6MjA5NTI2MTUzMH0.zWE458sdO1ktBL86pIXUN55UOESd-D5YdMdfLRsKoMY";
 const USER_ID = "shoggy217";
-const _cache = {};
-const _saveTimer = {};
-const sbHeaders = {
+const SB_HEADERS = {
   "apikey": SUPABASE_KEY,
   "Authorization": "Bearer " + SUPABASE_KEY,
-  "Content-Type": "application/json"
+  "Content-Type": "application/json",
+  "Prefer": "resolution=merge-duplicates,return=minimal"
+};
+let _store = null;
+let _saveTimer = null;
+let _loadPromise = null;
+const _loadAll = () => {
+  if (_loadPromise) return _loadPromise;
+  _loadPromise = (async () => {
+    try {
+      const local = localStorage.getItem("store_v1");
+      if (local) _store = JSON.parse(local);
+      const res = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&select=data&limit=1", {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + SUPABASE_KEY
+        }
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (rows.length > 0 && rows[0].data) {
+          _store = rows[0].data;
+          localStorage.setItem("store_v1", JSON.stringify(_store));
+        }
+      }
+    } catch (e) {
+      console.error("load error", e);
+    }
+    if (!_store) _store = {};
+    return _store;
+  })();
+  return _loadPromise;
 };
 const load = async (key, fb) => {
-  if (_cache[key] !== undefined) return _cache[key];
-  try {
-    const local = localStorage.getItem("sb_" + key);
-    if (local) _cache[key] = JSON.parse(local);
-    const res = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&select=data&limit=1", {
-      headers: sbHeaders
-    });
-    if (res.ok) {
-      const rows = await res.json();
-      if (rows.length > 0 && rows[0].data) {
-        const remote = rows[0].data;
-        Object.keys(remote).forEach(k => {
-          _cache[k] = remote[k];
-          localStorage.setItem("sb_" + k, JSON.stringify(remote[k]));
-        });
-        if (remote[key] !== undefined) return remote[key];
-      }
-    }
-  } catch (e) {
-    console.error("load error", e);
-  }
-  return _cache[key] !== undefined ? _cache[key] : fb;
-};
-const _flushSave = async () => {
-  try {
-    const allData = {};
-    Object.keys(_cache).forEach(k => allData[k] = _cache[k]);
-    await fetch(SUPABASE_URL + "/rest/v1/study_data", {
-      method: "POST",
-      headers: {
-        ...sbHeaders,
-        "Prefer": "resolution=merge-duplicates,return=minimal"
-      },
-      body: JSON.stringify({
-        user_id: USER_ID,
-        data: allData,
-        updated_at: new Date().toISOString()
-      })
-    });
-  } catch (e) {
-    console.error("save error", e);
-  }
+  const store = await _loadAll();
+  return store[key] !== undefined ? store[key] : fb;
 };
 const save = async (key, val) => {
-  _cache[key] = val;
-  localStorage.setItem("sb_" + key, JSON.stringify(val));
-  clearTimeout(_saveTimer._global);
-  _saveTimer._global = setTimeout(_flushSave, 800);
+  if (!_store) _store = {};
+  _store[key] = val;
+  localStorage.setItem("store_v1", JSON.stringify(_store));
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    try {
+      await fetch(SUPABASE_URL + "/rest/v1/study_data", {
+        method: "POST",
+        headers: SB_HEADERS,
+        body: JSON.stringify({
+          user_id: USER_ID,
+          data: _store,
+          updated_at: new Date().toISOString()
+        })
+      });
+    } catch (e) {
+      console.error("save error", e);
+    }
+  }, 800);
 };
 
 // ── CLAUDE API ─────────────────────────────────────────────
@@ -853,6 +857,64 @@ function App() {
       const p = await load("claude_pending_questions", []);
       setPendingCount(p.length);
     }, 8000);
+    return () => clearInterval(iv);
+  }, []);
+
+  // 30秒おきにSupabaseから最新データを取得して同期
+  useEffect(() => {
+    const iv = setInterval(async () => {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/study_data?user_id=eq.${USER_ID}&select=data,updated_at&limit=1`, {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`
+          }
+        });
+        if (!res.ok) return;
+        const rows = await res.json();
+        if (!rows.length || !rows[0].data) return;
+        const remote = rows[0].data;
+        // Supabaseの方が新しい場合のみ反映
+        const remoteQs = remote["questions_v3"];
+        if (remoteQs && Array.isArray(remoteQs)) {
+          // 既存historyとマージ(より多い方を採用)
+          setQuestions(prev => {
+            const prevMap = new Map(prev.map(q => [q.id, q]));
+            let changed = false;
+            remoteQs.forEach(rq => {
+              const pq = prevMap.get(rq.id);
+              if (!pq) {
+                prevMap.set(rq.id, rq);
+                changed = true;
+              } else if ((rq.history || []).length > (pq.history || []).length) {
+                prevMap.set(rq.id, {
+                  ...pq,
+                  history: rq.history,
+                  starred: rq.starred || pq.starred
+                });
+                changed = true;
+              }
+            });
+            if (!changed) return prev;
+            const merged = Array.from(prevMap.values());
+            // localStorageも更新
+            try {
+              localStorage.setItem("store_v1", JSON.stringify({
+                ...JSON.parse(localStorage.getItem("store_v1") || "{}"),
+                "questions_v3": merged
+              }));
+            } catch {}
+            return merged;
+          });
+        }
+        if (remote["logs"]) setLogs(remote["logs"]);
+        if (remote["xp"] !== undefined) setXp(remote["xp"]);
+        setSyncLabel("✓");
+        setTimeout(() => setSyncLabel("☁"), 1500);
+      } catch (e) {
+        console.error("sync error", e);
+      }
+    }, 30000);
     return () => clearInterval(iv);
   }, []);
   const importPending = useCallback(async () => {

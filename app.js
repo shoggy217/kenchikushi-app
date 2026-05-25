@@ -3709,28 +3709,246 @@ function AITab(_ref23) {
   }))));
 }
 
-// ── MANAGE TAB ─────────────────────────────────────────────
-function ManageTab(_ref26) {
+// ── HISTORY EDITOR ─────────────────────────────────────────
+function HistoryEditor(_ref26) {
   let questions = _ref26.questions,
-    setQuestions = _ref26.setQuestions,
-    pendingCount = _ref26.pendingCount,
-    importPending = _ref26.importPending;
-  const _useState75 = useState(false),
+    setQuestions = _ref26.setQuestions;
+  const _useState75 = useState(""),
     _useState76 = _slicedToArray(_useState75, 2),
-    importing = _useState76[0],
-    setImporting = _useState76[1];
+    search = _useState76[0],
+    setSearch = _useState76[1];
   const _useState77 = useState(null),
     _useState78 = _slicedToArray(_useState77, 2),
-    importDone = _useState78[0],
-    setImportDone = _useState78[1];
+    expanded = _useState78[0],
+    setExpanded = _useState78[1];
+  const answered = questions.filter(q => (q.history || []).length > 0);
+  const filtered = search ? answered.filter(q => q.q.includes(search) || q.topic?.includes(search) || q.year?.includes(search) || q.refs?.includes(search)) : answered;
+  const removeLastHistory = async qId => {
+    const updated = questions.map(q => {
+      if (q.id !== qId) return q;
+      const newHistory = [...(q.history || [])].slice(0, -1);
+      const newLastAnswered = newHistory.length > 0 ? q.lastAnswered : null;
+      return {
+        ...q,
+        history: newHistory,
+        lastAnswered: newLastAnswered
+      };
+    });
+    setQuestions(updated);
+    await save("questions_v3", updated);
+  };
+  const clearHistory = async qId => {
+    const updated = questions.map(q => q.id !== qId ? q : {
+      ...q,
+      history: [],
+      lastAnswered: null
+    });
+    setQuestions(updated);
+    await save("questions_v3", updated);
+  };
+  const toggleHistory = async (qId, idx) => {
+    const updated = questions.map(q => {
+      if (q.id !== qId) return q;
+      const h = [...(q.history || [])];
+      h[idx] = h[idx] === "○" ? "×" : "○";
+      return {
+        ...q,
+        history: h
+      };
+    });
+    setQuestions(updated);
+    await save("questions_v3", updated);
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "rgba(255,255,255,0.04)",
+      borderRadius: 16,
+      padding: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 15,
+      fontWeight: 500,
+      marginBottom: 4
+    }
+  }, "\u56DE\u7B54\u5C65\u6B74\u306E\u4FEE\u6B63"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "rgba(255,255,255,0.4)",
+      marginBottom: 16
+    }
+  }, "\u8AA4\u3063\u3066\u56DE\u7B54\u3057\u305F\u8A18\u9332\u3092\u4FEE\u6B63\u30FB\u524A\u9664\u3067\u304D\u307E\u3059"), /*#__PURE__*/React.createElement("input", {
+    value: search,
+    onChange: e => setSearch(e.target.value),
+    placeholder: "\u554F\u984C\u30FB\u6761\u6587\u30FB\u5E74\u5EA6\u3067\u691C\u7D22...",
+    style: {
+      width: "100%",
+      background: "rgba(255,255,255,0.06)",
+      border: "1px solid rgba(255,255,255,0.1)",
+      borderRadius: 10,
+      padding: "10px 12px",
+      fontSize: 13,
+      color: "#fff",
+      marginBottom: 12,
+      fontFamily: "inherit"
+    }
+  }), filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "rgba(255,255,255,0.3)",
+      textAlign: "center",
+      padding: "16px 0"
+    }
+  }, search ? "該当なし" : "回答済みの問題がありません"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 8,
+      maxHeight: 400,
+      overflowY: "auto"
+    }
+  }, filtered.slice(0, 30).map(q => {
+    const h = q.history || [];
+    const isExpanded = expanded === q.id;
+    return /*#__PURE__*/React.createElement("div", {
+      key: q.id,
+      style: {
+        background: "rgba(255,255,255,0.04)",
+        borderRadius: 12,
+        overflow: "hidden"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      onClick: () => setExpanded(isExpanded ? null : q.id),
+      style: {
+        padding: "12px 14px",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        gap: 8
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1,
+        fontSize: 12,
+        color: "rgba(255,255,255,0.7)",
+        lineHeight: 1.5
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "rgba(255,255,255,0.4)",
+        marginRight: 6
+      }
+    }, q.year), q.q.slice(0, 40), q.q.length > 40 ? "…" : ""), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 2,
+        flexShrink: 0
+      }
+    }, h.slice(-5).map((v, i) => /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        width: 14,
+        height: 14,
+        borderRadius: 3,
+        background: v === "○" ? "rgba(52,211,153,0.3)" : "rgba(248,113,113,0.3)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 8,
+        color: v === "○" ? "#34D399" : "#F87171"
+      }
+    }, v))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 10,
+        color: "rgba(255,255,255,0.3)"
+      }
+    }, isExpanded ? "▲" : "▼")), isExpanded && /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "0 14px 14px",
+        borderTop: "1px solid rgba(255,255,255,0.06)"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 11,
+        color: "rgba(255,255,255,0.4)",
+        marginBottom: 8,
+        marginTop: 10
+      }
+    }, "\u30BF\u30C3\u30D7\u3067\u25CB\u2194\xD7\u5207\u308A\u66FF\u3048"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 4,
+        flexWrap: "wrap",
+        marginBottom: 12
+      }
+    }, h.map((v, i) => /*#__PURE__*/React.createElement("button", {
+      key: i,
+      onClick: () => toggleHistory(q.id, i),
+      style: {
+        width: 28,
+        height: 28,
+        borderRadius: 6,
+        background: v === "○" ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)",
+        border: v === "○" ? "1px solid rgba(52,211,153,0.4)" : "1px solid rgba(248,113,113,0.4)",
+        color: v === "○" ? "#34D399" : "#F87171",
+        fontSize: 12,
+        cursor: "pointer"
+      }
+    }, v))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => removeLastHistory(q.id),
+      style: {
+        flex: 1,
+        padding: "8px",
+        borderRadius: 10,
+        background: "rgba(251,191,36,0.1)",
+        border: "1px solid rgba(251,191,36,0.25)",
+        color: "#FBBF24",
+        fontSize: 12,
+        cursor: "pointer"
+      }
+    }, "\u6700\u5F8C\u306E1\u4EF6\u3092\u524A\u9664"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => clearHistory(q.id),
+      style: {
+        flex: 1,
+        padding: "8px",
+        borderRadius: 10,
+        background: "rgba(248,113,113,0.1)",
+        border: "1px solid rgba(248,113,113,0.25)",
+        color: "#F87171",
+        fontSize: 12,
+        cursor: "pointer"
+      }
+    }, "\u5C65\u6B74\u3092\u30EA\u30BB\u30C3\u30C8"))));
+  })));
+}
+
+// ── MANAGE TAB ─────────────────────────────────────────────
+function ManageTab(_ref27) {
+  let questions = _ref27.questions,
+    setQuestions = _ref27.setQuestions,
+    pendingCount = _ref27.pendingCount,
+    importPending = _ref27.importPending;
   const _useState79 = useState(false),
     _useState80 = _slicedToArray(_useState79, 2),
-    showManual = _useState80[0],
-    setShowManual = _useState80[1];
-  const _useState81 = useState(""),
+    importing = _useState80[0],
+    setImporting = _useState80[1];
+  const _useState81 = useState(null),
     _useState82 = _slicedToArray(_useState81, 2),
-    ioMsg = _useState82[0],
-    setIoMsg = _useState82[1];
+    importDone = _useState82[0],
+    setImportDone = _useState82[1];
+  const _useState83 = useState(false),
+    _useState84 = _slicedToArray(_useState83, 2),
+    showManual = _useState84[0],
+    setShowManual = _useState84[1];
+  const _useState85 = useState(""),
+    _useState86 = _slicedToArray(_useState85, 2),
+    ioMsg = _useState86[0],
+    setIoMsg = _useState86[1];
 
   // データをJSONファイルとして保存
   const exportData = async () => {
@@ -3801,7 +4019,7 @@ function ManageTab(_ref26) {
     reader.readAsText(file);
     e.target.value = "";
   };
-  const _useState83 = useState({
+  const _useState87 = useState({
       subject: "houki",
       q: "",
       opts: ["", "", "", ""],
@@ -3816,13 +4034,13 @@ function ManageTab(_ref26) {
       qPage: "",
       tbPage: ""
     }),
-    _useState84 = _slicedToArray(_useState83, 2),
-    form = _useState84[0],
-    setForm = _useState84[1];
-  const _useState85 = useState(""),
-    _useState86 = _slicedToArray(_useState85, 2),
-    msg = _useState86[0],
-    setMsg = _useState86[1];
+    _useState88 = _slicedToArray(_useState87, 2),
+    form = _useState88[0],
+    setForm = _useState88[1];
+  const _useState89 = useState(""),
+    _useState90 = _slicedToArray(_useState89, 2),
+    msg = _useState90[0],
+    setMsg = _useState90[1];
   const doImport = async () => {
     setImporting(true);
     setImportDone(null);
@@ -3935,7 +4153,10 @@ function ManageTab(_ref26) {
       fontSize: 12,
       color: "#34D399"
     }
-  }, ioMsg)), /*#__PURE__*/React.createElement("div", {
+  }, ioMsg)), /*#__PURE__*/React.createElement(HistoryEditor, {
+    questions: questions,
+    setQuestions: setQuestions
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       background: pendingCount > 0 ? "rgba(91,159,255,0.1)" : "rgba(255,255,255,0.04)",
       border: pendingCount > 0 ? "1px solid rgba(91,159,255,0.3)" : "1px solid transparent",
@@ -3996,10 +4217,10 @@ function ManageTab(_ref26) {
       color: "rgba(255,255,255,0.35)",
       lineHeight: 1.8
     }
-  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref27 => {
-    let _ref28 = _slicedToArray(_ref27, 2),
-      n = _ref28[0],
-      t = _ref28[1];
+  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref28 => {
+    let _ref29 = _slicedToArray(_ref28, 2),
+      n = _ref29[0],
+      t = _ref29[1];
     return /*#__PURE__*/React.createElement("div", {
       key: n,
       style: {
@@ -4336,26 +4557,26 @@ function ManageTab(_ref26) {
 
 // ── NOTES TAB ──────────────────────────────────────────────
 function NotesTab() {
-  const _useState87 = useState({}),
-    _useState88 = _slicedToArray(_useState87, 2),
-    hints = _useState88[0],
-    setHints = _useState88[1];
-  const _useState89 = useState("houki"),
-    _useState90 = _slicedToArray(_useState89, 2),
-    selectedSubject = _useState90[0],
-    setSelectedSubject = _useState90[1];
-  const _useState91 = useState(null),
+  const _useState91 = useState({}),
     _useState92 = _slicedToArray(_useState91, 2),
-    editingId = _useState92[0],
-    setEditingId = _useState92[1];
-  const _useState93 = useState(""),
+    hints = _useState92[0],
+    setHints = _useState92[1];
+  const _useState93 = useState("houki"),
     _useState94 = _slicedToArray(_useState93, 2),
-    draft = _useState94[0],
-    setDraft = _useState94[1];
-  const _useState95 = useState(true),
+    selectedSubject = _useState94[0],
+    setSelectedSubject = _useState94[1];
+  const _useState95 = useState(null),
     _useState96 = _slicedToArray(_useState95, 2),
-    loading = _useState96[0],
-    setLoading = _useState96[1];
+    editingId = _useState96[0],
+    setEditingId = _useState96[1];
+  const _useState97 = useState(""),
+    _useState98 = _slicedToArray(_useState97, 2),
+    draft = _useState98[0],
+    setDraft = _useState98[1];
+  const _useState99 = useState(true),
+    _useState100 = _slicedToArray(_useState99, 2),
+    loading = _useState100[0],
+    setLoading = _useState100[1];
   useEffect(() => {
     load("hints", {}).then(h => {
       setHints(h);

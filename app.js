@@ -926,64 +926,6 @@ function App() {
     }, 8000);
     return () => clearInterval(iv);
   }, []);
-
-  // 30秒おきにSupabaseから最新データを取得して同期
-  useEffect(() => {
-    const iv = setInterval(async () => {
-      try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/study_data?user_id=eq.${USER_ID}&select=data,updated_at&limit=1`, {
-          headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": `Bearer ${SUPABASE_KEY}`
-          }
-        });
-        if (!res.ok) return;
-        const rows = await res.json();
-        if (!rows.length || !rows[0].data) return;
-        const remote = rows[0].data;
-        // Supabaseの方が新しい場合のみ反映
-        const remoteQs = remote["questions_v3"];
-        if (remoteQs && Array.isArray(remoteQs)) {
-          // 既存historyとマージ(より多い方を採用)
-          setQuestions(prev => {
-            const prevMap = new Map(prev.map(q => [q.id, q]));
-            let changed = false;
-            remoteQs.forEach(rq => {
-              const pq = prevMap.get(rq.id);
-              if (!pq) {
-                prevMap.set(rq.id, rq);
-                changed = true;
-              } else if ((rq.history || []).length > (pq.history || []).length) {
-                prevMap.set(rq.id, {
-                  ...pq,
-                  history: rq.history,
-                  starred: rq.starred || pq.starred
-                });
-                changed = true;
-              }
-            });
-            if (!changed) return prev;
-            const merged = Array.from(prevMap.values());
-            // localStorageも更新
-            try {
-              localStorage.setItem("store_v1", JSON.stringify({
-                ...JSON.parse(localStorage.getItem("store_v1") || "{}"),
-                "questions_v3": merged
-              }));
-            } catch {}
-            return merged;
-          });
-        }
-        if (remote["logs"]) setLogs(remote["logs"]);
-        if (remote["xp"] !== undefined) setXp(remote["xp"]);
-        setSyncLabel("✓");
-        setTimeout(() => setSyncLabel("☁"), 1500);
-      } catch (e) {
-        console.error("sync error", e);
-      }
-    }, 30000);
-    return () => clearInterval(iv);
-  }, []);
   const importPending = useCallback(async () => {
     const pend = await load("claude_pending_questions", []);
     if (!pend.length) return 0;
@@ -1221,14 +1163,45 @@ function App() {
       alignItems: "center",
       justifyContent: "center"
     }
-  }, t.badge))))), /*#__PURE__*/React.createElement("div", {
+  }, t.badge))))), /*#__PURE__*/React.createElement("button", {
+    onClick: async () => {
+      setSyncLabel("⟳");
+      try {
+        const res = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&order=updated_at.desc&limit=1&select=data", {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + SUPABASE_KEY
+          }
+        });
+        if (res.ok) {
+          const rows = await res.json();
+          if (rows.length > 0 && rows[0].data) {
+            const d = rows[0].data;
+            if (d.questions_v3) setQuestions(d.questions_v3);
+            if (d.logs) setLogs(d.logs);
+            if (d.xp !== undefined) setXp(d.xp);
+            localStorage.setItem("store_v1", JSON.stringify(d));
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      setSyncLabel("✓");
+      setTimeout(() => setSyncLabel("☁"), 2000);
+    },
     style: {
       position: "fixed",
-      top: 16,
-      right: 16,
-      fontSize: 11,
-      color: "rgba(255,255,255,0.2)",
-      zIndex: 200
+      top: 14,
+      right: 14,
+      fontSize: 13,
+      color: "rgba(255,255,255,0.3)",
+      background: "rgba(255,255,255,0.06)",
+      border: "1px solid rgba(255,255,255,0.1)",
+      borderRadius: 8,
+      cursor: "pointer",
+      padding: "4px 8px",
+      zIndex: 200,
+      lineHeight: 1
     }
   }, syncLabel)));
 }
@@ -2738,7 +2711,8 @@ function QuizTab(_ref0) {
     style: {
       fontSize: 13,
       color: "rgba(255,255,255,0.8)",
-      lineHeight: 1.7
+      lineHeight: 1.9,
+      whiteSpace: "pre-wrap"
     }
   }, aiHint))), /*#__PURE__*/React.createElement("div", {
     style: {

@@ -2217,7 +2217,7 @@ function QuizTab(_ref0) {
     if (!q) return;
     setHintLoading(true);
     setShowHint(true);
-    const text = await callClaude("あなたは一級建築士試験の専門講師です。【厳守】正解の選択肢番号・どの選択肢が正しいか・誤りかを絶対に言ってはいけません。考え方の方向性だけを示してください。\n形式:\n🔑 着目点: [1行]\n• [法的な観点1]\n• [法的な観点2]\n100字以内。", `問題: ${q.q}\n選択肢: ${q.opts.map((o, i) => `${i + 1}.${o}`).join("\n")}`);
+    const text = await callClaude("あなたは一級建築士試験の専門講師です。問題のテーマに関する法的な知識を2点だけ教えてください。選択肢・正解・正誤には一切触れないこと。\n\n形式(必ず守る):\n🔑 核心: [テーマの本質を1行]\n• [法的知識1]\n• [法的知識2]\n\n合計60字以内。", `テーマ: ${q.topic || q.refs || "建築基準法"}  条文: ${q.refs || ""}`);
     setAiHint(text);
     setHintLoading(false);
   };

@@ -713,10 +713,9 @@ const save = async (key, val) => {
 };
 
 // ── CLAUDE API ─────────────────────────────────────────────
-// AIキャッシュ(無駄な呼び出しを省く)
+// AIキャッシュ
 const _aiCache = {};
 const EDGE_URL = "https://nypugenklrsnhqjtyccc.supabase.co/functions/v1/claude-proxy";
-const EDGE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55cHVnZW5rbHJzbmhxanR5Y2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2ODU1MzAsImV4cCI6MjA5NTI2MTUzMH0.zWE458sdO1ktBL86pIXUN55UOESd-D5YdMdfLRsKoMY";
 const callClaude = async (systemPrompt, userPrompt) => {
   const cacheKey = systemPrompt.slice(0, 20) + userPrompt.slice(0, 50);
   if (_aiCache[cacheKey]) return _aiCache[cacheKey];
@@ -725,8 +724,8 @@ const callClaude = async (systemPrompt, userPrompt) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + EDGE_KEY,
-        "apikey": EDGE_KEY
+        "Authorization": "Bearer " + SUPABASE_KEY,
+        "apikey": SUPABASE_KEY
       },
       body: JSON.stringify({
         system: systemPrompt,
@@ -739,7 +738,7 @@ const callClaude = async (systemPrompt, userPrompt) => {
     if (text) _aiCache[cacheKey] = text;
     return text;
   } catch (e) {
-    console.error("AI API error:", e);
+    console.error("AI error", e);
     return "";
   }
 };
@@ -1007,6 +1006,30 @@ function App() {
       fontSize: 13
     }
   }, "\u8AAD\u307F\u8FBC\u307F\u4E2D..."));
+
+  // ── 間隔反復 (Spaced Repetition) ──────────────────────────
+  // 正解回数に応じた次回出題日を計算
+  const SRS_INTERVALS = [1, 2, 4, 7, 14, 30, 60]; // 日数
+  const getSrsNextDate = q => {
+    const h = q.history || [];
+    if (!h.length) return null; // 未着手
+    // 連続正解数をカウント
+    let streak = 0;
+    for (let i = h.length - 1; i >= 0; i--) {
+      if (h[i] === "○") streak++;else break;
+    }
+    const interval = SRS_INTERVALS[Math.min(streak, SRS_INTERVALS.length - 1)];
+    const last = new Date(q.lastAnswered || new Date());
+    const next = new Date(last);
+    next.setDate(next.getDate() + interval);
+    return next.toISOString().slice(0, 10);
+  };
+  const isDueToday = q => {
+    if (!q.lastAnswered) return true; // 未着手は常に対象
+    const next = getSrsNextDate(q);
+    if (!next) return true;
+    return next <= todayStr();
+  };
   const TABS = [{
     id: "home",
     icon: "🏠",
@@ -1668,7 +1691,141 @@ function HomeTab(_ref4) {
       color: "rgba(255,255,255,0.3)",
       textAlign: "center"
     }
-  }, "\u4ED6 ", weakQuestions.length - 5, "\u554F"))));
+  }, "\u4ED6 ", weakQuestions.length - 5, "\u554F"))), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u51FA\u984C\u5E74\u5EA6\u5206\u6790"), (() => {
+    // 年度ごとの正答率を集計
+    const yearStats = {};
+    questions.forEach(q => {
+      if (!q.year) return;
+      if (!yearStats[q.year]) yearStats[q.year] = {
+        total: 0,
+        correct: 0,
+        answered: 0
+      };
+      const h = q.history || [];
+      yearStats[q.year].total++;
+      yearStats[q.year].answered += h.length > 0 ? 1 : 0;
+      yearStats[q.year].correct += h.filter(x => x === "○").length;
+    });
+    const years = Object.keys(yearStats).sort().reverse();
+    if (!years.length) return /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 13,
+        color: "rgba(255,255,255,0.2)",
+        padding: "8px 0"
+      }
+    }, "\u554F\u984C\u30C7\u30FC\u30BF\u306A\u3057");
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 8
+      }
+    }, years.map(yr => {
+      const s = yearStats[yr];
+      const totalAns = questions.filter(q => q.year === yr).reduce((a, q) => a + (q.history || []).length, 0);
+      const rate = totalAns > 0 ? Math.round(s.correct / totalAns * 100) : null;
+      const freqLabel = s.total >= 3 ? "🔥 頻出" : s.total >= 2 ? "⚡ 重要" : "";
+      return /*#__PURE__*/React.createElement("div", {
+        key: yr,
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "6px 0",
+          borderBottom: "1px solid rgba(255,255,255,0.05)"
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 12,
+          color: "rgba(255,255,255,0.6)",
+          width: 36,
+          flexShrink: 0
+        }
+      }, yr), /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 10,
+          color: "rgba(255,255,255,0.3)",
+          width: 40,
+          flexShrink: 0
+        }
+      }, s.total, "\u554F"), freqLabel && /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 10
+        }
+      }, freqLabel), /*#__PURE__*/React.createElement("div", {
+        style: {
+          flex: 1,
+          height: 4,
+          background: "rgba(255,255,255,0.07)",
+          borderRadius: 99
+        }
+      }, rate !== null && /*#__PURE__*/React.createElement("div", {
+        style: {
+          height: "100%",
+          width: `${rate}%`,
+          background: rate >= 70 ? "#34D399" : rate >= 40 ? "#FBBF24" : "#F87171",
+          borderRadius: 99
+        }
+      })), /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 11,
+          color: "rgba(255,255,255,0.4)",
+          width: 36,
+          textAlign: "right",
+          flexShrink: 0
+        }
+      }, rate !== null ? `${rate}%` : "-"));
+    }));
+  })()), (() => {
+    const refMap = {};
+    questions.forEach(q => {
+      if (!q.refs || !(q.history || []).length) return;
+      const wrongs = (q.history || []).filter(h => h === "×").length;
+      if (wrongs === 0) return;
+      const key = q.refs;
+      if (!refMap[key]) refMap[key] = {
+        refs: key,
+        wrong: 0,
+        total: 0
+      };
+      refMap[key].wrong += wrongs;
+      refMap[key].total += (q.history || []).length;
+    });
+    const sorted = Object.values(refMap).sort((a, b) => b.wrong - a.wrong).slice(0, 5);
+    if (!sorted.length) return null;
+    return /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u82E6\u624B\u6761\u6587 Top5"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 8
+      }
+    }, sorted.map((r, i) => /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        fontSize: 12
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#F87171",
+        fontVariantNumeric: "tabular-nums",
+        width: 16,
+        flexShrink: 0
+      }
+    }, i + 1), /*#__PURE__*/React.createElement("span", {
+      style: {
+        flex: 1,
+        color: "rgba(255,255,255,0.7)"
+      }
+    }, r.refs), /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#F87171",
+        flexShrink: 0
+      }
+    }, "\xD7", r.wrong, "\u56DE")))));
+  })());
 }
 
 // ── QUIZ TAB ───────────────────────────────────────────────
@@ -1684,82 +1841,121 @@ function QuizTab(_ref0) {
     _useState22 = _slicedToArray(_useState21, 2),
     mode = _useState22[0],
     setMode = _useState22[1]; // AB A all weak starred untried
-  const _useState23 = useState(0),
+  const _useState23 = useState("srs"),
     _useState24 = _slicedToArray(_useState23, 2),
-    idx = _useState24[0],
-    setIdx = _useState24[1];
-  const _useState25 = useState(null),
+    course = _useState24[0],
+    setCourse = _useState24[1]; // srs=間隔反復 / new=新規勉強
+  const _useState25 = useState(0),
     _useState26 = _slicedToArray(_useState25, 2),
-    sel = _useState26[0],
-    setSel = _useState26[1];
-  const _useState27 = useState(false),
+    idx = _useState26[0],
+    setIdx = _useState26[1];
+  const _useState27 = useState(null),
     _useState28 = _slicedToArray(_useState27, 2),
-    done = _useState28[0],
-    setDone = _useState28[1];
-  const _useState29 = useState({
+    sel = _useState28[0],
+    setSel = _useState28[1];
+  const _useState29 = useState(false),
+    _useState30 = _slicedToArray(_useState29, 2),
+    done = _useState30[0],
+    setDone = _useState30[1];
+  const _useState31 = useState({
       correct: 0,
       total: 0
     }),
-    _useState30 = _slicedToArray(_useState29, 2),
-    session = _useState30[0],
-    setSession = _useState30[1];
-  const _useState31 = useState(""),
     _useState32 = _slicedToArray(_useState31, 2),
-    aiHint = _useState32[0],
-    setAiHint = _useState32[1];
-  const _useState33 = useState(false),
+    session = _useState32[0],
+    setSession = _useState32[1];
+  const _useState33 = useState(""),
     _useState34 = _slicedToArray(_useState33, 2),
-    hintLoading = _useState34[0],
-    setHintLoading = _useState34[1];
+    aiHint = _useState34[0],
+    setAiHint = _useState34[1];
   const _useState35 = useState(false),
     _useState36 = _slicedToArray(_useState35, 2),
-    showHint = _useState36[0],
-    setShowHint = _useState36[1];
-  const _useState37 = useState(""),
+    hintLoading = _useState36[0],
+    setHintLoading = _useState36[1];
+  const _useState37 = useState(false),
     _useState38 = _slicedToArray(_useState37, 2),
-    knowledge = _useState38[0],
-    setKnowledge = _useState38[1];
-  const _useState39 = useState(false),
+    showHint = _useState38[0],
+    setShowHint = _useState38[1];
+  const _useState39 = useState(""),
     _useState40 = _slicedToArray(_useState39, 2),
-    knowledgeLoading = _useState40[0],
-    setKnowledgeLoading = _useState40[1];
+    knowledge = _useState40[0],
+    setKnowledge = _useState40[1];
   const _useState41 = useState(false),
     _useState42 = _slicedToArray(_useState41, 2),
-    knowledgeSkipped = _useState42[0],
-    setKnowledgeSkipped = _useState42[1];
-  const _useState43 = useState(""),
+    knowledgeLoading = _useState42[0],
+    setKnowledgeLoading = _useState42[1];
+  const _useState43 = useState(false),
     _useState44 = _slicedToArray(_useState43, 2),
-    memo = _useState44[0],
-    setMemo = _useState44[1];
-  const _useState45 = useState(false),
+    knowledgeSkipped = _useState44[0],
+    setKnowledgeSkipped = _useState44[1];
+  const _useState45 = useState(""),
     _useState46 = _slicedToArray(_useState45, 2),
-    memoEditing = _useState46[0],
-    setMemoEditing = _useState46[1];
-  const _useState47 = useState(""),
+    memo = _useState46[0],
+    setMemo = _useState46[1];
+  const _useState47 = useState(false),
     _useState48 = _slicedToArray(_useState47, 2),
-    aiQuestion = _useState48[0],
-    setAiQuestion = _useState48[1];
+    memoEditing = _useState48[0],
+    setMemoEditing = _useState48[1];
   const _useState49 = useState(""),
     _useState50 = _slicedToArray(_useState49, 2),
-    aiAnswer = _useState50[0],
-    setAiAnswer = _useState50[1];
-  const _useState51 = useState(false),
+    aiQuestion = _useState50[0],
+    setAiQuestion = _useState50[1];
+  const _useState51 = useState(""),
     _useState52 = _slicedToArray(_useState51, 2),
-    aiQLoading = _useState52[0],
-    setAiQLoading = _useState52[1];
-  const _useState53 = useState({}),
+    aiAnswer = _useState52[0],
+    setAiAnswer = _useState52[1];
+  const _useState53 = useState(false),
     _useState54 = _slicedToArray(_useState53, 2),
-    memos = _useState54[0],
-    setMemos = _useState54[1];
+    aiQLoading = _useState54[0],
+    setAiQLoading = _useState54[1];
+  const _useState55 = useState({}),
+    _useState56 = _slicedToArray(_useState55, 2),
+    memos = _useState56[0],
+    setMemos = _useState56[1];
   const pool = useMemo(() => {
+    const today = todayStr();
     let arr = [...questions];
     if (subj !== "all") arr = arr.filter(q => q.subject === subj);
-    if (mode === "AB") arr = arr.filter(q => !q.rank || q.rank === "A" || q.rank === "B");else if (mode === "A") arr = arr.filter(q => q.rank === "A");else if (mode === "weak") arr = arr.filter(q => {
-      const r = (q.history || []).slice(-3);
-      return r.filter(x => x === "×").length >= 2;
-    });else if (mode === "starred") arr = arr.filter(q => q.starred);else if (mode === "untried") arr = arr.filter(q => !q.history || !q.history.length);
-    return arr;
-  }, [questions, subj, mode]);
+    if (course === "srs") {
+      // ── 間隔反復コース ──
+      // 今日が出題日の問題のみ対象
+      const due = arr.filter(q => isDueToday(q));
+      const notDue = arr.filter(q => !isDueToday(q));
+      // due内を優先度順に
+      const priority = q => {
+        const h = q.history || [];
+        if (!h.length) return 1; // 未着手
+        const last3 = h.slice(-3);
+        if (last3.filter(x => x === "×").length >= 2) return 0; // 要復習
+        if (last3.every(x => x === "○") && last3.length >= 3) return 3; // 習得済
+        return 2; // 学習中
+      };
+      due.sort((a, b) => priority(a) - priority(b));
+      // 今日すでに解いた問題は後ろへ
+      const solvedToday = due.filter(q => q.lastAnswered === today);
+      const notSolvedToday = due.filter(q => q.lastAnswered !== today);
+      return [...notSolvedToday, ...solvedToday];
+    } else {
+      // ── 新規勉強コース ──
+      // 未着手・学習中を優先、難易度フィルターを適用
+      if (mode === "AB") arr = arr.filter(q => !q.rank || q.rank === "A" || q.rank === "B");else if (mode === "A") arr = arr.filter(q => q.rank === "A");else if (mode === "weak") arr = arr.filter(q => {
+        const r = (q.history || []).slice(-3);
+        return r.filter(x => x === "×").length >= 2;
+      });else if (mode === "starred") arr = arr.filter(q => q.starred);else if (mode === "untried") arr = arr.filter(q => !q.history || !q.history.length);
+      const priority = q => {
+        const h = q.history || [];
+        if (!h.length) return 0; // 未着手(最優先)
+        const last3 = h.slice(-3);
+        if (last3.filter(x => x === "×").length >= 2) return 1; // 要復習
+        if (last3.every(x => x === "○") && last3.length >= 3) return 3; // 習得済(後回し)
+        return 2; // 学習中
+      };
+      arr.sort((a, b) => priority(a) - priority(b));
+      const solvedToday = arr.filter(q => q.lastAnswered === today);
+      const notSolvedToday = arr.filter(q => q.lastAnswered !== today);
+      return [...notSolvedToday, ...solvedToday];
+    }
+  }, [questions, subj, mode, course]);
   const q = pool[idx % Math.max(pool.length, 1)];
   const subj_ = SUBJECTS.find(s => s.id === q?.subject) || SUBJECTS[0];
   function reset(newSubj, newMode) {
@@ -1883,11 +2079,81 @@ function QuizTab(_ref0) {
       color: "rgba(255,255,255,0.4)"
     }
   }, "\u7BA1\u7406\u30BF\u30D6\u304B\u3089\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044"));
-  if (!pool.length) return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement(FilterBar, {
+  if (!pool.length) return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginBottom: 4
+    }
+  }, [["srs", "🔄 間隔反復", "今日の復習問題を優先"], ["new", "📖 新規勉強", "未着手から順番に"]].map(_ref1 => {
+    let _ref10 = _slicedToArray(_ref1, 3),
+      id = _ref10[0],
+      label = _ref10[1],
+      desc = _ref10[2];
+    return /*#__PURE__*/React.createElement("button", {
+      key: id,
+      onClick: () => {
+        setCourse(id);
+        setIdx(0);
+        setSel(null);
+        setDone(false);
+      },
+      style: {
+        flex: 1,
+        padding: "10px 8px",
+        borderRadius: 12,
+        background: course === id ? "rgba(91,159,255,0.15)" : "rgba(255,255,255,0.04)",
+        border: course === id ? "1px solid rgba(91,159,255,0.4)" : "1px solid rgba(255,255,255,0.08)",
+        cursor: "pointer",
+        textAlign: "left"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 13,
+        fontWeight: 600,
+        color: course === id ? "#5B9FFF" : "rgba(255,255,255,0.6)",
+        marginBottom: 2
+      }
+    }, label), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 10,
+        color: "rgba(255,255,255,0.3)"
+      }
+    }, desc));
+  })), course === "srs" && (() => {
+    const today = todayStr();
+    const dueCount = questions.filter(q => isDueToday(q)).length;
+    const doneToday = questions.filter(q => q.lastAnswered === today).length;
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        padding: "8px 12px",
+        background: "rgba(52,211,153,0.07)",
+        borderRadius: 10,
+        border: "1px solid rgba(52,211,153,0.15)",
+        fontSize: 12
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#34D399",
+        fontWeight: 600
+      }
+    }, "\u4ECA\u65E5\u306E\u5FA9\u7FD2: ", dueCount, "\u554F"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "rgba(255,255,255,0.3)",
+        marginLeft: 12
+      }
+    }, "\u5B8C\u4E86: ", doneToday, "\u554F"), dueCount === 0 && /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#34D399",
+        marginLeft: 12
+      }
+    }, "\u2713 \u4ECA\u65E5\u5206\u5B8C\u4E86!"));
+  })(), /*#__PURE__*/React.createElement(FilterBar, {
     questions: questions,
     subj: subj,
     mode: mode,
-    reset: reset
+    reset: reset,
+    course: course
   }), /*#__PURE__*/React.createElement(Card, {
     style: {
       textAlign: "center",
@@ -1912,29 +2178,43 @@ function QuizTab(_ref0) {
     subj: subj,
     mode: mode,
     reset: reset
-  }), session.total > 0 && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 16,
-      paddingLeft: 4,
-      fontSize: 13,
-      color: "rgba(255,255,255,0.4)"
-    }
-  }, /*#__PURE__*/React.createElement("span", null, "\u89E3\u7B54 ", /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: "#fff"
-    }
-  }, session.total)), /*#__PURE__*/React.createElement("span", null, "\u6B63\u7B54\u7387 ", /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: "#fff"
-    }
-  }, acc, "%")), /*#__PURE__*/React.createElement("span", {
-    style: {
-      marginLeft: "auto",
-      color: "rgba(255,255,255,0.25)",
-      fontVariantNumeric: "tabular-nums"
-    }
-  }, idx % pool.length + 1, "/", pool.length)), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement("div", {
+  }), (() => {
+    const today = todayStr();
+    const solvedToday = questions.filter(q => q.lastAnswered === today).length;
+    const total = pool.length;
+    const remaining = pool.filter(q => q.lastAnswered !== today).length;
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 12,
+        paddingLeft: 4,
+        fontSize: 12,
+        color: "rgba(255,255,255,0.4)",
+        flexWrap: "wrap",
+        alignItems: "center"
+      }
+    }, /*#__PURE__*/React.createElement("span", null, "\u4ECA\u65E5 ", /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: "#34D399",
+        fontVariantNumeric: "tabular-nums"
+      }
+    }, solvedToday), "\u554F\u89E3\u7B54"), /*#__PURE__*/React.createElement("span", null, "\u6B8B\u308A ", /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: "#fff",
+        fontVariantNumeric: "tabular-nums"
+      }
+    }, remaining), "\u554F"), session.total > 0 && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", null, "\u6B63\u7B54\u7387 ", /*#__PURE__*/React.createElement("b", {
+      style: {
+        color: "#fff"
+      }
+    }, acc, "%"))), /*#__PURE__*/React.createElement("span", {
+      style: {
+        marginLeft: "auto",
+        color: "rgba(255,255,255,0.2)",
+        fontVariantNumeric: "tabular-nums"
+      }
+    }, idx % Math.max(pool.length, 1) + 1, "/", pool.length));
+  })(), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -2505,11 +2785,11 @@ function QuizTab(_ref0) {
     }
   }, "\u6B21\u306E\u554F\u984C \u2192"))));
 }
-function FilterBar(_ref1) {
-  let questions = _ref1.questions,
-    subj = _ref1.subj,
-    mode = _ref1.mode,
-    reset = _ref1.reset;
+function FilterBar(_ref11) {
+  let questions = _ref11.questions,
+    subj = _ref11.subj,
+    mode = _ref11.mode,
+    reset = _ref11.reset;
   const pillStyle = (active, color) => ({
     padding: "6px 14px",
     borderRadius: 99,
@@ -2554,11 +2834,11 @@ function FilterBar(_ref1) {
       paddingBottom: 4,
       scrollbarWidth: "none"
     }
-  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null]].map(_ref10 => {
-    let _ref11 = _slicedToArray(_ref10, 3),
-      v = _ref11[0],
-      l = _ref11[1],
-      c = _ref11[2];
+  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null]].map(_ref12 => {
+    let _ref13 = _slicedToArray(_ref12, 3),
+      v = _ref13[0],
+      l = _ref13[1],
+      c = _ref13[2];
     return /*#__PURE__*/React.createElement("button", {
       key: v,
       style: {
@@ -2572,22 +2852,22 @@ function FilterBar(_ref1) {
 }
 
 // ── LOG TAB ────────────────────────────────────────────────
-function LogTab(_ref12) {
-  let logs = _ref12.logs,
-    setLogs = _ref12.setLogs;
-  const _useState55 = useState({}),
-    _useState56 = _slicedToArray(_useState55, 2),
-    inputs = _useState56[0],
-    setInputs = _useState56[1];
+function LogTab(_ref14) {
+  let logs = _ref14.logs,
+    setLogs = _ref14.setLogs;
+  const _useState57 = useState({}),
+    _useState58 = _slicedToArray(_useState57, 2),
+    inputs = _useState58[0],
+    setInputs = _useState58[1];
   const today = todayStr();
   const todayLog = logs[today] || {};
   const todayMin = Object.values(todayLog).reduce((a, b) => a + b, 0);
   const save_ = () => {
     const cleaned = {};
-    Object.entries(inputs).forEach(_ref13 => {
-      let _ref14 = _slicedToArray(_ref13, 2),
-        k = _ref14[0],
-        v = _ref14[1];
+    Object.entries(inputs).forEach(_ref15 => {
+      let _ref16 = _slicedToArray(_ref15, 2),
+        k = _ref16[0],
+        v = _ref16[1];
       const n = parseInt(v) || 0;
       if (n > 0) cleaned[k] = n;
     });
@@ -2707,25 +2987,25 @@ function LogTab(_ref12) {
 }
 
 // ── AI TAB ─────────────────────────────────────────────────
-function AITab(_ref15) {
-  let questions = _ref15.questions,
-    weakQuestions = _ref15.weakQuestions;
-  const _useState57 = useState("analysis"),
-    _useState58 = _slicedToArray(_useState57, 2),
-    mode = _useState58[0],
-    setMode = _useState58[1]; // analysis | generate | advice
-  const _useState59 = useState(""),
+function AITab(_ref17) {
+  let questions = _ref17.questions,
+    weakQuestions = _ref17.weakQuestions;
+  const _useState59 = useState("analysis"),
     _useState60 = _slicedToArray(_useState59, 2),
-    output = _useState60[0],
-    setOutput = _useState60[1];
-  const _useState61 = useState(false),
+    mode = _useState60[0],
+    setMode = _useState60[1]; // analysis | generate | advice
+  const _useState61 = useState(""),
     _useState62 = _slicedToArray(_useState61, 2),
-    loading = _useState62[0],
-    setLoading = _useState62[1];
-  const _useState63 = useState(""),
+    output = _useState62[0],
+    setOutput = _useState62[1];
+  const _useState63 = useState(false),
     _useState64 = _slicedToArray(_useState63, 2),
-    prompt = _useState64[0],
-    setPrompt = _useState64[1];
+    loading = _useState64[0],
+    setLoading = _useState64[1];
+  const _useState65 = useState(""),
+    _useState66 = _slicedToArray(_useState65, 2),
+    prompt = _useState66[0],
+    setPrompt = _useState66[1];
   const subjectStats = useMemo(() => {
     return SUBJECTS.map(s => {
       const qs = questions.filter(q => q.subject === s.id);
@@ -2901,27 +3181,27 @@ function AITab(_ref15) {
 }
 
 // ── MANAGE TAB ─────────────────────────────────────────────
-function ManageTab(_ref16) {
-  let questions = _ref16.questions,
-    setQuestions = _ref16.setQuestions,
-    pendingCount = _ref16.pendingCount,
-    importPending = _ref16.importPending;
-  const _useState65 = useState(false),
-    _useState66 = _slicedToArray(_useState65, 2),
-    importing = _useState66[0],
-    setImporting = _useState66[1];
-  const _useState67 = useState(null),
+function ManageTab(_ref18) {
+  let questions = _ref18.questions,
+    setQuestions = _ref18.setQuestions,
+    pendingCount = _ref18.pendingCount,
+    importPending = _ref18.importPending;
+  const _useState67 = useState(false),
     _useState68 = _slicedToArray(_useState67, 2),
-    importDone = _useState68[0],
-    setImportDone = _useState68[1];
-  const _useState69 = useState(false),
+    importing = _useState68[0],
+    setImporting = _useState68[1];
+  const _useState69 = useState(null),
     _useState70 = _slicedToArray(_useState69, 2),
-    showManual = _useState70[0],
-    setShowManual = _useState70[1];
-  const _useState71 = useState(""),
+    importDone = _useState70[0],
+    setImportDone = _useState70[1];
+  const _useState71 = useState(false),
     _useState72 = _slicedToArray(_useState71, 2),
-    ioMsg = _useState72[0],
-    setIoMsg = _useState72[1];
+    showManual = _useState72[0],
+    setShowManual = _useState72[1];
+  const _useState73 = useState(""),
+    _useState74 = _slicedToArray(_useState73, 2),
+    ioMsg = _useState74[0],
+    setIoMsg = _useState74[1];
 
   // データをJSONファイルとして保存
   const exportData = async () => {
@@ -2992,7 +3272,7 @@ function ManageTab(_ref16) {
     reader.readAsText(file);
     e.target.value = "";
   };
-  const _useState73 = useState({
+  const _useState75 = useState({
       subject: "houki",
       q: "",
       opts: ["", "", "", ""],
@@ -3007,13 +3287,13 @@ function ManageTab(_ref16) {
       qPage: "",
       tbPage: ""
     }),
-    _useState74 = _slicedToArray(_useState73, 2),
-    form = _useState74[0],
-    setForm = _useState74[1];
-  const _useState75 = useState(""),
     _useState76 = _slicedToArray(_useState75, 2),
-    msg = _useState76[0],
-    setMsg = _useState76[1];
+    form = _useState76[0],
+    setForm = _useState76[1];
+  const _useState77 = useState(""),
+    _useState78 = _slicedToArray(_useState77, 2),
+    msg = _useState78[0],
+    setMsg = _useState78[1];
   const doImport = async () => {
     setImporting(true);
     setImportDone(null);
@@ -3187,10 +3467,10 @@ function ManageTab(_ref16) {
       color: "rgba(255,255,255,0.35)",
       lineHeight: 1.8
     }
-  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref17 => {
-    let _ref18 = _slicedToArray(_ref17, 2),
-      n = _ref18[0],
-      t = _ref18[1];
+  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref19 => {
+    let _ref20 = _slicedToArray(_ref19, 2),
+      n = _ref20[0],
+      t = _ref20[1];
     return /*#__PURE__*/React.createElement("div", {
       key: n,
       style: {
@@ -3527,26 +3807,26 @@ function ManageTab(_ref16) {
 
 // ── NOTES TAB ──────────────────────────────────────────────
 function NotesTab() {
-  const _useState77 = useState({}),
-    _useState78 = _slicedToArray(_useState77, 2),
-    hints = _useState78[0],
-    setHints = _useState78[1];
-  const _useState79 = useState("houki"),
+  const _useState79 = useState({}),
     _useState80 = _slicedToArray(_useState79, 2),
-    selectedSubject = _useState80[0],
-    setSelectedSubject = _useState80[1];
-  const _useState81 = useState(null),
+    hints = _useState80[0],
+    setHints = _useState80[1];
+  const _useState81 = useState("houki"),
     _useState82 = _slicedToArray(_useState81, 2),
-    editingId = _useState82[0],
-    setEditingId = _useState82[1];
-  const _useState83 = useState(""),
+    selectedSubject = _useState82[0],
+    setSelectedSubject = _useState82[1];
+  const _useState83 = useState(null),
     _useState84 = _slicedToArray(_useState83, 2),
-    draft = _useState84[0],
-    setDraft = _useState84[1];
-  const _useState85 = useState(true),
+    editingId = _useState84[0],
+    setEditingId = _useState84[1];
+  const _useState85 = useState(""),
     _useState86 = _slicedToArray(_useState85, 2),
-    loading = _useState86[0],
-    setLoading = _useState86[1];
+    draft = _useState86[0],
+    setDraft = _useState86[1];
+  const _useState87 = useState(true),
+    _useState88 = _slicedToArray(_useState87, 2),
+    loading = _useState88[0],
+    setLoading = _useState88[1];
   useEffect(() => {
     load("hints", {}).then(h => {
       setHints(h);

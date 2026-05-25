@@ -657,7 +657,7 @@ const _loadAll = () => {
         }
       }
     } catch (e) {
-      console.error("load error", e);
+      console.error(e);
     }
     if (!_store) _store = {};
     return _store;
@@ -701,7 +701,7 @@ const _flush = async () => {
       _rowExists = true;
     }
   } catch (e) {
-    console.error("save error", e);
+    console.error(e);
   }
 };
 const save = async (key, val) => {
@@ -2066,7 +2066,36 @@ function QuizTab(_ref0) {
       flexDirection: "column",
       gap: 12
     }
-  }, /*#__PURE__*/React.createElement(FilterBar, {
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8
+    }
+  }, [["normal", "📖 通常"], ["srs", "🔄 間隔反復"]].map(_ref1 => {
+    let _ref10 = _slicedToArray(_ref1, 2),
+      id = _ref10[0],
+      label = _ref10[1];
+    return /*#__PURE__*/React.createElement("button", {
+      key: id,
+      onClick: () => {
+        setCourse(id);
+        setIdx(0);
+        setSel(null);
+        setDone(false);
+      },
+      style: {
+        flex: 1,
+        padding: "10px",
+        borderRadius: 12,
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: "pointer",
+        background: course === id ? "rgba(91,159,255,0.15)" : "rgba(255,255,255,0.04)",
+        border: course === id ? "1px solid rgba(91,159,255,0.4)" : "1px solid rgba(255,255,255,0.08)",
+        color: course === id ? "#5B9FFF" : "rgba(255,255,255,0.5)"
+      }
+    }, label);
+  })), /*#__PURE__*/React.createElement(FilterBar, {
     questions: questions,
     subj: subj,
     mode: mode,
@@ -2081,7 +2110,7 @@ function QuizTab(_ref0) {
       fontSize: 13,
       color: "rgba(255,255,255,0.4)"
     }
-  }, "該当問題なし")));
+  }, course === "srs" ? "🎉 今日の復習は完了！また明日" : "該当問題なし")));
   const acc = session.total > 0 ? (session.correct / session.total * 100).toFixed(0) : null;
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -2094,10 +2123,10 @@ function QuizTab(_ref0) {
       display: "flex",
       gap: 8
     }
-  }, [["normal", "📖 通常"], ["srs", "🔄 間隔反復"]].map(_ref1 => {
-    let _ref10 = _slicedToArray(_ref1, 2),
-      id = _ref10[0],
-      label = _ref10[1];
+  }, [["normal", "📖 通常"], ["srs", "🔄 間隔反復"]].map(_ref11 => {
+    let _ref12 = _slicedToArray(_ref11, 2),
+      id = _ref12[0],
+      label = _ref12[1];
     return /*#__PURE__*/React.createElement("button", {
       key: id,
       onClick: () => {
@@ -2748,11 +2777,11 @@ function QuizTab(_ref0) {
     }
   }, "\u6B21\u306E\u554F\u984C \u2192"))));
 }
-function FilterBar(_ref11) {
-  let questions = _ref11.questions,
-    subj = _ref11.subj,
-    mode = _ref11.mode,
-    reset = _ref11.reset;
+function FilterBar(_ref13) {
+  let questions = _ref13.questions,
+    subj = _ref13.subj,
+    mode = _ref13.mode,
+    reset = _ref13.reset;
   const pillStyle = (active, color) => ({
     padding: "6px 14px",
     borderRadius: 99,
@@ -2797,11 +2826,11 @@ function FilterBar(_ref11) {
       paddingBottom: 4,
       scrollbarWidth: "none"
     }
-  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null]].map(_ref12 => {
-    let _ref13 = _slicedToArray(_ref12, 3),
-      v = _ref13[0],
-      l = _ref13[1],
-      c = _ref13[2];
+  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null]].map(_ref14 => {
+    let _ref15 = _slicedToArray(_ref14, 3),
+      v = _ref15[0],
+      l = _ref15[1],
+      c = _ref15[2];
     return /*#__PURE__*/React.createElement("button", {
       key: v,
       style: {
@@ -2815,9 +2844,9 @@ function FilterBar(_ref11) {
 }
 
 // ── LOG TAB ────────────────────────────────────────────────
-function LogTab(_ref14) {
-  let logs = _ref14.logs,
-    setLogs = _ref14.setLogs;
+function LogTab(_ref16) {
+  let logs = _ref16.logs,
+    setLogs = _ref16.setLogs;
   const _useState57 = useState({}),
     _useState58 = _slicedToArray(_useState57, 2),
     inputs = _useState58[0],
@@ -2827,10 +2856,10 @@ function LogTab(_ref14) {
   const todayMin = Object.values(todayLog).reduce((a, b) => a + b, 0);
   const save_ = () => {
     const cleaned = {};
-    Object.entries(inputs).forEach(_ref15 => {
-      let _ref16 = _slicedToArray(_ref15, 2),
-        k = _ref16[0],
-        v = _ref16[1];
+    Object.entries(inputs).forEach(_ref17 => {
+      let _ref18 = _slicedToArray(_ref17, 2),
+        k = _ref18[0],
+        v = _ref18[1];
       const n = parseInt(v) || 0;
       if (n > 0) cleaned[k] = n;
     });
@@ -2950,9 +2979,9 @@ function LogTab(_ref14) {
 }
 
 // ── AI TAB ─────────────────────────────────────────────────
-function AITab(_ref17) {
-  let questions = _ref17.questions,
-    weakQuestions = _ref17.weakQuestions;
+function AITab(_ref19) {
+  let questions = _ref19.questions,
+    weakQuestions = _ref19.weakQuestions;
   const _useState59 = useState("analysis"),
     _useState60 = _slicedToArray(_useState59, 2),
     mode = _useState60[0],
@@ -3144,11 +3173,11 @@ function AITab(_ref17) {
 }
 
 // ── MANAGE TAB ─────────────────────────────────────────────
-function ManageTab(_ref18) {
-  let questions = _ref18.questions,
-    setQuestions = _ref18.setQuestions,
-    pendingCount = _ref18.pendingCount,
-    importPending = _ref18.importPending;
+function ManageTab(_ref20) {
+  let questions = _ref20.questions,
+    setQuestions = _ref20.setQuestions,
+    pendingCount = _ref20.pendingCount,
+    importPending = _ref20.importPending;
   const _useState67 = useState(false),
     _useState68 = _slicedToArray(_useState67, 2),
     importing = _useState68[0],
@@ -3430,10 +3459,10 @@ function ManageTab(_ref18) {
       color: "rgba(255,255,255,0.35)",
       lineHeight: 1.8
     }
-  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref19 => {
-    let _ref20 = _slicedToArray(_ref19, 2),
-      n = _ref20[0],
-      t = _ref20[1];
+  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref21 => {
+    let _ref22 = _slicedToArray(_ref21, 2),
+      n = _ref22[0],
+      t = _ref22[1];
     return /*#__PURE__*/React.createElement("div", {
       key: n,
       style: {

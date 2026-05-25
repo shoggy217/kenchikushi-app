@@ -636,17 +636,16 @@ const SB_MOD_HEADERS = {
   ...SB_GET_HEADERS,
   "Content-Type": "application/json"
 };
-let _store = null;
-let _saveTimer = null;
-let _loadPromise = null;
+let _store = null,
+  _saveTimer = null,
+  _loadPromise = null,
+  _rowExists = null;
 const _loadAll = () => {
   if (_loadPromise) return _loadPromise;
   _loadPromise = (async () => {
     try {
-      // localStorageから先に復元(高速表示)
       const local = localStorage.getItem("store_v1");
       if (local) _store = JSON.parse(local);
-      // Supabaseから最新を取得(updated_at降順で1件)
       const res = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&order=updated_at.desc&limit=1&select=data", {
         headers: SB_GET_HEADERS
       });
@@ -669,9 +668,6 @@ const load = async (key, fb) => {
   const store = await _loadAll();
   return store[key] !== undefined ? store[key] : fb;
 };
-
-// 既存行があればUPDATE、なければINSERT
-let _rowExists = null;
 const _flush = async () => {
   if (!_store) return;
   try {
@@ -681,7 +677,6 @@ const _flush = async () => {
       updated_at: new Date().toISOString()
     });
     if (_rowExists === null) {
-      // 行の存在確認
       const check = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&select=id&limit=1", {
         headers: SB_GET_HEADERS
       });
@@ -689,14 +684,12 @@ const _flush = async () => {
       _rowExists = rows.length > 0;
     }
     if (_rowExists) {
-      // UPDATE
       await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID, {
         method: "PATCH",
         headers: SB_MOD_HEADERS,
         body
       });
     } else {
-      // INSERT
       await fetch(SUPABASE_URL + "/rest/v1/study_data", {
         method: "POST",
         headers: {
@@ -720,7 +713,36 @@ const save = async (key, val) => {
 };
 
 // ── CLAUDE API ─────────────────────────────────────────────
-const callClaude = async () => "";
+// AIキャッシュ(クレジット節約)
+const _aiCache = {};
+const callClaude = async (systemPrompt, userPrompt) => {
+  const cacheKey = systemPrompt.slice(0, 20) + userPrompt.slice(0, 50);
+  if (_aiCache[cacheKey]) return _aiCache[cacheKey];
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 400,
+        system: systemPrompt,
+        messages: [{
+          role: "user",
+          content: userPrompt
+        }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || "";
+    if (text) _aiCache[cacheKey] = text;
+    return text;
+  } catch (e) {
+    console.error("Claude API error:", e);
+    return "";
+  }
+};
 
 // ── XP SYSTEM ──────────────────────────────────────────────
 const XP_PER_CORRECT = 10;
@@ -1462,45 +1484,191 @@ function HomeTab(_ref4) {
         fontVariantNumeric: "tabular-nums"
       }
     }, n));
-  })))), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u79D1\u76EE\u5225\u554F\u984C\u6570"), /*#__PURE__*/React.createElement("div", {
+  })))), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u79D1\u76EE\u5225\u9032\u6357"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
-      gap: 12
+      gap: 14
     }
   }, SUBJECTS.map(s => {
-    const cnt = questions.filter(q => q.subject === s.id).length;
-    const max = Math.max(...SUBJECTS.map(sx => questions.filter(q => q.subject === sx.id).length), 1);
+    const qs = questions.filter(q => q.subject === s.id);
+    const total = qs.length;
+    if (total === 0) return /*#__PURE__*/React.createElement("div", {
+      key: s.id,
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        fontSize: 13
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "rgba(255,255,255,0.4)"
+      }
+    }, s.name), /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "rgba(255,255,255,0.2)",
+        fontSize: 11
+      }
+    }, "\u672A\u767B\u9332"));
+    const mastered = qs.filter(q => (q.history || []).length >= 3 && [...(q.history || [])].slice(-3).every(h => h === "○")).length;
+    const weak = qs.filter(q => (q.history || []).length > 0 && (q.history || []).filter(h => h === "×").length > (q.history || []).length / 2).length;
+    const answered = qs.filter(q => (q.history || []).length > 0).length;
+    const pct = Math.round(mastered / total * 100);
+    const correctRate = answered > 0 ? Math.round(qs.reduce((a, q) => {
+      const h = q.history || [];
+      return a + h.filter(x => x === "○").length;
+    }, 0) / qs.reduce((a, q) => a + (q.history || []).length, 0) * 100) : null;
     return /*#__PURE__*/React.createElement("div", {
       key: s.id
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         justifyContent: "space-between",
-        fontSize: 13,
+        alignItems: "center",
         marginBottom: 6
-      }
-    }, /*#__PURE__*/React.createElement("span", null, s.name), /*#__PURE__*/React.createElement("span", {
-      style: {
-        color: "rgba(255,255,255,0.4)",
-        fontVariantNumeric: "tabular-nums"
-      }
-    }, cnt, "\u554F")), /*#__PURE__*/React.createElement("div", {
-      style: {
-        height: 4,
-        background: "rgba(255,255,255,0.07)",
-        borderRadius: 99
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
-        height: "100%",
-        width: `${cnt / max * 100}%`,
+        display: "flex",
+        alignItems: "center",
+        gap: 8
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 8,
+        height: 8,
+        borderRadius: 99,
         background: s.color,
+        flexShrink: 0
+      }
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 13
+      }
+    }, s.name)), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        fontSize: 12
+      }
+    }, weak > 0 && /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "#F87171"
+      }
+    }, "\u8981\u5FA9\u7FD2 ", weak, "\u554F"), correctRate !== null && /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "rgba(255,255,255,0.4)"
+      }
+    }, "\u6B63\u7B54\u7387 ", correctRate, "%"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "rgba(255,255,255,0.3)",
+        fontVariantNumeric: "tabular-nums"
+      }
+    }, answered, "/", total, "\u554F"))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        height: 6,
+        background: "rgba(255,255,255,0.07)",
+        borderRadius: 99,
+        overflow: "hidden"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        height: "100%",
+        gap: 1
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: `${mastered / total * 100}%`,
+        background: "#34D399",
         borderRadius: 99,
         transition: "width 0.6s"
       }
-    })));
-  }))));
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: `${(answered - mastered) / total * 100}%`,
+        background: "#FBBF24",
+        transition: "width 0.6s"
+      }
+    }))), pct > 0 && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 10,
+        color: "rgba(255,255,255,0.25)",
+        marginTop: 3
+      }
+    }, "\u7FD2\u5F97\u6E08 ", pct, "%"));
+  }))), weakQuestions.length > 0 && /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u5F31\u70B9\u554F\u984C ", weakQuestions.length, "\u554F"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      gap: 8
+    }
+  }, weakQuestions.slice(0, 5).map(q => {
+    const history = q.history || [];
+    const wrongCount = history.filter(h => h === "×").length;
+    return /*#__PURE__*/React.createElement("div", {
+      key: q.id,
+      style: {
+        padding: "10px 12px",
+        background: "rgba(248,113,113,0.06)",
+        borderRadius: 10,
+        borderLeft: "2px solid rgba(248,113,113,0.3)"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 12,
+        color: "rgba(255,255,255,0.6)",
+        marginBottom: 4,
+        lineHeight: 1.5
+      },
+      dangerouslySetInnerHTML: {
+        __html: q.q.length > 50 ? q.q.slice(0, 50) + "…" : q.q
+      }
+    }), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8,
+        alignItems: "center"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 10,
+        color: "rgba(255,255,255,0.3)"
+      }
+    }, q.year, " ", q.topic), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 10,
+        color: "#F87171",
+        marginLeft: "auto"
+      }
+    }, "\xD7", wrongCount, "\u56DE"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 2
+      }
+    }, history.slice(-5).map((h, i) => /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        width: 12,
+        height: 12,
+        borderRadius: 99,
+        background: h === "○" ? "#34D399" : "#F87171",
+        fontSize: 8,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#000",
+        fontWeight: 700
+      }
+    }, h)))));
+  }), weakQuestions.length > 5 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "rgba(255,255,255,0.3)",
+      textAlign: "center"
+    }
+  }, "\u4ED6 ", weakQuestions.length - 5, "\u554F"))));
 }
 
 // ── QUIZ TAB ───────────────────────────────────────────────
@@ -1559,6 +1727,30 @@ function QuizTab(_ref0) {
     _useState42 = _slicedToArray(_useState41, 2),
     knowledgeSkipped = _useState42[0],
     setKnowledgeSkipped = _useState42[1];
+  const _useState43 = useState(""),
+    _useState44 = _slicedToArray(_useState43, 2),
+    memo = _useState44[0],
+    setMemo = _useState44[1];
+  const _useState45 = useState(false),
+    _useState46 = _slicedToArray(_useState45, 2),
+    memoEditing = _useState46[0],
+    setMemoEditing = _useState46[1];
+  const _useState47 = useState(""),
+    _useState48 = _slicedToArray(_useState47, 2),
+    aiQuestion = _useState48[0],
+    setAiQuestion = _useState48[1];
+  const _useState49 = useState(""),
+    _useState50 = _slicedToArray(_useState49, 2),
+    aiAnswer = _useState50[0],
+    setAiAnswer = _useState50[1];
+  const _useState51 = useState(false),
+    _useState52 = _slicedToArray(_useState51, 2),
+    aiQLoading = _useState52[0],
+    setAiQLoading = _useState52[1];
+  const _useState53 = useState({}),
+    _useState54 = _slicedToArray(_useState53, 2),
+    memos = _useState54[0],
+    setMemos = _useState54[1];
   const pool = useMemo(() => {
     let arr = [...questions];
     if (subj !== "all") arr = arr.filter(q => q.subject === subj);
@@ -1629,6 +1821,39 @@ function QuizTab(_ref0) {
     setKnowledge("");
     setKnowledgeLoading(false);
     setKnowledgeSkipped(false);
+    setMemo("");
+    setMemoEditing(false);
+    setAiQuestion("");
+    setAiAnswer("");
+    setAiQLoading(false);
+  };
+
+  // 問題が変わったらその問題のメモをロード
+  useEffect(() => {
+    if (!q) return;
+    load("memos", {}).then(m => {
+      setMemos(m);
+      setMemo(m[q.id] || "");
+    });
+  }, [q?.id]);
+  const saveMemo = async text => {
+    const newMemos = {
+      ...memos,
+      [q.id]: text
+    };
+    setMemos(newMemos);
+    await save("memos", newMemos);
+  };
+  const askAI = async () => {
+    if (!aiQuestion.trim() || !q) return;
+    setAiQLoading(true);
+    const text = await callClaude("あなたは一級建築士試験の専門講師です。受験生の質問に日本語で簡潔に答えてください。300字以内で。", `問題: ${q.q}
+
+解説: ${q.explain || ""}
+
+受験生の質問: ${aiQuestion}`);
+    setAiAnswer(text);
+    setAiQLoading(false);
   };
   const toggleStar = () => setQuestions(questions.map(qq => qq.id === q?.id ? {
     ...qq,
@@ -2113,7 +2338,159 @@ function QuizTab(_ref0) {
       lineHeight: 1.7,
       whiteSpace: "pre-wrap"
     }
-  }, q.textbook))) : null), /*#__PURE__*/React.createElement("button", {
+  }, q.textbook))) : null), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "rgba(255,255,255,0.3)",
+      marginBottom: 8,
+      letterSpacing: "0.08em"
+    }
+  }, "\uD83D\uDCDD \u30E1\u30E2"), memoEditing ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("textarea", {
+    value: memo,
+    onChange: e => setMemo(e.target.value),
+    placeholder: "\u3053\u306E\u554F\u984C\u306E\u30DD\u30A4\u30F3\u30C8\u30FB\u899A\u3048\u65B9\u306A\u3069",
+    rows: 3,
+    style: {
+      width: "100%",
+      background: "rgba(255,255,255,0.05)",
+      border: "1px solid rgba(255,255,255,0.12)",
+      borderRadius: 10,
+      padding: "10px 12px",
+      fontSize: 13,
+      color: "#fff",
+      resize: "none",
+      fontFamily: "inherit"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginTop: 8
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      saveMemo(memo);
+      setMemoEditing(false);
+    },
+    style: {
+      flex: 1,
+      padding: "8px",
+      borderRadius: 10,
+      background: "rgba(255,255,255,0.1)",
+      color: "#fff",
+      fontSize: 13,
+      border: "none",
+      cursor: "pointer"
+    }
+  }, "\u4FDD\u5B58"), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setMemoEditing(false),
+    style: {
+      padding: "8px 16px",
+      borderRadius: 10,
+      background: "none",
+      color: "rgba(255,255,255,0.3)",
+      fontSize: 13,
+      border: "none",
+      cursor: "pointer"
+    }
+  }, "\u30AD\u30E3\u30F3\u30BB\u30EB"))) : /*#__PURE__*/React.createElement("div", {
+    onClick: () => setMemoEditing(true),
+    style: {
+      minHeight: 36,
+      padding: "8px 12px",
+      background: "rgba(255,255,255,0.03)",
+      border: "1px dashed rgba(255,255,255,0.1)",
+      borderRadius: 10,
+      fontSize: 13,
+      color: memo ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.2)",
+      cursor: "pointer",
+      lineHeight: 1.7,
+      whiteSpace: "pre-wrap"
+    }
+  }, memo || "タップしてメモを追加...")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 20,
+      background: "rgba(91,159,255,0.05)",
+      border: "1px solid rgba(91,159,255,0.12)",
+      borderRadius: 14,
+      padding: 14
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "#5B9FFF",
+      marginBottom: 10,
+      letterSpacing: "0.08em"
+    }
+  }, "\uD83E\uDD16 AI\u306B\u8CEA\u554F\u3059\u308B"), aiAnswer ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "rgba(255,255,255,0.4)",
+      marginBottom: 6
+    }
+  }, "Q: ", aiQuestion), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "rgba(255,255,255,0.85)",
+      lineHeight: 1.75,
+      whiteSpace: "pre-wrap"
+    }
+  }, aiAnswer), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setAiAnswer("");
+      setAiQuestion("");
+    },
+    style: {
+      marginTop: 10,
+      fontSize: 11,
+      color: "rgba(91,159,255,0.6)",
+      background: "none",
+      border: "none",
+      cursor: "pointer",
+      padding: 0
+    }
+  }, "\u5225\u306E\u8CEA\u554F\u3092\u3059\u308B")) : /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    value: aiQuestion,
+    onChange: e => setAiQuestion(e.target.value),
+    onKeyDown: e => e.key === "Enter" && askAI(),
+    placeholder: "\u4F8B: \u306A\u305C\u571F\u53F0\u306F\u4E3B\u8981\u69CB\u9020\u90E8\u3067\u306F\u306A\u3044\u306E\uFF1F",
+    style: {
+      flex: 1,
+      background: "rgba(255,255,255,0.05)",
+      border: "1px solid rgba(255,255,255,0.1)",
+      borderRadius: 10,
+      padding: "8px 12px",
+      fontSize: 13,
+      color: "#fff",
+      fontFamily: "inherit"
+    }
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: askAI,
+    disabled: aiQLoading || !aiQuestion.trim(),
+    style: {
+      padding: "8px 14px",
+      borderRadius: 10,
+      background: aiQLoading || !aiQuestion.trim() ? "rgba(91,159,255,0.1)" : "rgba(91,159,255,0.2)",
+      color: "#5B9FFF",
+      fontSize: 13,
+      border: "none",
+      cursor: aiQLoading || !aiQuestion.trim() ? "default" : "pointer",
+      whiteSpace: "nowrap"
+    }
+  }, aiQLoading ? "..." : "質問"))), /*#__PURE__*/React.createElement("button", {
     onClick: next,
     style: {
       width: "100%",
@@ -2198,10 +2575,10 @@ function FilterBar(_ref1) {
 function LogTab(_ref12) {
   let logs = _ref12.logs,
     setLogs = _ref12.setLogs;
-  const _useState43 = useState({}),
-    _useState44 = _slicedToArray(_useState43, 2),
-    inputs = _useState44[0],
-    setInputs = _useState44[1];
+  const _useState55 = useState({}),
+    _useState56 = _slicedToArray(_useState55, 2),
+    inputs = _useState56[0],
+    setInputs = _useState56[1];
   const today = todayStr();
   const todayLog = logs[today] || {};
   const todayMin = Object.values(todayLog).reduce((a, b) => a + b, 0);
@@ -2333,22 +2710,22 @@ function LogTab(_ref12) {
 function AITab(_ref15) {
   let questions = _ref15.questions,
     weakQuestions = _ref15.weakQuestions;
-  const _useState45 = useState("analysis"),
-    _useState46 = _slicedToArray(_useState45, 2),
-    mode = _useState46[0],
-    setMode = _useState46[1]; // analysis | generate | advice
-  const _useState47 = useState(""),
-    _useState48 = _slicedToArray(_useState47, 2),
-    output = _useState48[0],
-    setOutput = _useState48[1];
-  const _useState49 = useState(false),
-    _useState50 = _slicedToArray(_useState49, 2),
-    loading = _useState50[0],
-    setLoading = _useState50[1];
-  const _useState51 = useState(""),
-    _useState52 = _slicedToArray(_useState51, 2),
-    prompt = _useState52[0],
-    setPrompt = _useState52[1];
+  const _useState57 = useState("analysis"),
+    _useState58 = _slicedToArray(_useState57, 2),
+    mode = _useState58[0],
+    setMode = _useState58[1]; // analysis | generate | advice
+  const _useState59 = useState(""),
+    _useState60 = _slicedToArray(_useState59, 2),
+    output = _useState60[0],
+    setOutput = _useState60[1];
+  const _useState61 = useState(false),
+    _useState62 = _slicedToArray(_useState61, 2),
+    loading = _useState62[0],
+    setLoading = _useState62[1];
+  const _useState63 = useState(""),
+    _useState64 = _slicedToArray(_useState63, 2),
+    prompt = _useState64[0],
+    setPrompt = _useState64[1];
   const subjectStats = useMemo(() => {
     return SUBJECTS.map(s => {
       const qs = questions.filter(q => q.subject === s.id);
@@ -2529,22 +2906,22 @@ function ManageTab(_ref16) {
     setQuestions = _ref16.setQuestions,
     pendingCount = _ref16.pendingCount,
     importPending = _ref16.importPending;
-  const _useState53 = useState(false),
-    _useState54 = _slicedToArray(_useState53, 2),
-    importing = _useState54[0],
-    setImporting = _useState54[1];
-  const _useState55 = useState(null),
-    _useState56 = _slicedToArray(_useState55, 2),
-    importDone = _useState56[0],
-    setImportDone = _useState56[1];
-  const _useState57 = useState(false),
-    _useState58 = _slicedToArray(_useState57, 2),
-    showManual = _useState58[0],
-    setShowManual = _useState58[1];
-  const _useState59 = useState(""),
-    _useState60 = _slicedToArray(_useState59, 2),
-    ioMsg = _useState60[0],
-    setIoMsg = _useState60[1];
+  const _useState65 = useState(false),
+    _useState66 = _slicedToArray(_useState65, 2),
+    importing = _useState66[0],
+    setImporting = _useState66[1];
+  const _useState67 = useState(null),
+    _useState68 = _slicedToArray(_useState67, 2),
+    importDone = _useState68[0],
+    setImportDone = _useState68[1];
+  const _useState69 = useState(false),
+    _useState70 = _slicedToArray(_useState69, 2),
+    showManual = _useState70[0],
+    setShowManual = _useState70[1];
+  const _useState71 = useState(""),
+    _useState72 = _slicedToArray(_useState71, 2),
+    ioMsg = _useState72[0],
+    setIoMsg = _useState72[1];
 
   // データをJSONファイルとして保存
   const exportData = async () => {
@@ -2615,7 +2992,7 @@ function ManageTab(_ref16) {
     reader.readAsText(file);
     e.target.value = "";
   };
-  const _useState61 = useState({
+  const _useState73 = useState({
       subject: "houki",
       q: "",
       opts: ["", "", "", ""],
@@ -2630,13 +3007,13 @@ function ManageTab(_ref16) {
       qPage: "",
       tbPage: ""
     }),
-    _useState62 = _slicedToArray(_useState61, 2),
-    form = _useState62[0],
-    setForm = _useState62[1];
-  const _useState63 = useState(""),
-    _useState64 = _slicedToArray(_useState63, 2),
-    msg = _useState64[0],
-    setMsg = _useState64[1];
+    _useState74 = _slicedToArray(_useState73, 2),
+    form = _useState74[0],
+    setForm = _useState74[1];
+  const _useState75 = useState(""),
+    _useState76 = _slicedToArray(_useState75, 2),
+    msg = _useState76[0],
+    setMsg = _useState76[1];
   const doImport = async () => {
     setImporting(true);
     setImportDone(null);
@@ -3150,26 +3527,26 @@ function ManageTab(_ref16) {
 
 // ── NOTES TAB ──────────────────────────────────────────────
 function NotesTab() {
-  const _useState65 = useState({}),
-    _useState66 = _slicedToArray(_useState65, 2),
-    hints = _useState66[0],
-    setHints = _useState66[1];
-  const _useState67 = useState("houki"),
-    _useState68 = _slicedToArray(_useState67, 2),
-    selectedSubject = _useState68[0],
-    setSelectedSubject = _useState68[1];
-  const _useState69 = useState(null),
-    _useState70 = _slicedToArray(_useState69, 2),
-    editingId = _useState70[0],
-    setEditingId = _useState70[1];
-  const _useState71 = useState(""),
-    _useState72 = _slicedToArray(_useState71, 2),
-    draft = _useState72[0],
-    setDraft = _useState72[1];
-  const _useState73 = useState(true),
-    _useState74 = _slicedToArray(_useState73, 2),
-    loading = _useState74[0],
-    setLoading = _useState74[1];
+  const _useState77 = useState({}),
+    _useState78 = _slicedToArray(_useState77, 2),
+    hints = _useState78[0],
+    setHints = _useState78[1];
+  const _useState79 = useState("houki"),
+    _useState80 = _slicedToArray(_useState79, 2),
+    selectedSubject = _useState80[0],
+    setSelectedSubject = _useState80[1];
+  const _useState81 = useState(null),
+    _useState82 = _slicedToArray(_useState81, 2),
+    editingId = _useState82[0],
+    setEditingId = _useState82[1];
+  const _useState83 = useState(""),
+    _useState84 = _slicedToArray(_useState83, 2),
+    draft = _useState84[0],
+    setDraft = _useState84[1];
+  const _useState85 = useState(true),
+    _useState86 = _slicedToArray(_useState85, 2),
+    loading = _useState86[0],
+    setLoading = _useState86[1];
   useEffect(() => {
     load("hints", {}).then(h => {
       setHints(h);

@@ -7,39 +7,38 @@ function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" !=
 function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
 function SimpleBarChart(_ref) {
   let data = _ref.data;
+  if (!data || !data.length) return null;
   const max = Math.max(...data.map(d => d.minutes), 1);
-  return React.createElement('div', {
+  const W = 300,
+    H = 90,
+    PL = 4;
+  const bw = Math.max((W - PL) / data.length - 2, 2);
+  return React.createElement('svg', {
+    viewBox: '0 0 ' + W + ' ' + H,
     style: {
       width: '100%',
-      overflowX: 'auto'
-    }
-  }, React.createElement('svg', {
-    viewBox: '0 0 300 100',
-    style: {
-      width: '100%',
-      height: 100
+      height: H
     }
   }, data.map((d, i) => {
-    const bh = Math.max(d.minutes / max * 70, 1);
-    const x = 4 + i * (300 / data.length);
-    const bw = Math.max(300 / data.length - 3, 2);
+    const bh = Math.max(d.minutes / max * (H - 20), 1);
+    const x = PL + i * ((W - PL) / data.length);
     return React.createElement('g', {
       key: i
     }, React.createElement('rect', {
       x,
-      y: 80 - bh,
+      y: H - 20 - bh,
       width: bw,
       height: bh,
       fill: '#5B9FFF',
       rx: 2
     }), i % 3 === 0 ? React.createElement('text', {
       x: x + bw / 2,
-      y: 98,
+      y: H - 4,
       textAnchor: 'middle',
       fill: 'rgba(255,255,255,0.3)',
       fontSize: 7
     }, d.date) : null);
-  })));
+  }));
 }
 const PULSE_STYLE = `
 @keyframes pulse {
@@ -626,20 +625,90 @@ const CHAPTERS = {
   kouzou: [],
   sekou: []
 };
-const load = async (k, fb) => {
+
+// ── Supabase ストレージ ──────────────────────────────────────
+const SUPABASE_URL = "https://nypugenklrsnhqjtyccc.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55cHVnZW5rbHJzbmhxanR5Y2NjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2ODU1MzAsImV4cCI6MjA5NTI2MTUzMH0.zWE458sdO1ktBL86pIXUN55UOESd-D5YdMdfLRsKoMY";
+const USER_ID = "shoggy217";
+const sbFetch = async (method, body) => {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/study_data`, {
+    method,
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": method === "POST" ? "resolution=merge-duplicates,return=minimal" : "return=minimal"
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  return res;
+};
+
+// キーごとにローカルキャッシュ+Supabaseに保存
+const _cache = {};
+const load = async (key, fb) => {
+  if (_cache[key] !== undefined) return _cache[key];
   try {
-    const v = localStorage.getItem(k);
-    return v ? JSON.parse(v) : fb;
+    // まずlocalStorageから高速取得
+    const local = localStorage.getItem("sb_" + key);
+    if (local) {
+      _cache[key] = JSON.parse(local);
+    }
+    // バックグラウンドでSupabaseから最新を取得
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/study_data?user_id=eq.${USER_ID}&select=data&limit=1`, {
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`
+      }
+    });
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows.length > 0 && rows[0].data) {
+        const remote = rows[0].data;
+        if (remote[key] !== undefined) {
+          _cache[key] = remote[key];
+          localStorage.setItem("sb_" + key, JSON.stringify(remote[key]));
+          return remote[key];
+        }
+      }
+    }
+    return _cache[key] !== undefined ? _cache[key] : fb;
   } catch {
-    return fb;
+    return _cache[key] !== undefined ? _cache[key] : fb;
   }
 };
-const save = async (k, v) => {
-  try {
-    localStorage.setItem(k, JSON.stringify(v));
-  } catch (e) {
-    console.error(e);
-  }
+
+// 全データをまとめて1行に保存
+const _saveTimer = {};
+const save = async (key, val) => {
+  _cache[key] = val;
+  localStorage.setItem("sb_" + key, JSON.stringify(val));
+  // 500ms debounceしてSupabaseに保存
+  clearTimeout(_saveTimer[key]);
+  _saveTimer[key] = setTimeout(async () => {
+    try {
+      // 現在のデータを取得してマージ
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/study_data?user_id=eq.${USER_ID}&select=data&limit=1`, {
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      let current = {};
+      if (res.ok) {
+        const rows = await res.json();
+        if (rows.length > 0 && rows[0].data) current = rows[0].data;
+      }
+      current[key] = val;
+      await sbFetch("POST", {
+        user_id: USER_ID,
+        data: current,
+        updated_at: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error("Supabase save error:", e);
+    }
+  }, 500);
 };
 
 // ── CLAUDE API ─────────────────────────────────────────────
@@ -685,6 +754,15 @@ function App() {
     _useState14 = _slicedToArray(_useState13, 2),
     syncLabel = _useState14[0],
     setSyncLabel = _useState14[1];
+  const _useState15 = useState(false),
+    _useState16 = _slicedToArray(_useState15, 2),
+    timerRunning = _useState16[0],
+    setTimerRunning = _useState16[1];
+  const _useState17 = useState(0),
+    _useState18 = _slicedToArray(_useState17, 2),
+    timerSec = _useState18[0],
+    setTimerSec = _useState18[1];
+  const timerRef = useRef(null);
 
   // boot
   useEffect(() => {
@@ -748,6 +826,36 @@ function App() {
       setLoading(false);
     })();
   }, []);
+
+  // タイマー
+  useEffect(() => {
+    if (timerRunning) {
+      timerRef.current = setInterval(() => setTimerSec(s => s + 1), 1000);
+    } else {
+      clearInterval(timerRef.current);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [timerRunning]);
+  const toggleTimer = useCallback(async () => {
+    if (timerRunning) {
+      // 停止 → 分単位で今日の記録に加算
+      const mins = Math.floor(timerSec / 60);
+      if (mins > 0) {
+        const today = todayStr();
+        const newLogs = {
+          ...logs
+        };
+        if (!newLogs[today]) newLogs[today] = {};
+        newLogs[today]["学習"] = (newLogs[today]["学習"] || 0) + mins;
+        setLogs(newLogs);
+        await save("logs", newLogs);
+      }
+      setTimerSec(0);
+      setTimerRunning(false);
+    } else {
+      setTimerRunning(true);
+    }
+  }, [timerRunning, timerSec, logs]);
 
   // autosave questions
   useEffect(() => {
@@ -816,23 +924,23 @@ function App() {
   }, "\u8AAD\u307F\u8FBC\u307F\u4E2D..."));
   const TABS = [{
     id: "home",
-    icon: "⌂",
+    icon: "🏠",
     label: "ホーム"
   }, {
     id: "quiz",
-    icon: "◎",
+    icon: "✏️",
     label: "演習"
   }, {
     id: "log",
-    icon: "◷",
+    icon: "⏱",
     label: "記録"
   }, {
     id: "ai",
-    icon: "✦",
+    icon: "🤖",
     label: "AI"
   }, {
     id: "manage",
-    icon: "≡",
+    icon: "⚙️",
     label: "管理",
     badge: pendingCount
   }, {
@@ -933,7 +1041,10 @@ function App() {
     weakQuestions: weakQuestions,
     questions: questions,
     setTab: setTab,
-    logs: logs
+    logs: logs,
+    timerRunning: timerRunning,
+    timerSec: timerSec,
+    toggleTimer: toggleTimer
   }), tab === "quiz" && /*#__PURE__*/React.createElement(QuizTab, {
     questions: questions,
     setQuestions: setQuestions,
@@ -1054,7 +1165,10 @@ function HomeTab(_ref4) {
     weakQuestions = _ref4.weakQuestions,
     questions = _ref4.questions,
     setTab = _ref4.setTab,
-    logs = _ref4.logs;
+    logs = _ref4.logs,
+    timerRunning = _ref4.timerRunning,
+    timerSec = _ref4.timerSec,
+    toggleTimer = _ref4.toggleTimer;
   const last7 = useMemo(() => {
     return Array.from({
       length: 7
@@ -1133,13 +1247,25 @@ function HomeTab(_ref4) {
       fontVariantNumeric: "tabular-nums",
       lineHeight: 1
     }
-  }, todayMin), /*#__PURE__*/React.createElement("div", {
+  }, todayMin + Math.floor((timerSec || 0) / 60)), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "rgba(255,255,255,0.3)",
       marginTop: 4
     }
-  }, "\u5206 / \u7D2F\u8A08 ", (totalStudyMin / 60).toFixed(1), "h"))), weakQuestions.length > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "\u5206 / \u7D2F\u8A08 ", (totalStudyMin / 60).toFixed(1), "h"), /*#__PURE__*/React.createElement("button", {
+    onClick: toggleTimer,
+    style: {
+      marginTop: 10,
+      padding: "6px 18px",
+      borderRadius: 20,
+      background: timerRunning ? "rgba(255,80,80,0.12)" : "rgba(91,159,255,0.12)",
+      border: timerRunning ? "1px solid rgba(255,80,80,0.4)" : "1px solid rgba(91,159,255,0.3)",
+      color: timerRunning ? "#f87171" : "#5B9FFF",
+      fontSize: 12,
+      cursor: "pointer"
+    }
+  }, timerRunning ? `⏹ ${String(Math.floor((timerSec || 0) / 60)).padStart(2, "0")}:${String((timerSec || 0) % 60).padStart(2, "0")}` : "▶ 計測開始"))), weakQuestions.length > 0 && /*#__PURE__*/React.createElement("div", {
     onClick: () => setTab("quiz"),
     style: {
       background: "rgba(248,113,113,0.1)",
@@ -1319,57 +1445,57 @@ function QuizTab(_ref0) {
   let questions = _ref0.questions,
     setQuestions = _ref0.setQuestions,
     addXp = _ref0.addXp;
-  const _useState15 = useState("all"),
-    _useState16 = _slicedToArray(_useState15, 2),
-    subj = _useState16[0],
-    setSubj = _useState16[1];
-  const _useState17 = useState("AB"),
-    _useState18 = _slicedToArray(_useState17, 2),
-    mode = _useState18[0],
-    setMode = _useState18[1]; // AB A all weak starred untried
-  const _useState19 = useState(0),
+  const _useState19 = useState("all"),
     _useState20 = _slicedToArray(_useState19, 2),
-    idx = _useState20[0],
-    setIdx = _useState20[1];
-  const _useState21 = useState(null),
+    subj = _useState20[0],
+    setSubj = _useState20[1];
+  const _useState21 = useState("AB"),
     _useState22 = _slicedToArray(_useState21, 2),
-    sel = _useState22[0],
-    setSel = _useState22[1];
-  const _useState23 = useState(false),
+    mode = _useState22[0],
+    setMode = _useState22[1]; // AB A all weak starred untried
+  const _useState23 = useState(0),
     _useState24 = _slicedToArray(_useState23, 2),
-    done = _useState24[0],
-    setDone = _useState24[1];
-  const _useState25 = useState({
+    idx = _useState24[0],
+    setIdx = _useState24[1];
+  const _useState25 = useState(null),
+    _useState26 = _slicedToArray(_useState25, 2),
+    sel = _useState26[0],
+    setSel = _useState26[1];
+  const _useState27 = useState(false),
+    _useState28 = _slicedToArray(_useState27, 2),
+    done = _useState28[0],
+    setDone = _useState28[1];
+  const _useState29 = useState({
       correct: 0,
       total: 0
     }),
-    _useState26 = _slicedToArray(_useState25, 2),
-    session = _useState26[0],
-    setSession = _useState26[1];
-  const _useState27 = useState(""),
-    _useState28 = _slicedToArray(_useState27, 2),
-    aiHint = _useState28[0],
-    setAiHint = _useState28[1];
-  const _useState29 = useState(false),
     _useState30 = _slicedToArray(_useState29, 2),
-    hintLoading = _useState30[0],
-    setHintLoading = _useState30[1];
-  const _useState31 = useState(false),
+    session = _useState30[0],
+    setSession = _useState30[1];
+  const _useState31 = useState(""),
     _useState32 = _slicedToArray(_useState31, 2),
-    showHint = _useState32[0],
-    setShowHint = _useState32[1];
-  const _useState33 = useState(""),
+    aiHint = _useState32[0],
+    setAiHint = _useState32[1];
+  const _useState33 = useState(false),
     _useState34 = _slicedToArray(_useState33, 2),
-    knowledge = _useState34[0],
-    setKnowledge = _useState34[1];
+    hintLoading = _useState34[0],
+    setHintLoading = _useState34[1];
   const _useState35 = useState(false),
     _useState36 = _slicedToArray(_useState35, 2),
-    knowledgeLoading = _useState36[0],
-    setKnowledgeLoading = _useState36[1];
-  const _useState37 = useState(false),
+    showHint = _useState36[0],
+    setShowHint = _useState36[1];
+  const _useState37 = useState(""),
     _useState38 = _slicedToArray(_useState37, 2),
-    knowledgeSkipped = _useState38[0],
-    setKnowledgeSkipped = _useState38[1];
+    knowledge = _useState38[0],
+    setKnowledge = _useState38[1];
+  const _useState39 = useState(false),
+    _useState40 = _slicedToArray(_useState39, 2),
+    knowledgeLoading = _useState40[0],
+    setKnowledgeLoading = _useState40[1];
+  const _useState41 = useState(false),
+    _useState42 = _slicedToArray(_useState41, 2),
+    knowledgeSkipped = _useState42[0],
+    setKnowledgeSkipped = _useState42[1];
   const pool = useMemo(() => {
     let arr = [...questions];
     if (subj !== "all") arr = arr.filter(q => q.subject === subj);
@@ -2009,10 +2135,10 @@ function FilterBar(_ref1) {
 function LogTab(_ref12) {
   let logs = _ref12.logs,
     setLogs = _ref12.setLogs;
-  const _useState39 = useState({}),
-    _useState40 = _slicedToArray(_useState39, 2),
-    inputs = _useState40[0],
-    setInputs = _useState40[1];
+  const _useState43 = useState({}),
+    _useState44 = _slicedToArray(_useState43, 2),
+    inputs = _useState44[0],
+    setInputs = _useState44[1];
   const today = todayStr();
   const todayLog = logs[today] || {};
   const todayMin = Object.values(todayLog).reduce((a, b) => a + b, 0);
@@ -2144,22 +2270,22 @@ function LogTab(_ref12) {
 function AITab(_ref15) {
   let questions = _ref15.questions,
     weakQuestions = _ref15.weakQuestions;
-  const _useState41 = useState("analysis"),
-    _useState42 = _slicedToArray(_useState41, 2),
-    mode = _useState42[0],
-    setMode = _useState42[1]; // analysis | generate | advice
-  const _useState43 = useState(""),
-    _useState44 = _slicedToArray(_useState43, 2),
-    output = _useState44[0],
-    setOutput = _useState44[1];
-  const _useState45 = useState(false),
+  const _useState45 = useState("analysis"),
     _useState46 = _slicedToArray(_useState45, 2),
-    loading = _useState46[0],
-    setLoading = _useState46[1];
+    mode = _useState46[0],
+    setMode = _useState46[1]; // analysis | generate | advice
   const _useState47 = useState(""),
     _useState48 = _slicedToArray(_useState47, 2),
-    prompt = _useState48[0],
-    setPrompt = _useState48[1];
+    output = _useState48[0],
+    setOutput = _useState48[1];
+  const _useState49 = useState(false),
+    _useState50 = _slicedToArray(_useState49, 2),
+    loading = _useState50[0],
+    setLoading = _useState50[1];
+  const _useState51 = useState(""),
+    _useState52 = _slicedToArray(_useState51, 2),
+    prompt = _useState52[0],
+    setPrompt = _useState52[1];
   const subjectStats = useMemo(() => {
     return SUBJECTS.map(s => {
       const qs = questions.filter(q => q.subject === s.id);
@@ -2340,22 +2466,22 @@ function ManageTab(_ref16) {
     setQuestions = _ref16.setQuestions,
     pendingCount = _ref16.pendingCount,
     importPending = _ref16.importPending;
-  const _useState49 = useState(false),
-    _useState50 = _slicedToArray(_useState49, 2),
-    importing = _useState50[0],
-    setImporting = _useState50[1];
-  const _useState51 = useState(null),
-    _useState52 = _slicedToArray(_useState51, 2),
-    importDone = _useState52[0],
-    setImportDone = _useState52[1];
   const _useState53 = useState(false),
     _useState54 = _slicedToArray(_useState53, 2),
-    showManual = _useState54[0],
-    setShowManual = _useState54[1];
-  const _useState55 = useState(""),
+    importing = _useState54[0],
+    setImporting = _useState54[1];
+  const _useState55 = useState(null),
     _useState56 = _slicedToArray(_useState55, 2),
-    ioMsg = _useState56[0],
-    setIoMsg = _useState56[1];
+    importDone = _useState56[0],
+    setImportDone = _useState56[1];
+  const _useState57 = useState(false),
+    _useState58 = _slicedToArray(_useState57, 2),
+    showManual = _useState58[0],
+    setShowManual = _useState58[1];
+  const _useState59 = useState(""),
+    _useState60 = _slicedToArray(_useState59, 2),
+    ioMsg = _useState60[0],
+    setIoMsg = _useState60[1];
 
   // データをJSONファイルとして保存
   const exportData = async () => {
@@ -2426,7 +2552,7 @@ function ManageTab(_ref16) {
     reader.readAsText(file);
     e.target.value = "";
   };
-  const _useState57 = useState({
+  const _useState61 = useState({
       subject: "houki",
       q: "",
       opts: ["", "", "", ""],
@@ -2441,13 +2567,13 @@ function ManageTab(_ref16) {
       qPage: "",
       tbPage: ""
     }),
-    _useState58 = _slicedToArray(_useState57, 2),
-    form = _useState58[0],
-    setForm = _useState58[1];
-  const _useState59 = useState(""),
-    _useState60 = _slicedToArray(_useState59, 2),
-    msg = _useState60[0],
-    setMsg = _useState60[1];
+    _useState62 = _slicedToArray(_useState61, 2),
+    form = _useState62[0],
+    setForm = _useState62[1];
+  const _useState63 = useState(""),
+    _useState64 = _slicedToArray(_useState63, 2),
+    msg = _useState64[0],
+    setMsg = _useState64[1];
   const doImport = async () => {
     setImporting(true);
     setImportDone(null);
@@ -2961,26 +3087,26 @@ function ManageTab(_ref16) {
 
 // ── NOTES TAB ──────────────────────────────────────────────
 function NotesTab() {
-  const _useState61 = useState({}),
-    _useState62 = _slicedToArray(_useState61, 2),
-    hints = _useState62[0],
-    setHints = _useState62[1];
-  const _useState63 = useState("houki"),
-    _useState64 = _slicedToArray(_useState63, 2),
-    selectedSubject = _useState64[0],
-    setSelectedSubject = _useState64[1];
-  const _useState65 = useState(null),
+  const _useState65 = useState({}),
     _useState66 = _slicedToArray(_useState65, 2),
-    editingId = _useState66[0],
-    setEditingId = _useState66[1];
-  const _useState67 = useState(""),
+    hints = _useState66[0],
+    setHints = _useState66[1];
+  const _useState67 = useState("houki"),
     _useState68 = _slicedToArray(_useState67, 2),
-    draft = _useState68[0],
-    setDraft = _useState68[1];
-  const _useState69 = useState(true),
+    selectedSubject = _useState68[0],
+    setSelectedSubject = _useState68[1];
+  const _useState69 = useState(null),
     _useState70 = _slicedToArray(_useState69, 2),
-    loading = _useState70[0],
-    setLoading = _useState70[1];
+    editingId = _useState70[0],
+    setEditingId = _useState70[1];
+  const _useState71 = useState(""),
+    _useState72 = _slicedToArray(_useState71, 2),
+    draft = _useState72[0],
+    setDraft = _useState72[1];
+  const _useState73 = useState(true),
+    _useState74 = _slicedToArray(_useState73, 2),
+    loading = _useState74[0],
+    setLoading = _useState74[1];
   useEffect(() => {
     load("hints", {}).then(h => {
       setHints(h);
@@ -3190,4 +3316,5 @@ function NotesTab() {
     }, memo) : null);
   })));
 }
+window.App = App;
 window.App=App;

@@ -1983,67 +1983,71 @@ function QuizTab(_ref0) {
     setIdx = _useState34[1];
   const _useState35 = useState(null),
     _useState36 = _slicedToArray(_useState35, 2),
-    sel = _useState36[0],
-    setSel = _useState36[1];
-  const _useState37 = useState(false),
+    currentQId = _useState36[0],
+    setCurrentQId = _useState36[1];
+  const _useState37 = useState(null),
     _useState38 = _slicedToArray(_useState37, 2),
-    done = _useState38[0],
-    setDone = _useState38[1];
-  const _useState39 = useState({
+    sel = _useState38[0],
+    setSel = _useState38[1];
+  const _useState39 = useState(false),
+    _useState40 = _slicedToArray(_useState39, 2),
+    done = _useState40[0],
+    setDone = _useState40[1];
+  const _useState41 = useState({
       correct: 0,
       total: 0
     }),
-    _useState40 = _slicedToArray(_useState39, 2),
-    session = _useState40[0],
-    setSession = _useState40[1];
-  const _useState41 = useState(""),
     _useState42 = _slicedToArray(_useState41, 2),
-    aiHint = _useState42[0],
-    setAiHint = _useState42[1];
-  const _useState43 = useState(false),
+    session = _useState42[0],
+    setSession = _useState42[1];
+  const _useState43 = useState(""),
     _useState44 = _slicedToArray(_useState43, 2),
-    hintLoading = _useState44[0],
-    setHintLoading = _useState44[1];
+    aiHint = _useState44[0],
+    setAiHint = _useState44[1];
   const _useState45 = useState(false),
     _useState46 = _slicedToArray(_useState45, 2),
-    showHint = _useState46[0],
-    setShowHint = _useState46[1];
-  const _useState47 = useState(""),
+    hintLoading = _useState46[0],
+    setHintLoading = _useState46[1];
+  const _useState47 = useState(false),
     _useState48 = _slicedToArray(_useState47, 2),
-    knowledge = _useState48[0],
-    setKnowledge = _useState48[1];
-  const _useState49 = useState(false),
+    showHint = _useState48[0],
+    setShowHint = _useState48[1];
+  const _useState49 = useState(""),
     _useState50 = _slicedToArray(_useState49, 2),
-    knowledgeLoading = _useState50[0],
-    setKnowledgeLoading = _useState50[1];
+    knowledge = _useState50[0],
+    setKnowledge = _useState50[1];
   const _useState51 = useState(false),
     _useState52 = _slicedToArray(_useState51, 2),
-    knowledgeSkipped = _useState52[0],
-    setKnowledgeSkipped = _useState52[1];
-  const _useState53 = useState(""),
+    knowledgeLoading = _useState52[0],
+    setKnowledgeLoading = _useState52[1];
+  const _useState53 = useState(false),
     _useState54 = _slicedToArray(_useState53, 2),
-    memo = _useState54[0],
-    setMemo = _useState54[1];
-  const _useState55 = useState(false),
+    knowledgeSkipped = _useState54[0],
+    setKnowledgeSkipped = _useState54[1];
+  const _useState55 = useState(""),
     _useState56 = _slicedToArray(_useState55, 2),
-    memoEditing = _useState56[0],
-    setMemoEditing = _useState56[1];
-  const _useState57 = useState(""),
+    memo = _useState56[0],
+    setMemo = _useState56[1];
+  const _useState57 = useState(false),
     _useState58 = _slicedToArray(_useState57, 2),
-    aiQuestion = _useState58[0],
-    setAiQuestion = _useState58[1];
+    memoEditing = _useState58[0],
+    setMemoEditing = _useState58[1];
   const _useState59 = useState(""),
     _useState60 = _slicedToArray(_useState59, 2),
-    aiAnswer = _useState60[0],
-    setAiAnswer = _useState60[1];
-  const _useState61 = useState(false),
+    aiQuestion = _useState60[0],
+    setAiQuestion = _useState60[1];
+  const _useState61 = useState(""),
     _useState62 = _slicedToArray(_useState61, 2),
-    aiQLoading = _useState62[0],
-    setAiQLoading = _useState62[1];
-  const _useState63 = useState({}),
+    aiAnswer = _useState62[0],
+    setAiAnswer = _useState62[1];
+  const _useState63 = useState(false),
     _useState64 = _slicedToArray(_useState63, 2),
-    memos = _useState64[0],
-    setMemos = _useState64[1];
+    aiQLoading = _useState64[0],
+    setAiQLoading = _useState64[1];
+  const _useState65 = useState({}),
+    _useState66 = _slicedToArray(_useState65, 2),
+    memos = _useState66[0],
+    setMemos = _useState66[1];
   const pool = useMemo(() => {
     const today = todayStr();
     let arr = [...questions];
@@ -2070,7 +2074,10 @@ function QuizTab(_ref0) {
     }
     return [...notSolvedToday, ...solvedToday];
   }, [questions, subj, mode, course]);
-  const q = pool[idx % Math.max(pool.length, 1)];
+
+  // pool変化でqがずれないようIDで固定
+  const poolQ = pool[idx % Math.max(pool.length, 1)];
+  const q = currentQId ? questions.find(qq => qq.id === currentQId) || poolQ : poolQ;
   const subj_ = SUBJECTS.find(s => s.id === q?.subject) || SUBJECTS[0];
   function reset(newSubj, newMode) {
     if (newSubj !== undefined) setSubj(newSubj);
@@ -2090,6 +2097,8 @@ function QuizTab(_ref0) {
   }
   const pick = i => {
     if (done) return;
+    if (!q) return;
+    setCurrentQId(q.id); // 回答中はIDで固定
     const correct = i === q.correct;
     setSel(i);
     setDone(true);
@@ -2183,6 +2192,7 @@ function QuizTab(_ref0) {
       finishTimed();
       return;
     }
+    setCurrentQId(null); // 次の問題はpoolから取得
     setIdx(i => i + 1);
     setSel(null);
     setDone(false);
@@ -3221,10 +3231,10 @@ function LogTab(_ref18) {
   let logs = _ref18.logs,
     setLogs = _ref18.setLogs,
     questions = _ref18.questions;
-  const _useState65 = useState({}),
-    _useState66 = _slicedToArray(_useState65, 2),
-    inputs = _useState66[0],
-    setInputs = _useState66[1];
+  const _useState67 = useState({}),
+    _useState68 = _slicedToArray(_useState67, 2),
+    inputs = _useState68[0],
+    setInputs = _useState68[1];
   const today = todayStr();
   const todayLog = logs[today] || {};
   const todayMin = Object.values(todayLog).reduce((a, b) => a + b, 0);
@@ -3408,22 +3418,22 @@ function LogTab(_ref18) {
 function AITab(_ref23) {
   let questions = _ref23.questions,
     weakQuestions = _ref23.weakQuestions;
-  const _useState67 = useState("analysis"),
-    _useState68 = _slicedToArray(_useState67, 2),
-    mode = _useState68[0],
-    setMode = _useState68[1]; // analysis | generate | advice
-  const _useState69 = useState(""),
+  const _useState69 = useState("analysis"),
     _useState70 = _slicedToArray(_useState69, 2),
-    output = _useState70[0],
-    setOutput = _useState70[1];
-  const _useState71 = useState(false),
+    mode = _useState70[0],
+    setMode = _useState70[1]; // analysis | generate | advice
+  const _useState71 = useState(""),
     _useState72 = _slicedToArray(_useState71, 2),
-    loading = _useState72[0],
-    setLoading = _useState72[1];
-  const _useState73 = useState(""),
+    output = _useState72[0],
+    setOutput = _useState72[1];
+  const _useState73 = useState(false),
     _useState74 = _slicedToArray(_useState73, 2),
-    prompt = _useState74[0],
-    setPrompt = _useState74[1];
+    loading = _useState74[0],
+    setLoading = _useState74[1];
+  const _useState75 = useState(""),
+    _useState76 = _slicedToArray(_useState75, 2),
+    prompt = _useState76[0],
+    setPrompt = _useState76[1];
   const subjectStats = useMemo(() => {
     return SUBJECTS.map(s => {
       const qs = questions.filter(q => q.subject === s.id);
@@ -3713,14 +3723,14 @@ function AITab(_ref23) {
 function HistoryEditor(_ref26) {
   let questions = _ref26.questions,
     setQuestions = _ref26.setQuestions;
-  const _useState75 = useState(""),
-    _useState76 = _slicedToArray(_useState75, 2),
-    search = _useState76[0],
-    setSearch = _useState76[1];
-  const _useState77 = useState(null),
+  const _useState77 = useState(""),
     _useState78 = _slicedToArray(_useState77, 2),
-    expanded = _useState78[0],
-    setExpanded = _useState78[1];
+    search = _useState78[0],
+    setSearch = _useState78[1];
+  const _useState79 = useState(null),
+    _useState80 = _slicedToArray(_useState79, 2),
+    expanded = _useState80[0],
+    setExpanded = _useState80[1];
   const answered = questions.filter(q => (q.history || []).length > 0);
   const filtered = search ? answered.filter(q => q.q.includes(search) || q.topic?.includes(search) || q.year?.includes(search) || q.refs?.includes(search)) : answered;
   const removeLastHistory = async qId => {
@@ -3933,22 +3943,22 @@ function ManageTab(_ref27) {
     setQuestions = _ref27.setQuestions,
     pendingCount = _ref27.pendingCount,
     importPending = _ref27.importPending;
-  const _useState79 = useState(false),
-    _useState80 = _slicedToArray(_useState79, 2),
-    importing = _useState80[0],
-    setImporting = _useState80[1];
-  const _useState81 = useState(null),
+  const _useState81 = useState(false),
     _useState82 = _slicedToArray(_useState81, 2),
-    importDone = _useState82[0],
-    setImportDone = _useState82[1];
-  const _useState83 = useState(false),
+    importing = _useState82[0],
+    setImporting = _useState82[1];
+  const _useState83 = useState(null),
     _useState84 = _slicedToArray(_useState83, 2),
-    showManual = _useState84[0],
-    setShowManual = _useState84[1];
-  const _useState85 = useState(""),
+    importDone = _useState84[0],
+    setImportDone = _useState84[1];
+  const _useState85 = useState(false),
     _useState86 = _slicedToArray(_useState85, 2),
-    ioMsg = _useState86[0],
-    setIoMsg = _useState86[1];
+    showManual = _useState86[0],
+    setShowManual = _useState86[1];
+  const _useState87 = useState(""),
+    _useState88 = _slicedToArray(_useState87, 2),
+    ioMsg = _useState88[0],
+    setIoMsg = _useState88[1];
 
   // データをJSONファイルとして保存
   const exportData = async () => {
@@ -4019,7 +4029,7 @@ function ManageTab(_ref27) {
     reader.readAsText(file);
     e.target.value = "";
   };
-  const _useState87 = useState({
+  const _useState89 = useState({
       subject: "houki",
       q: "",
       opts: ["", "", "", ""],
@@ -4034,13 +4044,13 @@ function ManageTab(_ref27) {
       qPage: "",
       tbPage: ""
     }),
-    _useState88 = _slicedToArray(_useState87, 2),
-    form = _useState88[0],
-    setForm = _useState88[1];
-  const _useState89 = useState(""),
     _useState90 = _slicedToArray(_useState89, 2),
-    msg = _useState90[0],
-    setMsg = _useState90[1];
+    form = _useState90[0],
+    setForm = _useState90[1];
+  const _useState91 = useState(""),
+    _useState92 = _slicedToArray(_useState91, 2),
+    msg = _useState92[0],
+    setMsg = _useState92[1];
   const doImport = async () => {
     setImporting(true);
     setImportDone(null);
@@ -4557,26 +4567,26 @@ function ManageTab(_ref27) {
 
 // ── NOTES TAB ──────────────────────────────────────────────
 function NotesTab() {
-  const _useState91 = useState({}),
-    _useState92 = _slicedToArray(_useState91, 2),
-    hints = _useState92[0],
-    setHints = _useState92[1];
-  const _useState93 = useState("houki"),
+  const _useState93 = useState({}),
     _useState94 = _slicedToArray(_useState93, 2),
-    selectedSubject = _useState94[0],
-    setSelectedSubject = _useState94[1];
-  const _useState95 = useState(null),
+    hints = _useState94[0],
+    setHints = _useState94[1];
+  const _useState95 = useState("houki"),
     _useState96 = _slicedToArray(_useState95, 2),
-    editingId = _useState96[0],
-    setEditingId = _useState96[1];
-  const _useState97 = useState(""),
+    selectedSubject = _useState96[0],
+    setSelectedSubject = _useState96[1];
+  const _useState97 = useState(null),
     _useState98 = _slicedToArray(_useState97, 2),
-    draft = _useState98[0],
-    setDraft = _useState98[1];
-  const _useState99 = useState(true),
+    editingId = _useState98[0],
+    setEditingId = _useState98[1];
+  const _useState99 = useState(""),
     _useState100 = _slicedToArray(_useState99, 2),
-    loading = _useState100[0],
-    setLoading = _useState100[1];
+    draft = _useState100[0],
+    setDraft = _useState100[1];
+  const _useState101 = useState(true),
+    _useState102 = _slicedToArray(_useState101, 2),
+    loading = _useState102[0],
+    setLoading = _useState102[1];
   useEffect(() => {
     load("hints", {}).then(h => {
       setHints(h);

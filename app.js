@@ -942,13 +942,13 @@ function App() {
       setPendingCount(pend.length);
       // streak
       let s = 0,
-        d = new Date();
+        d = nowJST();
       while (true) {
         const k = d.toISOString().slice(0, 10);
         const dl = lg[k];
-        if (!dl || Object.values(dl).reduce((a, b) => a + b, 0) === 0) break;
+        if (!dl || dayTotalSec(dl) === 0) break;
         s++;
-        d.setDate(d.getDate() - 1);
+        d.setUTCDate(d.getUTCDate() - 1);
       }
       setStreak(s);
       setLoading(false);
@@ -966,7 +966,7 @@ function App() {
   }, [timerRunning]);
   const toggleTimer = useCallback(async () => {
     if (timerRunning) {
-      // 停止 → 分単位で今日の記録に加算
+      // 停止 → 秒単位で今日の記録に加算
       if (timerSec >= 5) {
         const today = todayStr();
         const newLogs = {
@@ -1033,7 +1033,7 @@ function App() {
     return r.filter(x => x === "×").length >= 2;
   }), [questions]);
   const todayRec = logs[todayStr()] || {};
-  const todayMin = Object.values(todayRec).reduce((a, b) => a + b, 0);
+  const todayMin = dayTotalMin(todayRec);
   if (loading) return /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#080C14",
@@ -1176,7 +1176,9 @@ function App() {
   }), tab === "quiz" && /*#__PURE__*/React.createElement(QuizTab, {
     questions: questions,
     setQuestions: setQuestions,
-    addXp: addXp
+    addXp: addXp,
+    logs: logs,
+    setLogs: setLogs
   }), tab === "log" && /*#__PURE__*/React.createElement(LogTab, {
     logs: logs,
     setLogs: setLogs,
@@ -2116,7 +2118,9 @@ function TermPopup(_ref1) {
 function QuizTab(_ref10) {
   let questions = _ref10.questions,
     setQuestions = _ref10.setQuestions,
-    addXp = _ref10.addXp;
+    addXp = _ref10.addXp,
+    logs = _ref10.logs,
+    setLogs = _ref10.setLogs;
   const _useState27 = useState("all"),
     _useState28 = _slicedToArray(_useState27, 2),
     subj = _useState28[0],
@@ -3559,7 +3563,7 @@ function LogTab(_ref21) {
     setInputs = _useState80[1];
   const today = todayStr();
   const todayLog = logs[today] || {};
-  const todayMin = Object.values(todayLog).reduce((a, b) => a + b, 0);
+  const todayMin = dayTotalMin(todayLog);
 
   // 週別正答率グラフ用データ（過去8週）
   const weeklyStats = useMemo(() => {
@@ -3586,7 +3590,7 @@ function LogTab(_ref21) {
           date = _ref23[0],
           dayLog = _ref23[1];
         if (date >= startStr && date <= endStr) {
-          studyMin += Object.values(dayLog).reduce((a, b) => a + b, 0);
+          studyMin += dayTotalMin(dayLog);
         }
       });
       const label = `${start.getMonth() + 1}/${start.getDate()}`;
@@ -3619,7 +3623,7 @@ function LogTab(_ref21) {
         k = _ref25[0],
         v = _ref25[1];
       const n = parseInt(v) || 0;
-      if (n > 0) cleaned[k] = n;
+      if (n > 0) cleaned[k] = n * 60; // 分→秒変換
     });
     if (!Object.keys(cleaned).length) return;
     setLogs(prev => ({
@@ -3635,8 +3639,8 @@ function LogTab(_ref21) {
     return Array.from({
       length: 14
     }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (13 - i));
+      const d = nowJST();
+      d.setUTCDate(d.getUTCDate() - (13 - i));
       const key = d.toISOString().slice(0, 10);
       const dl = logs[key] || {};
       return {

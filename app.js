@@ -86,6 +86,20 @@ const RANK_COLOR = {
 };
 const EXAM_DATE = new Date("2027-07-25");
 const todayStr = () => new Date().toISOString().slice(0, 10);
+const relativeDate = dateStr => {
+  if (!dateStr) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(dateStr);
+  d.setHours(0, 0, 0, 0);
+  const diff = Math.round((today - d) / 86400000);
+  if (diff === 0) return "今日";
+  if (diff === 1) return "昨日";
+  if (diff < 7) return `${diff}日前`;
+  if (diff < 30) return `${Math.floor(diff / 7)}週間前`;
+  if (diff < 365) return `${Math.floor(diff / 30)}ヶ月前`;
+  return `${Math.floor(diff / 365)}年前`;
+};
 
 // ── 専門用語辞書 ─────────────────────────────────────────────
 const TERMS = ["主要構造部", "特殊建築物", "延焼のおそれのある部分", "確認済証", "完了検査", "指定確認検査機関", "遮炎性能", "防火設備", "特定防火設備", "準防火性能", "建築物", "建築主", "工事施工者", "工事監理", "工事監理者", "建築主事", "特定行政庁", "大規模の修繕", "大規模の模様替", "新築", "増築", "改築", "移転", "避難階", "地階", "階数", "延べ面積", "建築面積", "床面積", "容積率", "建蔽率", "耐火構造", "準耐火構造", "防火構造", "不燃材料", "準不燃材料", "難燃材料", "耐火建築物", "準耐火建築物", "防火地域", "準防火地域", "防火区画", "排煙設備", "非常用照明", "非常用の進入口", "内装制限", "構造計算適合性判定", "仮使用", "中間検査", "定期報告", "特定工程"];
@@ -2731,7 +2745,13 @@ function QuizTab(_ref10) {
       padding: "1px 6px",
       borderRadius: 4
     }
-  }, "\u6559\u79D1\u66F8 p.", q.tbPage)), /*#__PURE__*/React.createElement("div", {
+  }, "\u6559\u79D1\u66F8 p.", q.tbPage), q.lastAnswered && /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 10,
+      color: "rgba(255,255,255,0.2)",
+      marginLeft: "auto"
+    }
+  }, "\uD83D\uDD50 ", relativeDate(q.lastAnswered))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -3415,7 +3435,91 @@ function LogTab(_ref20) {
       flexDirection: "column",
       gap: 16
     }
-  }, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4ECA\u65E5\u306E\u8A18\u9332"), /*#__PURE__*/React.createElement("div", {
+  }, (() => {
+    const weeks = 15;
+    const days = weeks * 7;
+    const cells = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const str = d.toISOString().slice(0, 10);
+      const dayLog = logs[str] || {};
+      const min = Object.values(dayLog).reduce((a, b) => a + b, 0);
+      const solvedCount = (questions || []).filter(q => q.lastAnswered === str).length;
+      cells.push({
+        str,
+        min,
+        solvedCount
+      });
+    }
+    const maxMin = Math.max(...cells.map(c => c.min), 1);
+    const weekGroups = [];
+    for (let i = 0; i < cells.length; i += 7) weekGroups.push(cells.slice(i, i + 7));
+    return /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u5B66\u7FD2\u30AB\u30EC\u30F3\u30C0\u30FC"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        overflowX: "auto",
+        paddingBottom: 4
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 3
+      }
+    }, weekGroups.map((week, wi) => /*#__PURE__*/React.createElement("div", {
+      key: wi,
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 3
+      }
+    }, week.map((cell, di) => {
+      const intensity = cell.min > 0 ? Math.max(0.15, cell.min / maxMin) : 0;
+      const isToday = cell.str === todayStr();
+      const bg = cell.min > 0 ? `rgba(91,159,255,${intensity})` : cell.solvedCount > 0 ? "rgba(52,211,153,0.25)" : "rgba(255,255,255,0.05)";
+      return /*#__PURE__*/React.createElement("div", {
+        key: di,
+        title: `${cell.str}: 学習${cell.min}分 / ${cell.solvedCount}問`,
+        style: {
+          width: 16,
+          height: 16,
+          borderRadius: 3,
+          background: bg,
+          border: isToday ? "1.5px solid #5B9FFF" : "none"
+        }
+      });
+    })))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "flex-end",
+        gap: 8,
+        marginTop: 10,
+        fontSize: 10,
+        color: "rgba(255,255,255,0.3)",
+        alignItems: "center"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 10,
+        height: 10,
+        borderRadius: 2,
+        background: "rgba(255,255,255,0.05)"
+      }
+    }), /*#__PURE__*/React.createElement("span", null, "\u306A\u3057"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 10,
+        height: 10,
+        borderRadius: 2,
+        background: "rgba(52,211,153,0.25)"
+      }
+    }), /*#__PURE__*/React.createElement("span", null, "\u554F\u984C\u306E\u307F"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 10,
+        height: 10,
+        borderRadius: 2,
+        background: "rgba(91,159,255,0.8)"
+      }
+    }), /*#__PURE__*/React.createElement("span", null, "\u5B66\u7FD2\u3042\u308A"))));
+  })(), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4ECA\u65E5\u306E\u8A18\u9332"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",

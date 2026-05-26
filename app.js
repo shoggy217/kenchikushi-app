@@ -3775,96 +3775,80 @@ function LogTab(_ref21) {
         outlineOffset: "1px"
       }
     }), /*#__PURE__*/React.createElement("span", null, "\u4ECA\u65E5")))));
-  })(), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4ECA\u65E5\u306E\u8A18\u9332"), /*#__PURE__*/React.createElement("div", {
+  })(), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4ECA\u65E5\u306E\u5B66\u7FD2\u8A18\u9332"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "rgba(255,255,255,0.35)",
+      marginBottom: 16
+    }
+  }, "\u6F14\u7FD2\u30BB\u30C3\u30B7\u30E7\u30F3\u3092\u7D42\u4E86\u3059\u308B\u3068\u81EA\u52D5\u3067\u8A18\u9332\u3055\u308C\u307E\u3059"), todayMin > 0 ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 48,
+      fontWeight: 200,
+      fontVariantNumeric: "tabular-nums",
+      marginBottom: 4
+    }
+  }, todayMin, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 16,
+      color: "rgba(255,255,255,0.4)",
+      marginLeft: 4
+    }
+  }, "\u5206")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      color: "rgba(255,255,255,0.4)",
+      marginBottom: 16
+    }
+  }, "\u7D2F\u8A08 ", (Object.values(logs).reduce((a, d) => a + Object.values(d).reduce((b, v) => b + v, 0), 0) / 60).toFixed(1), "\u6642\u9593"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
-      gap: 2,
-      marginBottom: 16
+      gap: 6
     }
-  }, SUBJECTS.map(s => /*#__PURE__*/React.createElement("div", {
-    key: s.id,
+  }, Object.entries(todayLog).map(_ref26 => {
+    let _ref27 = _slicedToArray(_ref26, 2),
+      key = _ref27[0],
+      val = _ref27[1];
+    return val > 0 && /*#__PURE__*/React.createElement("div", {
+      key: key,
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        fontSize: 13,
+        padding: "6px 0",
+        borderBottom: "1px solid rgba(255,255,255,0.04)"
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: "rgba(255,255,255,0.6)"
+      }
+    }, key), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontVariantNumeric: "tabular-nums"
+      }
+    }, val, "\u5206"));
+  }))) : /*#__PURE__*/React.createElement("div", {
     style: {
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-      padding: "10px 0",
-      borderBottom: "1px solid rgba(255,255,255,0.04)"
+      textAlign: "center",
+      padding: "24px 0",
+      color: "rgba(255,255,255,0.2)",
+      fontSize: 13
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, "\u4ECA\u65E5\u306F\u307E\u3060\u8A18\u9332\u304C\u3042\u308A\u307E\u305B\u3093", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
     style: {
-      width: 8,
-      height: 8,
-      borderRadius: 99,
-      background: s.color,
-      flexShrink: 0
+      fontSize: 11
     }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      flex: 1,
-      fontSize: 14
-    }
-  }, s.name), /*#__PURE__*/React.createElement("input", {
-    type: "number",
-    inputMode: "numeric",
-    min: "0",
-    placeholder: "0",
-    value: inputs[s.id] || "",
-    onChange: e => setInputs({
-      ...inputs,
-      [s.id]: e.target.value
-    }),
-    style: {
-      width: 60,
-      background: "rgba(255,255,255,0.06)",
-      border: "none",
-      borderRadius: 8,
-      padding: "6px 10px",
-      color: "#fff",
-      fontSize: 15,
-      textAlign: "right",
-      outline: "none"
-    }
-  }), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 11,
-      color: "rgba(255,255,255,0.3)",
-      width: 24
-    }
-  }, "\u5206")))), todayMin > 0 && /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      color: "rgba(255,255,255,0.4)",
-      marginBottom: 12
-    }
-  }, "\u672C\u65E5\u8A18\u9332\u6E08: ", /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#fff",
-      fontVariantNumeric: "tabular-nums"
-    }
-  }, todayMin, "\u5206")), /*#__PURE__*/React.createElement("button", {
-    onClick: save_,
-    style: {
-      width: "100%",
-      padding: "14px",
-      borderRadius: 14,
-      background: "#fff",
-      color: "#000",
-      fontSize: 14,
-      fontWeight: 600,
-      border: "none",
-      cursor: "pointer"
-    }
-  }, "\u4FDD\u5B58")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u76F4\u8FD114\u65E5"), /*#__PURE__*/React.createElement(SimpleBarChart, {
+  }, "\u6F14\u7FD2\u30BF\u30D6\u3067\u30BB\u30C3\u30B7\u30E7\u30F3\u3092\u958B\u59CB\u3057\u307E\u3057\u3087\u3046"))), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u76F4\u8FD114\u65E5"), /*#__PURE__*/React.createElement(SimpleBarChart, {
     data: last14
   })));
 }
 
 // ── AI TAB ─────────────────────────────────────────────────
-function AITab(_ref26) {
-  let questions = _ref26.questions,
-    weakQuestions = _ref26.weakQuestions,
-    logs = _ref26.logs;
+function AITab(_ref28) {
+  let questions = _ref28.questions,
+    weakQuestions = _ref28.weakQuestions,
+    logs = _ref28.logs;
   const _useState81 = useState("analysis"),
     _useState82 = _slicedToArray(_useState81, 2),
     mode = _useState82[0],
@@ -4056,9 +4040,9 @@ function AITab(_ref26) {
 }
 
 // ── HISTORY EDITOR ─────────────────────────────────────────
-function HistoryEditor(_ref27) {
-  let questions = _ref27.questions,
-    setQuestions = _ref27.setQuestions;
+function HistoryEditor(_ref29) {
+  let questions = _ref29.questions,
+    setQuestions = _ref29.setQuestions;
   const _useState89 = useState(""),
     _useState90 = _slicedToArray(_useState89, 2),
     search = _useState90[0],
@@ -4274,11 +4258,11 @@ function HistoryEditor(_ref27) {
 }
 
 // ── MANAGE TAB ─────────────────────────────────────────────
-function ManageTab(_ref28) {
-  let questions = _ref28.questions,
-    setQuestions = _ref28.setQuestions,
-    pendingCount = _ref28.pendingCount,
-    importPending = _ref28.importPending;
+function ManageTab(_ref30) {
+  let questions = _ref30.questions,
+    setQuestions = _ref30.setQuestions,
+    pendingCount = _ref30.pendingCount,
+    importPending = _ref30.importPending;
   const _useState93 = useState(false),
     _useState94 = _slicedToArray(_useState93, 2),
     importing = _useState94[0],
@@ -4563,10 +4547,10 @@ function ManageTab(_ref28) {
       color: "rgba(255,255,255,0.35)",
       lineHeight: 1.8
     }
-  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref29 => {
-    let _ref30 = _slicedToArray(_ref29, 2),
-      n = _ref30[0],
-      t = _ref30[1];
+  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref31 => {
+    let _ref32 = _slicedToArray(_ref31, 2),
+      n = _ref32[0],
+      t = _ref32[1];
     return /*#__PURE__*/React.createElement("div", {
       key: n,
       style: {

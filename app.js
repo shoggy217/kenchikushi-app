@@ -3094,7 +3094,7 @@ function QuizTab(_ref10) {
         fontVariantNumeric: "tabular-nums"
       }
     }, idx % Math.max(pool.length, 1) + 1, "/", pool.length));
-  })(), q && q.hasFig && !done && /*#__PURE__*/React.createElement("div", {
+  })(), q && q.hasFig && !q.svg && !done && /*#__PURE__*/React.createElement("div", {
     style: { padding: "12px 16px", background: "rgba(251,191,36,0.08)", borderRadius: 12, border: "1px solid rgba(251,191,36,0.25)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }
   },
     /*#__PURE__*/React.createElement("div", null,
@@ -3234,7 +3234,10 @@ function QuizTab(_ref10) {
   }, /*#__PURE__*/React.createElement(HighlightedText, {
     text: q.q,
     onTermClick: t => setActiveTerm(t)
-  })), !done && /*#__PURE__*/React.createElement("div", {
+  })), q.svg && /*#__PURE__*/React.createElement("div", {
+    style: { margin: "0 0 16px", background: "rgba(255,255,255,0.03)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.07)", padding: "10px", overflow: "hidden" },
+    dangerouslySetInnerHTML: { __html: q.svg }
+  }), !done && /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 16
     }

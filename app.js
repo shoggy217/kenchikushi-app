@@ -868,15 +868,17 @@ function App() {
         await save("questions_v3", finalQs);
         await save("bver", BUNDLE_VER);
       }
-      // lastAnsweredが未設定の問題を自動補完（historyがある場合は今日の日付を設定）
-      const today = todayStr();
+      // lastAnsweredが未設定の問題を自動補完（historyがある場合は昨日の日付を設定→間隔反復に即出題）
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().slice(0, 10);
       let needsSave = false;
       const fixedQs = finalQs.map(q => {
         if ((q.history || []).length > 0 && !q.lastAnswered) {
           needsSave = true;
           return {
             ...q,
-            lastAnswered: today
+            lastAnswered: yesterdayStr
           };
         }
         return q;

@@ -1348,8 +1348,8 @@ function HomeTab(_ref4) {
     return Array.from({
       length: 7
     }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
+      const d = nowJST();
+      d.setUTCDate(d.getUTCDate() - (6 - i));
       const key = d.toISOString().slice(0, 10);
       return {
         date: fmtMD(d),
@@ -1600,7 +1600,7 @@ function HomeTab(_ref4) {
     let date = _ref5.date,
       key = _ref5.key;
     const dayLog = logs[key] || {};
-    const mins = Object.values(dayLog).reduce((a, b) => a + b, 0);
+    const mins = dayTotalSec(dayLog);
     const done = mins > 0;
     return /*#__PURE__*/React.createElement("div", {
       key: key,
@@ -2308,6 +2308,12 @@ function QuizTab(_ref10) {
     setQuestions(updatedQuestions);
     // 回答直後に即時保存（タブを閉じても記録が消えないよう）
     save("questions_v3", updatedQuestions);
+    // 解説読み中はタイマーを止める（経過時間をここまでで確定）
+    if (sessionStartRef.current) {
+      const elapsed = Math.floor((Date.now() - sessionStartRef.current) / 1000);
+      sessionStartRef._pausedElapsed = (sessionStartRef._pausedElapsed || 0) + elapsed;
+      sessionStartRef.current = null;
+    }
     setAiHint("");
     setShowHint(false);
     setKnowledge("");
@@ -2363,9 +2369,11 @@ function QuizTab(_ref10) {
   useEffect(() => { logsRef.current = logs; }, [logs]);
 
   const saveElapsed = async (resetStart) => {
-    if (!sessionStartRef.current) return;
-    const elapsedSec = Math.floor((Date.now() - sessionStartRef.current) / 1000);
-    if (resetStart) sessionStartRef.current = Date.now();
+    // 一時停止中(pick後)はsessionStartRef.currentがnullなので、_pausedElapsedを使う
+    const pausedSec = sessionStartRef._pausedElapsed || 0;
+    const liveSec = sessionStartRef.current ? Math.floor((Date.now() - sessionStartRef.current) / 1000) : 0;
+    const elapsedSec = pausedSec + liveSec;
+    if (resetStart) { sessionStartRef.current = Date.now(); sessionStartRef._pausedElapsed = 0; }
     if (elapsedSec < 3) return;
     const today = todayStr();
     const base = logsRef.current;
@@ -2401,9 +2409,14 @@ function QuizTab(_ref10) {
       correct: 0,
       total: 0
     });
+    sessionStartRef.current = null;
+    sessionStartRef._pausedElapsed = 0;
   };
 
   const next = () => {
+    // 次の問題開始 → タイマー再開
+    sessionStartRef.current = Date.now();
+    sessionStartRef._pausedElapsed = 0;
     saveElapsed(true); // 1問終えるたびに経過時間を保存
     // セッション: 指定問数に達したら終了
     if (sessionConf && sessionConf.count < 9999 && session.total + 1 >= sessionConf.count) {
@@ -2545,13 +2558,18 @@ function QuizTab(_ref10) {
         color: "#34D399",
         fontWeight: 600
       }
-    }, "\u4ECA\u65E5\u306E\u5FA9\u7FD2: ", questions.filter(q => (q.history || []).length > 0 && isDueToday(q)).length, "\u554F")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement("div", {
+    }, "\u4ECA\u65E5\u306E\u5FA9\u7FD2: ", questions.filter(q => (q.history || []).length > 0 && isDueToday(q)).length, "\u554F")), /*#__PURE__*/React.createElement(FilterBar, {
+      questions: questions,
+      subj: subj,
+      mode: mode,
+      reset: reset
+    }), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 14,
         fontWeight: 600,
         marginBottom: 16
       }
-    }, "\u554F\u984C\u6570"), /*#__PURE__*/React.createElement("div", {
+    }, "\u79D1\u76EE: ", subj === "all" ? "\u5168\u79D1\u76EE" : (SUBJECTS.find(s=>s.id===subj)||{name:subj}).name, " / \u554F\u984C\u6570: ", avail, "\u554F"), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8,
@@ -3569,10 +3587,10 @@ function LogTab(_ref21) {
   const weeklyStats = useMemo(() => {
     const weeks = [];
     for (let w = 7; w >= 0; w--) {
-      const start = new Date();
-      start.setDate(start.getDate() - w * 7 - 6);
-      const end = new Date();
-      end.setDate(end.getDate() - w * 7);
+      const start = nowJST();
+      start.setUTCDate(start.getUTCDate() - w * 7 - 6);
+      const end = nowJST();
+      end.setUTCDate(end.getUTCDate() - w * 7);
       const startStr = start.toISOString().slice(0, 10);
       const endStr = end.toISOString().slice(0, 10);
       let correct = 0,

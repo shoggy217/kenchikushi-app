@@ -4204,10 +4204,10 @@ function HistoryEditor(_ref29) {
       display: "flex",
       flexDirection: "column",
       gap: 8,
-      maxHeight: 400,
+      maxHeight: "65vh",
       overflowY: "auto"
     }
-  }, filtered.slice(0, 30).map(q => {
+  }, filtered.map(q => {
     const h = q.history || [];
     const isExpanded = expanded === q.id;
     return /*#__PURE__*/React.createElement("div", {

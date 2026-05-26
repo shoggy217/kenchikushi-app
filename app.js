@@ -868,7 +868,23 @@ function App() {
         await save("questions_v3", finalQs);
         await save("bver", BUNDLE_VER);
       }
-      setQuestions(finalQs);
+      // lastAnsweredが未設定の問題を自動補完（historyがある場合は今日の日付を設定）
+      const today = todayStr();
+      let needsSave = false;
+      const fixedQs = finalQs.map(q => {
+        if ((q.history || []).length > 0 && !q.lastAnswered) {
+          needsSave = true;
+          return {
+            ...q,
+            lastAnswered: today
+          };
+        }
+        return q;
+      });
+      if (needsSave) {
+        await save("questions_v3", fixedQs);
+      }
+      setQuestions(needsSave ? fixedQs : finalQs);
       setLogs(lg);
       setXp(savedXp);
       setPendingCount(pend.length);

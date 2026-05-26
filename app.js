@@ -2352,6 +2352,7 @@ function QuizTab(_ref10) {
       correct: 0,
       total: 0
     });
+    sessionStartRef.current = Date.now();
   };
   const finishSession = async () => {
     clearInterval(timedRef.current);
@@ -2364,17 +2365,9 @@ function QuizTab(_ref10) {
       total: session.total,
       sec: actualSec
     });
-    // 学習時間をlogsに記録（5秒以上の場合、秒単位で保存）
-    if (actualSec >= 5) {
-      const today = todayStr();
-      const newLogs = {
-        ...logs
-      };
-      if (!newLogs[today]) newLogs[today] = {};
-      newLogs[today]["演習"] = (newLogs[today]["演習"] || 0) + actualSec;
-      setLogs(newLogs);
-      await save("logs", newLogs);
-    }
+    // 最後の問題の残り時間を記録（recordElapsedで既に前の問題分は保存済み）
+    await recordElapsed();
+    sessionStartRef.current = null;
   };
   const resetSession = () => {
     clearInterval(timedRef.current);
@@ -2391,7 +2384,22 @@ function QuizTab(_ref10) {
       total: 0
     });
   };
+  const recordElapsed = async () => {
+    if (!sessionStartRef.current) return;
+    const elapsedSec = Math.floor((Date.now() - sessionStartRef.current) / 1000);
+    if (elapsedSec >= 3) {
+      const today = todayStr();
+      const stored = await load("logs", {});
+      const newLogs = { ...stored };
+      if (!newLogs[today]) newLogs[today] = {};
+      newLogs[today]["演習"] = (newLogs[today]["演習"] || 0) + elapsedSec;
+      setLogs(newLogs);
+      await save("logs", newLogs);
+    }
+    sessionStartRef.current = Date.now(); // 次の問題の開始時刻をリセット
+  };
   const next = () => {
+    recordElapsed(); // ← 1問終えるたびに経過時間を保存
     // セッション: 指定問数に達したら終了
     if (sessionConf && sessionConf.count < 9999 && session.total + 1 >= sessionConf.count) {
       finishSession();

@@ -85,11 +85,22 @@ const RANK_COLOR = {
   C: "#F87171"
 };
 const EXAM_DATE = new Date("2027-07-25");
-const todayStr = () => new Date().toISOString().slice(0, 10);
+// JST(UTC+9)基準の日付取得
+const todayStr = () => {
+  const d = new Date();
+  d.setTime(d.getTime() + 9 * 60 * 60 * 1000);
+  return d.toISOString().slice(0, 10);
+};
+const nowJST = () => {
+  const d = new Date();
+  d.setTime(d.getTime() + 9 * 60 * 60 * 1000);
+  return d;
+};
 const relativeDate = dateStr => {
   if (!dateStr) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayJST = nowJST();
+  todayJST.setHours(0, 0, 0, 0);
+  const today = todayJST;
   const d = new Date(dateStr);
   d.setHours(0, 0, 0, 0);
   const diff = Math.round((today - d) / 86400000);
@@ -817,14 +828,33 @@ function App() {
     _useState14 = _slicedToArray(_useState13, 2),
     syncLabel = _useState14[0],
     setSyncLabel = _useState14[1];
-  const _useState15 = useState(false),
+  const _useState15 = useState(""),
     _useState16 = _slicedToArray(_useState15, 2),
-    timerRunning = _useState16[0],
-    setTimerRunning = _useState16[1];
-  const _useState17 = useState(0),
+    clockStr = _useState16[0],
+    setClockStr = _useState16[1];
+
+  // 時計(JST)
+  useEffect(() => {
+    const tick = () => {
+      const d = nowJST();
+      const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(d.getUTCDate()).padStart(2, "0");
+      const hh = String(d.getUTCHours()).padStart(2, "0");
+      const mi = String(d.getUTCMinutes()).padStart(2, "0");
+      setClockStr(`${d.getUTCFullYear()}/${mm}/${dd} ${hh}:${mi}`);
+    };
+    tick();
+    const iv = setInterval(tick, 60000);
+    return () => clearInterval(iv);
+  }, []);
+  const _useState17 = useState(false),
     _useState18 = _slicedToArray(_useState17, 2),
-    timerSec = _useState18[0],
-    setTimerSec = _useState18[1];
+    timerRunning = _useState18[0],
+    setTimerRunning = _useState18[1];
+  const _useState19 = useState(0),
+    _useState20 = _slicedToArray(_useState19, 2),
+    timerSec = _useState20[0],
+    setTimerSec = _useState20[1];
   const timerRef = useRef(null);
 
   // boot
@@ -868,10 +898,10 @@ function App() {
         await save("questions_v3", finalQs);
         await save("bver", BUNDLE_VER);
       }
-      // lastAnsweredが未設定の問題を自動補完（historyがある場合は昨日の日付を設定→間隔反復に即出題）
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().slice(0, 10);
+      // lastAnsweredが未設定の問題を自動補完（historyがある場合は昨日(JST)の日付を設定→間隔反復に即出題）
+      const ystJST = nowJST();
+      ystJST.setUTCDate(ystJST.getUTCDate() - 1);
+      const yesterdayStr = ystJST.toISOString().slice(0, 10);
       let needsSave = false;
       const fixedQs = finalQs.map(q => {
         if ((q.history || []).length > 0 && !q.lastAnswered) {
@@ -1198,7 +1228,19 @@ function App() {
       alignItems: "center",
       justifyContent: "center"
     }
-  }, t.badge))))), /*#__PURE__*/React.createElement("button", {
+  }, t.badge))))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      top: 14,
+      left: "50%",
+      transform: "translateX(-50%)",
+      fontSize: 10,
+      color: "rgba(255,255,255,0.25)",
+      zIndex: 200,
+      pointerEvents: "none",
+      whiteSpace: "nowrap"
+    }
+  }, clockStr), /*#__PURE__*/React.createElement("button", {
     onClick: async () => {
       setSyncLabel("⟳");
       try {
@@ -1976,14 +2018,14 @@ function HighlightedText(_ref0) {
 function TermPopup(_ref1) {
   let term = _ref1.term,
     onClose = _ref1.onClose;
-  const _useState19 = useState(""),
-    _useState20 = _slicedToArray(_useState19, 2),
-    explanation = _useState20[0],
-    setExplanation = _useState20[1];
-  const _useState21 = useState(true),
+  const _useState21 = useState(""),
     _useState22 = _slicedToArray(_useState21, 2),
-    loading = _useState22[0],
-    setLoading = _useState22[1];
+    explanation = _useState22[0],
+    setExplanation = _useState22[1];
+  const _useState23 = useState(true),
+    _useState24 = _slicedToArray(_useState23, 2),
+    loading = _useState24[0],
+    setLoading = _useState24[1];
   useEffect(() => {
     if (!term) return;
     setLoading(true);
@@ -2055,110 +2097,110 @@ function QuizTab(_ref10) {
   let questions = _ref10.questions,
     setQuestions = _ref10.setQuestions,
     addXp = _ref10.addXp;
-  const _useState23 = useState("all"),
-    _useState24 = _slicedToArray(_useState23, 2),
-    subj = _useState24[0],
-    setSubj = _useState24[1];
-  const _useState25 = useState("AB"),
+  const _useState25 = useState("all"),
     _useState26 = _slicedToArray(_useState25, 2),
-    mode = _useState26[0],
-    setMode = _useState26[1]; // AB A all weak starred untried
-  const _useState27 = useState("normal"),
+    subj = _useState26[0],
+    setSubj = _useState26[1];
+  const _useState27 = useState("AB"),
     _useState28 = _slicedToArray(_useState27, 2),
-    course = _useState28[0],
-    setCourse = _useState28[1]; // normal / srs / timed
-  const _useState29 = useState(null),
+    mode = _useState28[0],
+    setMode = _useState28[1]; // AB A all weak starred untried
+  const _useState29 = useState("normal"),
     _useState30 = _slicedToArray(_useState29, 2),
-    timedCount = _useState30[0],
-    setTimedCount = _useState30[1]; // null=未選択, 5/10/20/30
-  const _useState31 = useState(0),
+    course = _useState30[0],
+    setCourse = _useState30[1]; // normal / srs / timed
+  const _useState31 = useState(null),
     _useState32 = _slicedToArray(_useState31, 2),
-    timedSec = _useState32[0],
-    setTimedSec = _useState32[1];
-  const _useState33 = useState(false),
+    timedCount = _useState32[0],
+    setTimedCount = _useState32[1]; // null=未選択, 5/10/20/30
+  const _useState33 = useState(0),
     _useState34 = _slicedToArray(_useState33, 2),
-    timedDone = _useState34[0],
-    setTimedDone = _useState34[1];
-  const _useState35 = useState(null),
+    timedSec = _useState34[0],
+    setTimedSec = _useState34[1];
+  const _useState35 = useState(false),
     _useState36 = _slicedToArray(_useState35, 2),
-    timedResult = _useState36[0],
-    setTimedResult = _useState36[1];
-  const timedRef = useRef(null);
-  const _useState37 = useState(0),
+    timedDone = _useState36[0],
+    setTimedDone = _useState36[1];
+  const _useState37 = useState(null),
     _useState38 = _slicedToArray(_useState37, 2),
-    idx = _useState38[0],
-    setIdx = _useState38[1];
-  const _useState39 = useState(null),
+    timedResult = _useState38[0],
+    setTimedResult = _useState38[1];
+  const timedRef = useRef(null);
+  const _useState39 = useState(0),
     _useState40 = _slicedToArray(_useState39, 2),
-    currentQId = _useState40[0],
-    setCurrentQId = _useState40[1];
+    idx = _useState40[0],
+    setIdx = _useState40[1];
   const _useState41 = useState(null),
     _useState42 = _slicedToArray(_useState41, 2),
-    activeTerm = _useState42[0],
-    setActiveTerm = _useState42[1];
+    currentQId = _useState42[0],
+    setCurrentQId = _useState42[1];
   const _useState43 = useState(null),
     _useState44 = _slicedToArray(_useState43, 2),
-    sel = _useState44[0],
-    setSel = _useState44[1];
-  const _useState45 = useState(false),
+    activeTerm = _useState44[0],
+    setActiveTerm = _useState44[1];
+  const _useState45 = useState(null),
     _useState46 = _slicedToArray(_useState45, 2),
-    done = _useState46[0],
-    setDone = _useState46[1];
-  const _useState47 = useState({
+    sel = _useState46[0],
+    setSel = _useState46[1];
+  const _useState47 = useState(false),
+    _useState48 = _slicedToArray(_useState47, 2),
+    done = _useState48[0],
+    setDone = _useState48[1];
+  const _useState49 = useState({
       correct: 0,
       total: 0
     }),
-    _useState48 = _slicedToArray(_useState47, 2),
-    session = _useState48[0],
-    setSession = _useState48[1];
-  const _useState49 = useState(""),
     _useState50 = _slicedToArray(_useState49, 2),
-    aiHint = _useState50[0],
-    setAiHint = _useState50[1];
-  const _useState51 = useState(false),
+    session = _useState50[0],
+    setSession = _useState50[1];
+  const _useState51 = useState(""),
     _useState52 = _slicedToArray(_useState51, 2),
-    hintLoading = _useState52[0],
-    setHintLoading = _useState52[1];
+    aiHint = _useState52[0],
+    setAiHint = _useState52[1];
   const _useState53 = useState(false),
     _useState54 = _slicedToArray(_useState53, 2),
-    showHint = _useState54[0],
-    setShowHint = _useState54[1];
-  const _useState55 = useState(""),
+    hintLoading = _useState54[0],
+    setHintLoading = _useState54[1];
+  const _useState55 = useState(false),
     _useState56 = _slicedToArray(_useState55, 2),
-    knowledge = _useState56[0],
-    setKnowledge = _useState56[1];
-  const _useState57 = useState(false),
+    showHint = _useState56[0],
+    setShowHint = _useState56[1];
+  const _useState57 = useState(""),
     _useState58 = _slicedToArray(_useState57, 2),
-    knowledgeLoading = _useState58[0],
-    setKnowledgeLoading = _useState58[1];
+    knowledge = _useState58[0],
+    setKnowledge = _useState58[1];
   const _useState59 = useState(false),
     _useState60 = _slicedToArray(_useState59, 2),
-    knowledgeSkipped = _useState60[0],
-    setKnowledgeSkipped = _useState60[1];
-  const _useState61 = useState(""),
+    knowledgeLoading = _useState60[0],
+    setKnowledgeLoading = _useState60[1];
+  const _useState61 = useState(false),
     _useState62 = _slicedToArray(_useState61, 2),
-    memo = _useState62[0],
-    setMemo = _useState62[1];
-  const _useState63 = useState(false),
+    knowledgeSkipped = _useState62[0],
+    setKnowledgeSkipped = _useState62[1];
+  const _useState63 = useState(""),
     _useState64 = _slicedToArray(_useState63, 2),
-    memoEditing = _useState64[0],
-    setMemoEditing = _useState64[1];
-  const _useState65 = useState(""),
+    memo = _useState64[0],
+    setMemo = _useState64[1];
+  const _useState65 = useState(false),
     _useState66 = _slicedToArray(_useState65, 2),
-    aiQuestion = _useState66[0],
-    setAiQuestion = _useState66[1];
+    memoEditing = _useState66[0],
+    setMemoEditing = _useState66[1];
   const _useState67 = useState(""),
     _useState68 = _slicedToArray(_useState67, 2),
-    aiAnswer = _useState68[0],
-    setAiAnswer = _useState68[1];
-  const _useState69 = useState(false),
+    aiQuestion = _useState68[0],
+    setAiQuestion = _useState68[1];
+  const _useState69 = useState(""),
     _useState70 = _slicedToArray(_useState69, 2),
-    aiQLoading = _useState70[0],
-    setAiQLoading = _useState70[1];
-  const _useState71 = useState({}),
+    aiAnswer = _useState70[0],
+    setAiAnswer = _useState70[1];
+  const _useState71 = useState(false),
     _useState72 = _slicedToArray(_useState71, 2),
-    memos = _useState72[0],
-    setMemos = _useState72[1];
+    aiQLoading = _useState72[0],
+    setAiQLoading = _useState72[1];
+  const _useState73 = useState({}),
+    _useState74 = _slicedToArray(_useState73, 2),
+    memos = _useState74[0],
+    setMemos = _useState74[1];
   const pool = useMemo(() => {
     const today = todayStr();
     let arr = [...questions];
@@ -3368,10 +3410,10 @@ function LogTab(_ref20) {
   let logs = _ref20.logs,
     setLogs = _ref20.setLogs,
     questions = _ref20.questions;
-  const _useState73 = useState({}),
-    _useState74 = _slicedToArray(_useState73, 2),
-    inputs = _useState74[0],
-    setInputs = _useState74[1];
+  const _useState75 = useState({}),
+    _useState76 = _slicedToArray(_useState75, 2),
+    inputs = _useState76[0],
+    setInputs = _useState76[1];
   const today = todayStr();
   const todayLog = logs[today] || {};
   const todayMin = Object.values(todayLog).reduce((a, b) => a + b, 0);
@@ -3674,22 +3716,22 @@ function AITab(_ref25) {
   let questions = _ref25.questions,
     weakQuestions = _ref25.weakQuestions,
     logs = _ref25.logs;
-  const _useState75 = useState("analysis"),
-    _useState76 = _slicedToArray(_useState75, 2),
-    mode = _useState76[0],
-    setMode = _useState76[1]; // analysis | generate | advice
-  const _useState77 = useState(""),
+  const _useState77 = useState("analysis"),
     _useState78 = _slicedToArray(_useState77, 2),
-    output = _useState78[0],
-    setOutput = _useState78[1];
-  const _useState79 = useState(false),
+    mode = _useState78[0],
+    setMode = _useState78[1]; // analysis | generate | advice
+  const _useState79 = useState(""),
     _useState80 = _slicedToArray(_useState79, 2),
-    loading = _useState80[0],
-    setLoading = _useState80[1];
-  const _useState81 = useState(""),
+    output = _useState80[0],
+    setOutput = _useState80[1];
+  const _useState81 = useState(false),
     _useState82 = _slicedToArray(_useState81, 2),
-    prompt = _useState82[0],
-    setPrompt = _useState82[1];
+    loading = _useState82[0],
+    setLoading = _useState82[1];
+  const _useState83 = useState(""),
+    _useState84 = _slicedToArray(_useState83, 2),
+    prompt = _useState84[0],
+    setPrompt = _useState84[1];
   const subjectStats = useMemo(() => {
     return SUBJECTS.map(s => {
       const qs = questions.filter(q => q.subject === s.id);
@@ -3868,14 +3910,14 @@ function AITab(_ref25) {
 function HistoryEditor(_ref26) {
   let questions = _ref26.questions,
     setQuestions = _ref26.setQuestions;
-  const _useState83 = useState(""),
-    _useState84 = _slicedToArray(_useState83, 2),
-    search = _useState84[0],
-    setSearch = _useState84[1];
-  const _useState85 = useState(null),
+  const _useState85 = useState(""),
     _useState86 = _slicedToArray(_useState85, 2),
-    expanded = _useState86[0],
-    setExpanded = _useState86[1];
+    search = _useState86[0],
+    setSearch = _useState86[1];
+  const _useState87 = useState(null),
+    _useState88 = _slicedToArray(_useState87, 2),
+    expanded = _useState88[0],
+    setExpanded = _useState88[1];
   const answered = questions.filter(q => (q.history || []).length > 0);
   const filtered = search ? answered.filter(q => q.q.includes(search) || q.topic?.includes(search) || q.year?.includes(search) || q.refs?.includes(search)) : answered;
   const removeLastHistory = async qId => {
@@ -4088,22 +4130,22 @@ function ManageTab(_ref27) {
     setQuestions = _ref27.setQuestions,
     pendingCount = _ref27.pendingCount,
     importPending = _ref27.importPending;
-  const _useState87 = useState(false),
-    _useState88 = _slicedToArray(_useState87, 2),
-    importing = _useState88[0],
-    setImporting = _useState88[1];
-  const _useState89 = useState(null),
+  const _useState89 = useState(false),
     _useState90 = _slicedToArray(_useState89, 2),
-    importDone = _useState90[0],
-    setImportDone = _useState90[1];
-  const _useState91 = useState(false),
+    importing = _useState90[0],
+    setImporting = _useState90[1];
+  const _useState91 = useState(null),
     _useState92 = _slicedToArray(_useState91, 2),
-    showManual = _useState92[0],
-    setShowManual = _useState92[1];
-  const _useState93 = useState(""),
+    importDone = _useState92[0],
+    setImportDone = _useState92[1];
+  const _useState93 = useState(false),
     _useState94 = _slicedToArray(_useState93, 2),
-    ioMsg = _useState94[0],
-    setIoMsg = _useState94[1];
+    showManual = _useState94[0],
+    setShowManual = _useState94[1];
+  const _useState95 = useState(""),
+    _useState96 = _slicedToArray(_useState95, 2),
+    ioMsg = _useState96[0],
+    setIoMsg = _useState96[1];
 
   // データをJSONファイルとして保存
   const exportData = async () => {
@@ -4174,7 +4216,7 @@ function ManageTab(_ref27) {
     reader.readAsText(file);
     e.target.value = "";
   };
-  const _useState95 = useState({
+  const _useState97 = useState({
       subject: "houki",
       q: "",
       opts: ["", "", "", ""],
@@ -4189,13 +4231,13 @@ function ManageTab(_ref27) {
       qPage: "",
       tbPage: ""
     }),
-    _useState96 = _slicedToArray(_useState95, 2),
-    form = _useState96[0],
-    setForm = _useState96[1];
-  const _useState97 = useState(""),
     _useState98 = _slicedToArray(_useState97, 2),
-    msg = _useState98[0],
-    setMsg = _useState98[1];
+    form = _useState98[0],
+    setForm = _useState98[1];
+  const _useState99 = useState(""),
+    _useState100 = _slicedToArray(_useState99, 2),
+    msg = _useState100[0],
+    setMsg = _useState100[1];
   const doImport = async () => {
     setImporting(true);
     setImportDone(null);
@@ -4712,26 +4754,26 @@ function ManageTab(_ref27) {
 
 // ── NOTES TAB ──────────────────────────────────────────────
 function NotesTab() {
-  const _useState99 = useState({}),
-    _useState100 = _slicedToArray(_useState99, 2),
-    hints = _useState100[0],
-    setHints = _useState100[1];
-  const _useState101 = useState("houki"),
+  const _useState101 = useState({}),
     _useState102 = _slicedToArray(_useState101, 2),
-    selectedSubject = _useState102[0],
-    setSelectedSubject = _useState102[1];
-  const _useState103 = useState(null),
+    hints = _useState102[0],
+    setHints = _useState102[1];
+  const _useState103 = useState("houki"),
     _useState104 = _slicedToArray(_useState103, 2),
-    editingId = _useState104[0],
-    setEditingId = _useState104[1];
-  const _useState105 = useState(""),
+    selectedSubject = _useState104[0],
+    setSelectedSubject = _useState104[1];
+  const _useState105 = useState(null),
     _useState106 = _slicedToArray(_useState105, 2),
-    draft = _useState106[0],
-    setDraft = _useState106[1];
-  const _useState107 = useState(true),
+    editingId = _useState106[0],
+    setEditingId = _useState106[1];
+  const _useState107 = useState(""),
     _useState108 = _slicedToArray(_useState107, 2),
-    loading = _useState108[0],
-    setLoading = _useState108[1];
+    draft = _useState108[0],
+    setDraft = _useState108[1];
+  const _useState109 = useState(true),
+    _useState110 = _slicedToArray(_useState109, 2),
+    loading = _useState110[0],
+    setLoading = _useState110[1];
   useEffect(() => {
     load("hints", {}).then(h => {
       setHints(h);

@@ -3672,12 +3672,12 @@ function LogTab(_ref21) {
         date.setUTCDate(startDate.getUTCDate() + w * 7 + d);
         const str = date.toISOString().slice(0, 10);
         const dayLog = logs[str] || {};
-        const min = dayTotalMin(dayLog);
+        const sec = dayTotalSec(dayLog);
         const solved = (questions || []).filter(q => q.lastAnswered === str).length;
         const isFuture = str > todayDateStr;
         days.push({
           str,
-          min,
+          sec,
           solved,
           isFuture,
           day: date.getUTCDate(),
@@ -3686,7 +3686,7 @@ function LogTab(_ref21) {
       }
       weeks.push(days);
     }
-    const maxMin = Math.max(...weeks.flat().map(d => d.min), 1);
+    const maxSec = Math.max(...weeks.flat().map(d => d.sec), 1);
     return /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u5B66\u7FD2\u30AB\u30EC\u30F3\u30C0\u30FC\uFF08\u904E\u53BB16\u9031\uFF09"), /*#__PURE__*/React.createElement("div", {
       style: {
         overflowX: "auto"
@@ -3746,12 +3746,12 @@ function LogTab(_ref21) {
             background: "rgba(255,255,255,0.02)"
           }
         });
-        const intensity = cell.min > 0 ? Math.max(0.2, cell.min / maxMin) : 0;
+        const intensity = cell.sec > 0 ? Math.max(0.2, cell.sec / maxSec) : 0;
         const isToday = cell.str === todayDateStr;
-        const bg = cell.min > 0 ? `rgba(91,159,255,${intensity})` : cell.solved > 0 ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.06)";
+        const bg = cell.sec > 0 ? `rgba(91,159,255,${intensity})` : cell.solved > 0 ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.06)";
         return /*#__PURE__*/React.createElement("div", {
           key: di,
-          title: `${cell.str}（${cell.min}分・${cell.solved}問）`,
+          title: `${cell.str}（${Math.floor(cell.sec/60)}分${cell.sec%60}秒・${cell.solved}問）`,
           style: {
             width: 14,
             height: 14,

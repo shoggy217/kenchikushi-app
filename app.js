@@ -1300,11 +1300,11 @@ function HomeTab(_ref4) {
   // 学習ペース計算
   const EXAM_DATE = new Date("2027-07-25");
   const daysLeft = Math.ceil((EXAM_DATE - new Date()) / 86400000);
-  const dueToday = questions.filter(q => isDueToday(q)).length;
+  const dueToday = questions.filter(q => (q.history || []).length > 0 && isDueToday(q)).length;
   const untried = questions.filter(q => !(q.history || []).length).length;
   const dailyNeeded = untried > 0 ? Math.ceil(untried / daysLeft) : 0;
   const todaySrsLimit = Math.min(dueToday, 20);
-  const todaySrsDone = questions.filter(q => q.lastAnswered === todayStr() && !isDueToday(q)).length;
+  const todaySrsDone = questions.filter(q => (q.history || []).length > 0 && q.lastAnswered === todayStr() && !isDueToday(q)).length;
 
   // 科目別1周進捗
   const subjectProgress = SUBJECTS.map(s => {
@@ -2162,8 +2162,19 @@ function QuizTab(_ref10) {
     notSolvedToday.sort((a, b) => priority(a) - priority(b));
     // SRSモードの場合は今日が出題日の問題のみ
     if (course === "srs") {
-      const due = [...notSolvedToday, ...solvedToday].filter(q => isDueToday(q));
-      return due;
+      // 一度以上解いた問題のうち、今日が出題日のもの
+      const due = [...questions].filter(q => (q.history || []).length > 0 && isDueToday(q));
+      // 今日すでに解いたものは後ろへ
+      const notDoneToday = due.filter(q => q.lastAnswered !== todayStr());
+      const doneToday = due.filter(q => q.lastAnswered === todayStr());
+      // 要復習を優先
+      const priority = q => {
+        const last3 = (q.history || []).slice(-3);
+        if (last3.filter(x => x === "×").length >= 2) return 0;
+        return 1;
+      };
+      notDoneToday.sort((a, b) => priority(a) - priority(b));
+      return [...notDoneToday, ...doneToday];
     }
     return [...notSolvedToday, ...solvedToday];
   }, [questions, subj, mode, course]);
@@ -2604,12 +2615,12 @@ function QuizTab(_ref10) {
       color: "#34D399",
       fontWeight: 600
     }
-  }, "\u4ECA\u65E5\u306E\u5FA9\u7FD2: ", questions.filter(q => isDueToday(q)).length, "\u554F"), /*#__PURE__*/React.createElement("span", {
+  }, "\u4ECA\u65E5\u306E\u5FA9\u7FD2: ", questions.filter(q => (q.history || []).length > 0 && isDueToday(q)).length, "\u554F"), /*#__PURE__*/React.createElement("span", {
     style: {
       color: "rgba(255,255,255,0.3)",
       marginLeft: 12
     }
-  }, "\u5B8C\u4E86: ", questions.filter(q => q.lastAnswered === todayStr() && !isDueToday(q)).length, "\u554F")), /*#__PURE__*/React.createElement(FilterBar, {
+  }, "\u5B8C\u4E86: ", questions.filter(q => (q.history || []).length > 0 && q.lastAnswered === todayStr() && !isDueToday(q)).length, "\u554F")), /*#__PURE__*/React.createElement(FilterBar, {
     questions: questions,
     subj: subj,
     mode: mode,

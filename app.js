@@ -2144,6 +2144,7 @@ function QuizTab(_ref10) {
     _useState42 = _slicedToArray(_useState41, 2),
     paused = _useState42[0],
     setPaused = _useState42[1];
+  const sessionStartRef = useRef(null);
   const _useState43 = useState(0),
     _useState44 = _slicedToArray(_useState43, 2),
     idx = _useState44[0],
@@ -2348,14 +2349,17 @@ function QuizTab(_ref10) {
   };
   const finishSession = async () => {
     clearInterval(timedRef.current);
+    // 経過時間を計算（制限なしでも実時間を使う）
+    const elapsedSec = sessionStartRef.current ? Math.floor((Date.now() - sessionStartRef.current) / 1000) : timedSec;
+    const actualSec = Math.max(timedSec, elapsedSec);
     setTimedDone(true);
     setTimedResult({
       correct: session.correct,
       total: session.total,
-      sec: timedSec
+      sec: actualSec
     });
     // 学習時間をlogsに記録（1分以上の場合）
-    const mins = Math.floor(timedSec / 60);
+    const mins = Math.floor(actualSec / 60);
     if (mins > 0) {
       const today = todayStr();
       const newLogs = {
@@ -2771,56 +2775,78 @@ function QuizTab(_ref10) {
     subj: subj,
     mode: mode,
     reset: reset
-  }), sessionConf && !timedDone && /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "10px 16px",
-      background: "rgba(251,191,36,0.08)",
-      border: "1px solid rgba(251,191,36,0.25)",
-      borderRadius: 12
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 13,
-      color: "#FBBF24",
-      fontWeight: 600
-    }
-  }, session.total + 1, "/", sessionConf.count === 9999 ? pool.length : sessionConf.count, "\u554F"), sessionConf.secPerQ > 0 && /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 20,
-      fontWeight: 200,
-      color: "#FBBF24",
-      fontVariantNumeric: "tabular-nums"
-    }
-  }, String(Math.floor(Math.max(0, sessionConf.count * sessionConf.secPerQ - timedSec) / 60)).padStart(2, "0"), ":", String(Math.max(0, sessionConf.count * sessionConf.secPerQ - timedSec) % 60).padStart(2, "0")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      alignItems: "center"
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    onClick: () => setPaused(p => !p),
-    style: {
-      fontSize: 11,
-      color: paused ? "#FBBF24" : "rgba(255,255,255,0.5)",
-      background: paused ? "rgba(251,191,36,0.1)" : "none",
-      border: paused ? "1px solid rgba(251,191,36,0.3)" : "none",
-      borderRadius: 6,
-      padding: "4px 8px",
-      cursor: "pointer"
-    }
-  }, paused ? "▶ 再開" : "⏸ 一時停止"), /*#__PURE__*/React.createElement("button", {
-    onClick: finishSession,
-    style: {
-      fontSize: 11,
-      color: "rgba(255,255,255,0.3)",
-      background: "none",
-      border: "none",
-      cursor: "pointer"
-    }
-  }, "\u7D42\u4E86"))), (() => {
+  }), sessionConf && !timedDone && (() => {
+    const totalSec = sessionConf.count * sessionConf.secPerQ;
+    const remaining = Math.max(0, totalSec - timedSec);
+    const perQ = sessionConf.secPerQ;
+    const elapsedThisQ = perQ > 0 ? timedSec % perQ : 0;
+    const remainingThisQ = perQ > 0 ? Math.max(0, perQ - elapsedThisQ) : null;
+    const isOver = perQ > 0 && elapsedThisQ >= perQ;
+    const isWarning = remainingThisQ !== null && remainingThisQ <= 10 && !isOver;
+    const color = isOver ? "#F87171" : isWarning ? "#FBBF24" : "#5B9FFF";
+    const bg = isOver ? "rgba(248,113,113,0.08)" : isWarning ? "rgba(251,191,36,0.08)" : "rgba(91,159,255,0.08)";
+    const border = isOver ? "1px solid rgba(248,113,113,0.3)" : isWarning ? "1px solid rgba(251,191,36,0.25)" : "1px solid rgba(91,159,255,0.2)";
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "10px 16px",
+        background: bg,
+        border,
+        borderRadius: 12,
+        animation: isOver ? "timerFlash 0.8s ease-in-out infinite" : "none"
+      }
+    }, /*#__PURE__*/React.createElement("style", null, `@keyframes timerFlash { 0%,100%{opacity:1} 50%{opacity:0.3} }`), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 13,
+        color,
+        fontWeight: 600
+      }
+    }, session.total + 1, "/", sessionConf.count === 9999 ? pool.length : sessionConf.count, "\u554F"), perQ > 0 && /*#__PURE__*/React.createElement("div", {
+      style: {
+        textAlign: "center"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 20,
+        fontWeight: 200,
+        color,
+        fontVariantNumeric: "tabular-nums"
+      }
+    }, String(Math.floor(remainingThisQ / 60)).padStart(2, "0"), ":", String(remainingThisQ % 60).padStart(2, "0")), isOver && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 9,
+        color: "#F87171"
+      }
+    }, "\u6642\u9593\u8D85\u904E")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8,
+        alignItems: "center"
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: () => setPaused(p => !p),
+      style: {
+        fontSize: 11,
+        color: paused ? color : "rgba(255,255,255,0.5)",
+        background: paused ? `rgba(${isOver ? "248,113,113" : "251,191,36"},0.1)` : "none",
+        border: paused ? `1px solid ${color}33` : "none",
+        borderRadius: 6,
+        padding: "4px 8px",
+        cursor: "pointer"
+      }
+    }, paused ? "▶ 再開" : "⏸ 停止"), /*#__PURE__*/React.createElement("button", {
+      onClick: finishSession,
+      style: {
+        fontSize: 11,
+        color: "rgba(255,255,255,0.3)",
+        background: "none",
+        border: "none",
+        cursor: "pointer"
+      }
+    }, "\u7D42\u4E86")));
+  })(), (() => {
     const today = todayStr();
     const solvedToday = questions.filter(q => q.lastAnswered === today).length;
     const total = pool.length;

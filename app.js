@@ -1041,7 +1041,7 @@ function App() {
     label: "演習"
   }, {
     id: "log",
-    icon: "⏱",
+    icon: "📊",
     label: "記録"
   }, {
     id: "ai",
@@ -2109,11 +2109,11 @@ function QuizTab(_ref10) {
   const _useState29 = useState("normal"),
     _useState30 = _slicedToArray(_useState29, 2),
     course = _useState30[0],
-    setCourse = _useState30[1]; // normal / srs / timed
+    setCourse = _useState30[1]; // normal / srs
   const _useState31 = useState(null),
     _useState32 = _slicedToArray(_useState31, 2),
-    timedCount = _useState32[0],
-    setTimedCount = _useState32[1]; // null=未選択, 5/10/20/30
+    sessionConf = _useState32[0],
+    setSessionConf = _useState32[1]; // {count, secPerQ} or null
   const _useState33 = useState(0),
     _useState34 = _slicedToArray(_useState33, 2),
     timedSec = _useState34[0],
@@ -2297,10 +2297,10 @@ function QuizTab(_ref10) {
     setKnowledgeLoading(false);
   };
 
-  // タイムアタック タイマー
+  // セッションタイマー
   useEffect(() => {
-    if (course === "timed" && timedCount && !timedDone) {
-      const limit = timedCount * 120; // 1問2分
+    if (sessionConf && sessionConf.secPerQ > 0 && !timedDone) {
+      const limit = sessionConf.count * sessionConf.secPerQ;
       timedRef.current = setInterval(() => {
         setTimedSec(s => {
           if (s + 1 >= limit) {
@@ -2313,9 +2313,9 @@ function QuizTab(_ref10) {
       }, 1000);
     }
     return () => clearInterval(timedRef.current);
-  }, [course, timedCount, timedDone]);
-  const startTimed = count => {
-    setTimedCount(count);
+  }, [sessionConf, timedDone]);
+  const startSession = conf => {
+    setSessionConf(conf);
     setTimedSec(0);
     setTimedDone(false);
     setTimedResult(null);
@@ -2327,7 +2327,7 @@ function QuizTab(_ref10) {
       total: 0
     });
   };
-  const finishTimed = () => {
+  const finishSession = () => {
     clearInterval(timedRef.current);
     setTimedDone(true);
     setTimedResult({
@@ -2336,13 +2336,12 @@ function QuizTab(_ref10) {
       sec: timedSec
     });
   };
-  const resetTimed = () => {
+  const resetSession = () => {
     clearInterval(timedRef.current);
-    setTimedCount(null);
+    setSessionConf(null);
     setTimedSec(0);
     setTimedDone(false);
     setTimedResult(null);
-    setCourse("normal");
     setIdx(0);
     setSel(null);
     setDone(false);
@@ -2352,9 +2351,9 @@ function QuizTab(_ref10) {
     });
   };
   const next = () => {
-    // タイムアタック: 指定問数に達したら終了
-    if (course === "timed" && timedCount && session.total + 1 >= timedCount) {
-      finishTimed();
+    // セッション: 指定問数に達したら終了
+    if (sessionConf && sessionConf.count < 9999 && session.total + 1 >= sessionConf.count) {
+      finishSession();
       return;
     }
     setCurrentQId(null); // 次の問題はpoolから取得
@@ -2429,9 +2428,23 @@ function QuizTab(_ref10) {
     }
   }, "\u7BA1\u7406\u30BF\u30D6\u304B\u3089\u8FFD\u52A0\u3057\u3066\u304F\u3060\u3055\u3044"));
 
-  // タイムアタック: 問数選択画面
-  if (course === "timed" && !timedCount) {
-    const limit = Math.min(questions.length, 30);
+  // セッション設定画面（コース選択後、開始前）
+  if (!sessionConf) {
+    const avail = pool.length;
+    const SEC_OPTIONS = [{
+      label: "1分/問",
+      sec: 60
+    }, {
+      label: "1.5分/問",
+      sec: 90
+    }, {
+      label: "2分/問 (推奨)",
+      sec: 120
+    }, {
+      label: "制限なし",
+      sec: 0
+    }];
+    const COUNT_OPTIONS = [5, 10, 20, 30].filter(n => n <= avail).concat(avail > 30 ? [avail] : []);
     return /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
@@ -2443,22 +2456,21 @@ function QuizTab(_ref10) {
         display: "flex",
         gap: 8
       }
-    }, [["normal", "🆕 新規"], ["srs", "🔄 反復"], ["timed", "⏱ タイム"]].map(_ref11 => {
+    }, [["normal", "🆕 新規"], ["srs", "🔄 反復"]].map(_ref11 => {
       let _ref12 = _slicedToArray(_ref11, 2),
         id = _ref12[0],
         label = _ref12[1];
       return /*#__PURE__*/React.createElement("button", {
         key: id,
         onClick: () => {
-          if (id !== "timed") {
-            setCourse(id);
-          }
+          setCourse(id);
+          resetSession();
         },
         style: {
           flex: 1,
-          padding: "10px",
+          padding: "12px",
           borderRadius: 12,
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 600,
           cursor: "pointer",
           background: course === id ? "rgba(91,159,255,0.15)" : "rgba(255,255,255,0.04)",
@@ -2466,47 +2478,95 @@ function QuizTab(_ref10) {
           color: course === id ? "#5B9FFF" : "rgba(255,255,255,0.5)"
         }
       }, label);
-    })), /*#__PURE__*/React.createElement(Card, {
+    })), course === "srs" && /*#__PURE__*/React.createElement("div", {
       style: {
-        textAlign: "center",
-        padding: "32px 20px"
+        padding: "8px 12px",
+        background: "rgba(52,211,153,0.07)",
+        borderRadius: 10,
+        border: "1px solid rgba(52,211,153,0.15)",
+        fontSize: 12
       }
-    }, /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("span", {
       style: {
-        fontSize: 16,
+        color: "#34D399",
+        fontWeight: 600
+      }
+    }, "\u4ECA\u65E5\u306E\u5FA9\u7FD2: ", questions.filter(q => (q.history || []).length > 0 && isDueToday(q)).length, "\u554F")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 14,
         fontWeight: 600,
-        marginBottom: 8
+        marginBottom: 16
       }
-    }, "\u23F1 \u30BF\u30A4\u30E0\u30A2\u30BF\u30C3\u30AF"), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 12,
-        color: "rgba(255,255,255,0.4)",
-        marginBottom: 24
-      }
-    }, "1\u554F2\u5206\u306E\u30DA\u30FC\u30B9\u3067\u89E3\u7B54\u3002\u672C\u756A\u306E\u7DCA\u5F35\u611F\u3092\u7DF4\u7FD2\uFF01"), /*#__PURE__*/React.createElement("div", {
+    }, "\u554F\u984C\u6570"), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
-        flexDirection: "column",
-        gap: 10
+        gap: 8,
+        flexWrap: "wrap",
+        marginBottom: 20
       }
-    }, [5, 10, 20, 30].filter(n => n <= limit).map(n => /*#__PURE__*/React.createElement("button", {
+    }, COUNT_OPTIONS.map(n => /*#__PURE__*/React.createElement("button", {
       key: n,
-      onClick: () => startTimed(n),
+      onClick: () => startSession({
+        count: n,
+        secPerQ: 120
+      }),
       style: {
-        padding: "14px",
-        borderRadius: 14,
-        background: "rgba(91,159,255,0.12)",
+        flex: 1,
+        minWidth: 60,
+        padding: "12px 8px",
+        borderRadius: 12,
+        background: "rgba(91,159,255,0.1)",
         border: "1px solid rgba(91,159,255,0.25)",
         color: "#5B9FFF",
         fontSize: 14,
         fontWeight: 600,
         cursor: "pointer"
       }
-    }, n, "\u554F (", Math.floor(n * 2 / 60), "\u6642\u9593", n * 2 % 60 > 0 ? `${n * 2 % 60}分` : "", "\u30C1\u30E3\u30EC\u30F3\u30B8)")))));
+    }, n === avail ? "全問" : n + "問"))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 14,
+        fontWeight: 600,
+        marginBottom: 12
+      }
+    }, "1\u554F\u3042\u305F\u308A\u306E\u6642\u9593"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 8
+      }
+    }, SEC_OPTIONS.map(_ref13 => {
+      let label = _ref13.label,
+        sec = _ref13.sec;
+      return /*#__PURE__*/React.createElement("button", {
+        key: sec,
+        onClick: () => startSession({
+          count: Math.min(10, avail),
+          secPerQ: sec
+        }),
+        style: {
+          padding: "12px 16px",
+          borderRadius: 12,
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          color: sec === 120 ? "#5B9FFF" : "rgba(255,255,255,0.6)",
+          fontSize: 13,
+          cursor: "pointer",
+          textAlign: "left",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center"
+        }
+      }, /*#__PURE__*/React.createElement("span", null, label), sec === 120 && /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 10,
+          color: "rgba(91,159,255,0.6)"
+        }
+      }, "\u30C7\u30D5\u30A9\u30EB\u30C8"));
+    }))));
   }
 
-  // タイムアタック: 結果画面
-  if (course === "timed" && timedDone) {
+  // 結果画面
+  if (timedDone) {
     const rate = timedResult?.total > 0 ? Math.round(timedResult.correct / timedResult.total * 100) : 0;
     const min = Math.floor((timedResult?.sec || 0) / 60);
     const sec = (timedResult?.sec || 0) % 60;
@@ -2527,9 +2587,9 @@ function QuizTab(_ref10) {
         fontWeight: 600,
         marginBottom: 20
       }
-    }, "\u23F1 \u7D50\u679C"), /*#__PURE__*/React.createElement("div", {
+    }, "\uD83D\uDCCA \u30BB\u30C3\u30B7\u30E7\u30F3\u7D50\u679C"), /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 48,
+        fontSize: 56,
         fontWeight: 200,
         color: rate >= 70 ? "#34D399" : rate >= 50 ? "#FBBF24" : "#F87171",
         marginBottom: 8,
@@ -2541,23 +2601,23 @@ function QuizTab(_ref10) {
         color: "rgba(255,255,255,0.5)",
         marginBottom: 4
       }
-    }, timedResult?.correct, "/", timedResult?.total, "\u554F\u6B63\u89E3"), /*#__PURE__*/React.createElement("div", {
+    }, timedResult?.correct, "/", timedResult?.total, "\u554F\u6B63\u89E3"), timedResult?.sec > 0 && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 12,
         color: "rgba(255,255,255,0.3)",
-        marginBottom: 24
+        marginBottom: 20
       }
     }, "\u89E3\u7B54\u6642\u9593: ", min, "\u5206", sec, "\u79D2"), /*#__PURE__*/React.createElement("div", {
       style: {
-        fontSize: 12,
-        color: "rgba(255,255,255,0.4)",
-        marginBottom: 20,
-        padding: "12px",
+        fontSize: 13,
+        color: "rgba(255,255,255,0.5)",
+        marginBottom: 24,
+        padding: "14px",
         background: "rgba(255,255,255,0.04)",
-        borderRadius: 10
+        borderRadius: 12
       }
     }, rate >= 70 ? "🎉 合格ライン突破！この調子で続けよう" : rate >= 50 ? "📈 もう少し！弱点問題を復習しよう" : "💪 要復習モードで弱点を克服しよう"), /*#__PURE__*/React.createElement("button", {
-      onClick: resetTimed,
+      onClick: resetSession,
       style: {
         width: "100%",
         padding: "14px",
@@ -2582,10 +2642,10 @@ function QuizTab(_ref10) {
       display: "flex",
       gap: 8
     }
-  }, [["normal", "🆕 新規"], ["srs", "🔄 間隔反復"]].map(_ref13 => {
-    let _ref14 = _slicedToArray(_ref13, 2),
-      id = _ref14[0],
-      label = _ref14[1];
+  }, [["normal", "🆕 新規"], ["srs", "🔄 間隔反復"]].map(_ref14 => {
+    let _ref15 = _slicedToArray(_ref14, 2),
+      id = _ref15[0],
+      label = _ref15[1];
     return /*#__PURE__*/React.createElement("button", {
       key: id,
       onClick: () => {
@@ -2634,28 +2694,21 @@ function QuizTab(_ref10) {
       display: "flex",
       gap: 8
     }
-  }, [["normal", "🆕 新規"], ["srs", "🔄 反復"], ["timed", "⏱ タイム"]].map(_ref15 => {
-    let _ref16 = _slicedToArray(_ref15, 2),
-      id = _ref16[0],
-      label = _ref16[1];
+  }, [["normal", "🆕 新規"], ["srs", "🔄 反復"]].map(_ref16 => {
+    let _ref17 = _slicedToArray(_ref16, 2),
+      id = _ref17[0],
+      label = _ref17[1];
     return /*#__PURE__*/React.createElement("button", {
       key: id,
       onClick: () => {
-        if (id === "timed") {
-          setTimedCount(null);
-          setTimedDone(false);
-          setTimedResult(null);
-        }
         setCourse(id);
-        setIdx(0);
-        setSel(null);
-        setDone(false);
+        resetSession();
       },
       style: {
         flex: 1,
-        padding: "10px",
+        padding: "12px",
         borderRadius: 12,
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: 600,
         cursor: "pointer",
         background: course === id ? "rgba(91,159,255,0.15)" : "rgba(255,255,255,0.04)",
@@ -2686,7 +2739,7 @@ function QuizTab(_ref10) {
     subj: subj,
     mode: mode,
     reset: reset
-  }), course === "timed" && timedCount && !timedDone && /*#__PURE__*/React.createElement("div", {
+  }), sessionConf && !timedDone && /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -2702,15 +2755,15 @@ function QuizTab(_ref10) {
       color: "#FBBF24",
       fontWeight: 600
     }
-  }, "\u23F1 ", session.total + 1, "/", timedCount, "\u554F"), /*#__PURE__*/React.createElement("div", {
+  }, session.total + 1, "/", sessionConf.count === 9999 ? pool.length : sessionConf.count, "\u554F"), sessionConf.secPerQ > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 20,
       fontWeight: 200,
       color: "#FBBF24",
       fontVariantNumeric: "tabular-nums"
     }
-  }, String(Math.floor((timedCount * 120 - timedSec) / 60)).padStart(2, "0"), ":", String((timedCount * 120 - timedSec) % 60).padStart(2, "0")), /*#__PURE__*/React.createElement("button", {
-    onClick: finishTimed,
+  }, String(Math.floor(Math.max(0, sessionConf.count * sessionConf.secPerQ - timedSec) / 60)).padStart(2, "0"), ":", String(Math.max(0, sessionConf.count * sessionConf.secPerQ - timedSec) % 60).padStart(2, "0")), /*#__PURE__*/React.createElement("button", {
+    onClick: finishSession,
     style: {
       fontSize: 11,
       color: "rgba(255,255,255,0.4)",
@@ -3340,11 +3393,11 @@ function QuizTab(_ref10) {
     onClose: () => setActiveTerm(null)
   }));
 }
-function FilterBar(_ref17) {
-  let questions = _ref17.questions,
-    subj = _ref17.subj,
-    mode = _ref17.mode,
-    reset = _ref17.reset;
+function FilterBar(_ref18) {
+  let questions = _ref18.questions,
+    subj = _ref18.subj,
+    mode = _ref18.mode,
+    reset = _ref18.reset;
   const pillStyle = (active, color) => ({
     padding: "6px 14px",
     borderRadius: 99,
@@ -3389,11 +3442,11 @@ function FilterBar(_ref17) {
       paddingBottom: 4,
       scrollbarWidth: "none"
     }
-  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null]].map(_ref18 => {
-    let _ref19 = _slicedToArray(_ref18, 3),
-      v = _ref19[0],
-      l = _ref19[1],
-      c = _ref19[2];
+  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null]].map(_ref19 => {
+    let _ref20 = _slicedToArray(_ref19, 3),
+      v = _ref20[0],
+      l = _ref20[1],
+      c = _ref20[2];
     return /*#__PURE__*/React.createElement("button", {
       key: v,
       style: {
@@ -3407,10 +3460,10 @@ function FilterBar(_ref17) {
 }
 
 // ── LOG TAB ────────────────────────────────────────────────
-function LogTab(_ref20) {
-  let logs = _ref20.logs,
-    setLogs = _ref20.setLogs,
-    questions = _ref20.questions;
+function LogTab(_ref21) {
+  let logs = _ref21.logs,
+    setLogs = _ref21.setLogs,
+    questions = _ref21.questions;
   const _useState75 = useState({}),
     _useState76 = _slicedToArray(_useState75, 2),
     inputs = _useState76[0],
@@ -3439,10 +3492,10 @@ function LogTab(_ref20) {
       });
       // 学習ログから学習時間を集計
       let studyMin = 0;
-      Object.entries(logs).forEach(_ref21 => {
-        let _ref22 = _slicedToArray(_ref21, 2),
-          date = _ref22[0],
-          dayLog = _ref22[1];
+      Object.entries(logs).forEach(_ref22 => {
+        let _ref23 = _slicedToArray(_ref22, 2),
+          date = _ref23[0],
+          dayLog = _ref23[1];
         if (date >= startStr && date <= endStr) {
           studyMin += Object.values(dayLog).reduce((a, b) => a + b, 0);
         }
@@ -3472,10 +3525,10 @@ function LogTab(_ref20) {
   }, [questions]);
   const save_ = () => {
     const cleaned = {};
-    Object.entries(inputs).forEach(_ref23 => {
-      let _ref24 = _slicedToArray(_ref23, 2),
-        k = _ref24[0],
-        v = _ref24[1];
+    Object.entries(inputs).forEach(_ref24 => {
+      let _ref25 = _slicedToArray(_ref24, 2),
+        k = _ref25[0],
+        v = _ref25[1];
       const n = parseInt(v) || 0;
       if (n > 0) cleaned[k] = n;
     });
@@ -3713,10 +3766,10 @@ function LogTab(_ref20) {
 }
 
 // ── AI TAB ─────────────────────────────────────────────────
-function AITab(_ref25) {
-  let questions = _ref25.questions,
-    weakQuestions = _ref25.weakQuestions,
-    logs = _ref25.logs;
+function AITab(_ref26) {
+  let questions = _ref26.questions,
+    weakQuestions = _ref26.weakQuestions,
+    logs = _ref26.logs;
   const _useState77 = useState("analysis"),
     _useState78 = _slicedToArray(_useState77, 2),
     mode = _useState78[0],
@@ -3908,9 +3961,9 @@ function AITab(_ref25) {
 }
 
 // ── HISTORY EDITOR ─────────────────────────────────────────
-function HistoryEditor(_ref26) {
-  let questions = _ref26.questions,
-    setQuestions = _ref26.setQuestions;
+function HistoryEditor(_ref27) {
+  let questions = _ref27.questions,
+    setQuestions = _ref27.setQuestions;
   const _useState85 = useState(""),
     _useState86 = _slicedToArray(_useState85, 2),
     search = _useState86[0],
@@ -4126,11 +4179,11 @@ function HistoryEditor(_ref26) {
 }
 
 // ── MANAGE TAB ─────────────────────────────────────────────
-function ManageTab(_ref27) {
-  let questions = _ref27.questions,
-    setQuestions = _ref27.setQuestions,
-    pendingCount = _ref27.pendingCount,
-    importPending = _ref27.importPending;
+function ManageTab(_ref28) {
+  let questions = _ref28.questions,
+    setQuestions = _ref28.setQuestions,
+    pendingCount = _ref28.pendingCount,
+    importPending = _ref28.importPending;
   const _useState89 = useState(false),
     _useState90 = _slicedToArray(_useState89, 2),
     importing = _useState90[0],
@@ -4415,10 +4468,10 @@ function ManageTab(_ref27) {
       color: "rgba(255,255,255,0.35)",
       lineHeight: 1.8
     }
-  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref28 => {
-    let _ref29 = _slicedToArray(_ref28, 2),
-      n = _ref29[0],
-      t = _ref29[1];
+  }, "\u30C1\u30E3\u30C3\u30C8\u306B\u554F\u984C\u96C6\u306E\u5199\u771F\u3092\u9001\u308A", /*#__PURE__*/React.createElement("br", null), "\u300C\u554F\u984C\u3092\u767B\u9332\u3057\u3066\u300D\u3068\u8A00\u3046\u3060\u3051")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4F7F\u3044\u65B9"), [["1", "問題集の写真をチャットに送る"], ["2", "「問題を登録して」と送る"], ["3", "このタブに通知が来る"], ["4", "ボタン1タップで完了"]].map(_ref29 => {
+    let _ref30 = _slicedToArray(_ref29, 2),
+      n = _ref30[0],
+      t = _ref30[1];
     return /*#__PURE__*/React.createElement("div", {
       key: n,
       style: {

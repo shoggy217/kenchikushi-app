@@ -3600,99 +3600,123 @@ function LogTab(_ref21) {
       gap: 16
     }
   }, (() => {
-    const weeks = 15;
-    const days = weeks * 7;
-    const cells = [];
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const str = d.toISOString().slice(0, 10);
-      const dayLog = logs[str] || {};
-      const min = Object.values(dayLog).reduce((a, b) => a + b, 0);
-      const solvedCount = (questions || []).filter(q => q.lastAnswered === str).length;
-      cells.push({
-        str,
-        min,
-        solvedCount
-      });
+    // JST基準で今日から16週前の月曜日を起点に計算
+    const todayJST = nowJST();
+    const todayDateStr = todayStr();
+    // 今日の曜日(月=0, 火=1, ... 日=6)
+    const dow = (todayJST.getUTCDay() + 6) % 7; // 月曜始まりに変換
+    // 今週の月曜日
+    const startDate = new Date(todayJST);
+    startDate.setUTCDate(startDate.getUTCDate() - dow - 15 * 7);
+
+    // 16週分のデータを週ごとに作成
+    const WEEKS = 16;
+    const DOW = ["月", "火", "水", "木", "金", "土", "日"];
+    const weeks = [];
+    for (let w = 0; w < WEEKS; w++) {
+      const days = [];
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(startDate);
+        date.setUTCDate(startDate.getUTCDate() + w * 7 + d);
+        const str = date.toISOString().slice(0, 10);
+        const dayLog = logs[str] || {};
+        const min = Object.values(dayLog).reduce((a, b) => a + b, 0);
+        const solved = (questions || []).filter(q => q.lastAnswered === str).length;
+        const isFuture = str > todayDateStr;
+        days.push({
+          str,
+          min,
+          solved,
+          isFuture,
+          day: date.getUTCDate(),
+          month: date.getUTCMonth() + 1
+        });
+      }
+      weeks.push(days);
     }
-    const maxMin = Math.max(...cells.map(c => c.min), 1);
-    const weekGroups = [];
-    for (let i = 0; i < cells.length; i += 7) weekGroups.push(cells.slice(i, i + 7));
-    const DOW_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
-    return /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u5B66\u7FD2\u30AB\u30EC\u30F3\u30C0\u30FC"), /*#__PURE__*/React.createElement("div", {
+    const maxMin = Math.max(...weeks.flat().map(d => d.min), 1);
+    return /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u5B66\u7FD2\u30AB\u30EC\u30F3\u30C0\u30FC\uFF08\u904E\u53BB16\u9031\uFF09"), /*#__PURE__*/React.createElement("div", {
       style: {
-        overflowX: "auto",
-        paddingBottom: 4
+        overflowX: "auto"
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
-        gap: 3
+        gap: 2,
+        paddingTop: 20
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         flexDirection: "column",
-        gap: 3,
-        marginRight: 2
+        gap: 2,
+        marginRight: 4,
+        flexShrink: 0
       }
-    }, DOW_LABELS.map((d, i) => /*#__PURE__*/React.createElement("div", {
+    }, DOW.map((d, i) => /*#__PURE__*/React.createElement("div", {
       key: i,
       style: {
-        width: 16,
-        height: 16,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        height: 14,
         fontSize: 8,
-        color: "rgba(255,255,255,0.25)"
-      }
-    }, d))), weekGroups.map((week, wi) => /*#__PURE__*/React.createElement("div", {
-      key: wi,
-      style: {
+        color: "rgba(255,255,255,0.3)",
         display: "flex",
-        flexDirection: "column",
-        gap: 3
+        alignItems: "center"
       }
-    }, week.map((cell, di) => {
-      const intensity = cell.min > 0 ? Math.max(0.15, cell.min / maxMin) : 0;
-      const isToday = cell.str === todayStr();
-      const d = new Date(cell.str);
-      const isFirst = d.getDate() === 1;
-      const bg = cell.min > 0 ? `rgba(91,159,255,${intensity})` : cell.solvedCount > 0 ? "rgba(52,211,153,0.25)" : "rgba(255,255,255,0.05)";
+    }, i % 2 === 0 ? d : ""))), weeks.map((week, wi) => {
+      // 月が変わる週に月ラベルを表示
+      const firstDay = week[0];
+      const showMonth = firstDay.day <= 7 || wi === 0;
       return /*#__PURE__*/React.createElement("div", {
-        key: di,
+        key: wi,
         style: {
-          position: "relative"
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          position: "relative",
+          flexShrink: 0
         }
-      }, isFirst && di === 0 && /*#__PURE__*/React.createElement("div", {
+      }, showMonth && /*#__PURE__*/React.createElement("div", {
         style: {
           position: "absolute",
-          top: -12,
+          top: -16,
           left: 0,
-          fontSize: 7,
-          color: "rgba(255,255,255,0.3)",
+          fontSize: 8,
+          color: "rgba(255,255,255,0.4)",
           whiteSpace: "nowrap"
         }
-      }, d.getMonth() + 1, "\u6708"), /*#__PURE__*/React.createElement("div", {
-        title: `${cell.str}: 学習${cell.min}分 / ${cell.solvedCount}問`,
-        style: {
-          width: 16,
-          height: 16,
-          borderRadius: 3,
-          background: bg,
-          border: isToday ? "1.5px solid #5B9FFF" : "none"
-        }
+      }, firstDay.month, "\u6708"), week.map((cell, di) => {
+        if (cell.isFuture) return /*#__PURE__*/React.createElement("div", {
+          key: di,
+          style: {
+            width: 14,
+            height: 14,
+            borderRadius: 3,
+            background: "rgba(255,255,255,0.02)"
+          }
+        });
+        const intensity = cell.min > 0 ? Math.max(0.2, cell.min / maxMin) : 0;
+        const isToday = cell.str === todayDateStr;
+        const bg = cell.min > 0 ? `rgba(91,159,255,${intensity})` : cell.solved > 0 ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.06)";
+        return /*#__PURE__*/React.createElement("div", {
+          key: di,
+          title: `${cell.str}（${cell.min}分・${cell.solved}問）`,
+          style: {
+            width: 14,
+            height: 14,
+            borderRadius: 3,
+            background: bg,
+            outline: isToday ? "2px solid #5B9FFF" : "none",
+            outlineOffset: "1px"
+          }
+        });
       }));
-    })))), /*#__PURE__*/React.createElement("div", {
+    })), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
-        justifyContent: "flex-end",
-        gap: 8,
-        marginTop: 10,
+        gap: 10,
+        marginTop: 12,
         fontSize: 10,
-        color: "rgba(255,255,255,0.3)",
+        color: "rgba(255,255,255,0.35)",
         alignItems: "center"
       }
     }, /*#__PURE__*/React.createElement("div", {
@@ -3700,23 +3724,45 @@ function LogTab(_ref21) {
         width: 10,
         height: 10,
         borderRadius: 2,
-        background: "rgba(255,255,255,0.05)"
+        background: "rgba(255,255,255,0.06)"
       }
     }), /*#__PURE__*/React.createElement("span", null, "\u306A\u3057"), /*#__PURE__*/React.createElement("div", {
       style: {
         width: 10,
         height: 10,
         borderRadius: 2,
-        background: "rgba(52,211,153,0.25)"
+        background: "rgba(52,211,153,0.3)"
       }
-    }), /*#__PURE__*/React.createElement("span", null, "\u554F\u984C\u306E\u307F"), /*#__PURE__*/React.createElement("div", {
+    }), /*#__PURE__*/React.createElement("span", null, "\u89E3\u7B54\u306E\u307F"), /*#__PURE__*/React.createElement("div", {
       style: {
         width: 10,
         height: 10,
         borderRadius: 2,
-        background: "rgba(91,159,255,0.8)"
+        background: "rgba(91,159,255,0.4)"
       }
-    }), /*#__PURE__*/React.createElement("span", null, "\u5B66\u7FD2\u3042\u308A"))));
+    }), /*#__PURE__*/React.createElement("span", null, "\u5B66\u7FD2"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 10,
+        height: 10,
+        borderRadius: 2,
+        background: "rgba(91,159,255,0.9)"
+      }
+    }), /*#__PURE__*/React.createElement("span", null, "\u591A\u304F\u5B66\u7FD2"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginLeft: "auto",
+        display: "flex",
+        alignItems: "center",
+        gap: 4
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 10,
+        height: 10,
+        borderRadius: 2,
+        outline: "2px solid #5B9FFF",
+        outlineOffset: "1px"
+      }
+    }), /*#__PURE__*/React.createElement("span", null, "\u4ECA\u65E5")))));
   })(), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4ECA\u65E5\u306E\u8A18\u9332"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",

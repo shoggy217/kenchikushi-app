@@ -2400,7 +2400,7 @@ function QuizTab(_ref10) {
         display: "flex",
         gap: 8
       }
-    }, [["normal", "📖 通常"], ["srs", "🔄 反復"], ["timed", "⏱ タイム"]].map(_ref11 => {
+    }, [["normal", "🆕 新規"], ["srs", "🔄 反復"], ["timed", "⏱ タイム"]].map(_ref11 => {
       let _ref12 = _slicedToArray(_ref11, 2),
         id = _ref12[0],
         label = _ref12[1];
@@ -2539,7 +2539,7 @@ function QuizTab(_ref10) {
       display: "flex",
       gap: 8
     }
-  }, [["normal", "📖 通常"], ["srs", "🔄 間隔反復"]].map(_ref13 => {
+  }, [["normal", "🆕 新規"], ["srs", "🔄 間隔反復"]].map(_ref13 => {
     let _ref14 = _slicedToArray(_ref13, 2),
       id = _ref14[0],
       label = _ref14[1];
@@ -2591,7 +2591,7 @@ function QuizTab(_ref10) {
       display: "flex",
       gap: 8
     }
-  }, [["normal", "📖 通常"], ["srs", "🔄 反復"], ["timed", "⏱ タイム"]].map(_ref15 => {
+  }, [["normal", "🆕 新規"], ["srs", "🔄 反復"], ["timed", "⏱ タイム"]].map(_ref15 => {
     let _ref16 = _slicedToArray(_ref15, 2),
       id = _ref16[0],
       label = _ref16[1];

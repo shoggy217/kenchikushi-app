@@ -1623,9 +1623,10 @@ function HomeTab(_ref4) {
       style: {
         fontSize: 9,
         color: "#000",
-        fontWeight: 700
+        fontWeight: 700,
+        lineHeight: 1.2
       }
-    }, mins)), /*#__PURE__*/React.createElement("div", {
+    }, `${String(Math.floor(mins/3600)).padStart(2,"0")}:${String(Math.floor(mins%3600/60)).padStart(2,"0")}:${String(mins%60).padStart(2,"0")}`)), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 9,
         color: "rgba(255,255,255,0.25)"

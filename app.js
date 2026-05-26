@@ -1032,6 +1032,18 @@ function App() {
     const r = (q.history || []).slice(-3);
     return r.filter(x => x === "×").length >= 2;
   }), [questions]);
+  // 3連続×の赤フラグ問題
+  const redFlagQuestions = useMemo(() => questions.filter(q => {
+    const r = (q.history || []).slice(-3);
+    return r.length === 3 && r.every(x => x === "×");
+  }), [questions]);
+  // 解答時間が長い（苦手）問題（平均60秒超）
+  const slowQuestions = useMemo(() => questions.filter(q => {
+    const times = q.answerTimes || [];
+    if (times.length < 2) return false;
+    const avg = times.reduce((a, b) => a + b, 0) / times.length;
+    return avg > 60;
+  }), [questions]);
   const todayRec = logs[todayStr()] || {};
   const todayMin = dayTotalMin(todayRec);
   if (loading) return /*#__PURE__*/React.createElement("div", {
@@ -1167,6 +1179,8 @@ function App() {
     todayMin: todayMin,
     totalStudyMin: totalStudyMin,
     weakQuestions: weakQuestions,
+    redFlagQuestions: redFlagQuestions,
+    slowQuestions: slowQuestions,
     questions: questions,
     setTab: setTab,
     logs: logs,
@@ -1338,6 +1352,8 @@ function HomeTab(_ref4) {
     todayMin = _ref4.todayMin,
     totalStudyMin = _ref4.totalStudyMin,
     weakQuestions = _ref4.weakQuestions,
+    redFlagQuestions = _ref4.redFlagQuestions,
+    slowQuestions = _ref4.slowQuestions,
     questions = _ref4.questions,
     setTab = _ref4.setTab,
     logs = _ref4.logs,
@@ -1377,6 +1393,14 @@ function HomeTab(_ref4) {
       untried,
       total: questions.length
     };
+  }, [questions]);
+
+  // 前日ミス問題
+  const yesterdayMissed = useMemo(() => {
+    const y = nowJST();
+    y.setUTCDate(y.getUTCDate() - 1);
+    const yk = y.toISOString().slice(0, 10);
+    return questions.filter(q => q.lastAnswered === yk && (q.history || []).slice(-1)[0] === "×");
   }, [questions]);
 
   // 学習ペース計算
@@ -1810,7 +1834,43 @@ function HomeTab(_ref4) {
         marginTop: 3
       }
     }, "\u7FD2\u5F97\u6E08 ", pct, "%"));
-  }))), weakQuestions.length > 0 && /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u5F31\u70B9\u554F\u984C ", weakQuestions.length, "\u554F"), /*#__PURE__*/React.createElement("div", {
+  }))),
+  yesterdayMissed.length > 0 && /*#__PURE__*/React.createElement(Card, null,
+    /*#__PURE__*/React.createElement(SectionTitle, null, "📋 昨日のミス ", yesterdayMissed.length, "問"),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 10 } }, "今日必ず復習しましょう"),
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
+      yesterdayMissed.slice(0, 5).map(q => /*#__PURE__*/React.createElement("div", {
+        key: q.id,
+        style: { padding: "8px 10px", background: "rgba(248,113,113,0.07)", borderRadius: 8, border: "1px solid rgba(248,113,113,0.15)", fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.5 }
+      }, q.q.slice(0, 70), q.q.length > 70 ? "…" : ""))
+    )
+  ),
+  redFlagQuestions.length > 0 && /*#__PURE__*/React.createElement(Card, null,
+    /*#__PURE__*/React.createElement(SectionTitle, null, "🚩 赤フラグ（3連続×） ", redFlagQuestions.length, "問"),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 10 } }, "直近3回すべて不正解。集中的に取り組んでください"),
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
+      redFlagQuestions.slice(0, 5).map(q => /*#__PURE__*/React.createElement("div", {
+        key: q.id,
+        style: { padding: "8px 10px", background: "rgba(239,68,68,0.08)", borderRadius: 8, border: "1px solid rgba(239,68,68,0.25)", fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.5, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }
+      }, /*#__PURE__*/React.createElement("span", null, q.q.slice(0, 55), q.q.length > 55 ? "…" : ""),
+         /*#__PURE__*/React.createElement("span", { style: { color: "#F87171", fontWeight: 700, flexShrink: 0 } }, "×××")))
+    )
+  ),
+  slowQuestions.length > 0 && /*#__PURE__*/React.createElement(Card, null,
+    /*#__PURE__*/React.createElement(SectionTitle, null, "⏱ 時間がかかる問題 ", slowQuestions.length, "問"),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 10 } }, "平均60秒超＝理解が曖昧なサイン"),
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
+      slowQuestions.slice(0, 5).map(q => {
+        const avg = Math.round((q.answerTimes||[]).reduce((a,b)=>a+b,0) / Math.max((q.answerTimes||[1]).length,1));
+        return /*#__PURE__*/React.createElement("div", {
+          key: q.id,
+          style: { padding: "8px 10px", background: "rgba(251,191,36,0.06)", borderRadius: 8, border: "1px solid rgba(251,191,36,0.2)", fontSize: 12, color: "rgba(255,255,255,0.7)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }
+        }, /*#__PURE__*/React.createElement("span", null, q.q.slice(0, 50), q.q.length > 50 ? "…" : ""),
+           /*#__PURE__*/React.createElement("span", { style: { color: "#FBBF24", fontWeight: 700, flexShrink: 0 } }, "avg ", avg, "s"));
+      })
+    )
+  ),
+  weakQuestions.length > 0 && /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u5F31\u70B9\u554F\u984C ", weakQuestions.length, "\u554F"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -2301,10 +2361,14 @@ function QuizTab(_ref10) {
       correct: s.correct + (correct ? 1 : 0),
       total: s.total + 1
     }));
+    // 解答時間を計算（pausedElapsed = 問題を見てから回答するまでの秒数）
+    const qSec = sessionStartRef._pausedElapsed || 0;
     const updatedQuestions = questions.map(qq => qq.id !== q.id ? qq : {
       ...qq,
       history: [...(qq.history || []), correct ? "○" : "×"].slice(-10),
-      lastAnswered: todayStr()
+      lastAnswered: todayStr(),
+      // 解答時間の移動平均（直近5回）
+      answerTimes: [...(qq.answerTimes || []), qSec].slice(-5)
     });
     setQuestions(updatedQuestions);
     // 回答直後に即時保存（タブを閉じても記録が消えないよう）
@@ -2577,7 +2641,23 @@ function QuizTab(_ref10) {
         flexWrap: "wrap",
         marginBottom: 20
       }
-    }, COUNT_OPTIONS.map(n => /*#__PURE__*/React.createElement("button", {
+    }, /*#__PURE__*/React.createElement("button", {
+      key: "sim",
+      onClick: () => startSession({ count: 25, secPerQ: 144, simulation: true }),
+      style: {
+        width: "100%",
+        padding: "12px 8px",
+        borderRadius: 12,
+        background: "rgba(248,113,113,0.1)",
+        border: "1px solid rgba(248,113,113,0.3)",
+        color: "#F87171",
+        fontSize: 13,
+        fontWeight: 700,
+        cursor: "pointer",
+        marginBottom: 8
+      }
+    }, "🎯 本番シミュレーション（25問／60分）"),
+    COUNT_OPTIONS.map(n => /*#__PURE__*/React.createElement("button", {
       key: n,
       onClick: () => startSession({
         count: n,
@@ -3918,11 +3998,11 @@ function LogTab(_ref21) {
 function AITab(_ref28) {
   let questions = _ref28.questions,
     weakQuestions = _ref28.weakQuestions,
-    logs = _ref28.logs;
-  const _useState81 = useState("analysis"),
+    logs = _ref28.logs || {};
+  const _useState81 = useState("weekly"),
     _useState82 = _slicedToArray(_useState81, 2),
     mode = _useState82[0],
-    setMode = _useState82[1]; // analysis | generate | advice
+    setMode = _useState82[1]; // weekly | analysis | generate | advice
   const _useState83 = useState(""),
     _useState84 = _slicedToArray(_useState83, 2),
     output = _useState84[0],
@@ -3956,7 +4036,15 @@ function AITab(_ref28) {
     setOutput("");
     let sys = "",
       usr = "";
-    if (mode === "analysis") {
+    if (mode === "weekly") {
+      // 直近7日の統計を集計
+      const weekDays = Array.from({length:7},(_,i)=>{ const d=nowJST(); d.setUTCDate(d.getUTCDate()-(6-i)); return d.toISOString().slice(0,10); });
+      const weekAnswered = questions.filter(q => weekDays.includes(q.lastAnswered));
+      const weekWrong = weekAnswered.filter(q => (q.history||[]).slice(-1)[0]==="×");
+      const weekStudySec = weekDays.reduce((a,k)=>a+dayTotalSec(logs[k]||{}),0);
+      sys = "あなたは一級建築士試験の専門コーチです。学習者の1週間のデータを分析し、「今週のレポート」を作成してください。①成果、②弱点まとめ、③来週の優先事項、の3点を日本語400字以内で具体的に。";
+      usr = `【今週の学習データ】\n学習時間: ${Math.floor(weekStudySec/60)}分\n回答問題数: ${weekAnswered.length}問\n正解数: ${weekAnswered.length - weekWrong.length}問\n不正解数: ${weekWrong.length}問\n\n【不正解だった問題のトピック】\n${weekWrong.slice(0,10).map(q=>`・${q.topic||q.q.slice(0,30)}`).join("\n") || "なし"}\n\n【3連続×の赤フラグ問題数】\n${questions.filter(q=>{const r=(q.history||[]).slice(-3);return r.length===3&&r.every(x=>x==="×");}).length}問`;
+    } else if (mode === "analysis") {
       sys = "あなたは一級建築士試験の専門コーチです。学習データを分析して、具体的で実践的なアドバイスを日本語で300字程度で提供してください。";
       usr = `学習データ:\n${subjectStats.map(s => `${s.name}: 登録${s.total}問、回答済${s.answered}問、習得${s.mastered}問`).join("\n")}\n要復習問題: ${weakQuestions.length}問\n\n弱点分析と優先して取り組むべき事項を教えてください。`;
     } else if (mode === "generate") {
@@ -3973,6 +4061,9 @@ function AITab(_ref28) {
     setLoading(false);
   };
   const MODES = [{
+    id: "weekly",
+    label: "📊週次レポート"
+  }, {
     id: "analysis",
     label: "弱点分析"
   }, {

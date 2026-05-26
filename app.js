@@ -833,7 +833,7 @@ function App() {
     clockStr = _useState16[0],
     setClockStr = _useState16[1];
 
-  // 時計(JST)
+  // 時計(JST) - 1秒ごとに更新
   useEffect(() => {
     const tick = () => {
       const d = nowJST();
@@ -841,10 +841,11 @@ function App() {
       const dd = String(d.getUTCDate()).padStart(2, "0");
       const hh = String(d.getUTCHours()).padStart(2, "0");
       const mi = String(d.getUTCMinutes()).padStart(2, "0");
-      setClockStr(`${d.getUTCFullYear()}/${mm}/${dd} ${hh}:${mi}`);
+      const ss = String(d.getUTCSeconds()).padStart(2, "0");
+      setClockStr(`${d.getUTCFullYear()}/${mm}/${dd} ${hh}:${mi}:${ss}`);
     };
     tick();
-    const iv = setInterval(tick, 60000);
+    const iv = setInterval(tick, 1000);
     return () => clearInterval(iv);
   }, []);
   const _useState17 = useState(false),

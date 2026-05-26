@@ -4204,8 +4204,9 @@ function HistoryEditor(_ref29) {
       display: "flex",
       flexDirection: "column",
       gap: 8,
-      maxHeight: "65vh",
-      overflowY: "auto"
+      maxHeight: "60vh",
+      overflowY: "auto",
+      paddingRight: 4
     }
   }, filtered.map(q => {
     const h = q.history || [];
@@ -4214,8 +4215,7 @@ function HistoryEditor(_ref29) {
       key: q.id,
       style: {
         background: "rgba(255,255,255,0.04)",
-        borderRadius: 12,
-        overflow: "hidden"
+        borderRadius: 12
       }
     }, /*#__PURE__*/React.createElement("div", {
       onClick: () => setExpanded(isExpanded ? null : q.id),
@@ -4264,15 +4264,26 @@ function HistoryEditor(_ref29) {
       }
     }, isExpanded ? "▲" : "▼")), isExpanded && /*#__PURE__*/React.createElement("div", {
       style: {
-        padding: "0 14px 14px",
+        padding: "0 14px 16px",
         borderTop: "1px solid rgba(255,255,255,0.06)"
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
+        fontSize: 12,
+        color: "rgba(255,255,255,0.65)",
+        lineHeight: 1.6,
+        marginTop: 10,
+        marginBottom: 10,
+        padding: "8px 10px",
+        background: "rgba(255,255,255,0.03)",
+        borderRadius: 8,
+        whiteSpace: "pre-wrap"
+      }
+    }, q.q), /*#__PURE__*/React.createElement("div", {
+      style: {
         fontSize: 11,
         color: "rgba(255,255,255,0.4)",
-        marginBottom: 8,
-        marginTop: 10
+        marginBottom: 8
       }
     }, "\u30BF\u30C3\u30D7\u3067\u25CB\u2194\xD7\u5207\u308A\u66FF\u3048"), /*#__PURE__*/React.createElement("div", {
       style: {

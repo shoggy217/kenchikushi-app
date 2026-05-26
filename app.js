@@ -2354,20 +2354,34 @@ function QuizTab(_ref10) {
     });
     sessionStartRef.current = Date.now();
   };
+  // logsをrefで常に最新値を参照できるようにする
+  const logsRef = useRef({});
+  useEffect(() => { logsRef.current = logs; }, [logs]);
+
+  const saveElapsed = async (resetStart) => {
+    if (!sessionStartRef.current) return;
+    const elapsedSec = Math.floor((Date.now() - sessionStartRef.current) / 1000);
+    if (resetStart) sessionStartRef.current = Date.now();
+    if (elapsedSec < 3) return;
+    const today = todayStr();
+    const base = logsRef.current;
+    const newLogs = { ...base, [today]: { ...(base[today] || {}), "演習": ((base[today] || {})["演習"] || 0) + elapsedSec } };
+    setLogs(newLogs);
+    logsRef.current = newLogs;
+    await save("logs", newLogs);
+  };
+
   const finishSession = async () => {
     clearInterval(timedRef.current);
-    // 経過時間を計算（制限なしでも実時間を使う）
-    const elapsedSec = sessionStartRef.current ? Math.floor((Date.now() - sessionStartRef.current) / 1000) : timedSec;
-    const actualSec = Math.max(timedSec, elapsedSec);
+    await saveElapsed(false);
+    sessionStartRef.current = null;
+    const sec = timedSec;
     setTimedDone(true);
     setTimedResult({
       correct: session.correct,
       total: session.total,
-      sec: actualSec
+      sec
     });
-    // 最後の問題の残り時間を記録（recordElapsedで既に前の問題分は保存済み）
-    await recordElapsed();
-    sessionStartRef.current = null;
   };
   const resetSession = () => {
     clearInterval(timedRef.current);
@@ -2384,22 +2398,9 @@ function QuizTab(_ref10) {
       total: 0
     });
   };
-  const recordElapsed = async () => {
-    if (!sessionStartRef.current) return;
-    const elapsedSec = Math.floor((Date.now() - sessionStartRef.current) / 1000);
-    if (elapsedSec >= 3) {
-      const today = todayStr();
-      const stored = await load("logs", {});
-      const newLogs = { ...stored };
-      if (!newLogs[today]) newLogs[today] = {};
-      newLogs[today]["演習"] = (newLogs[today]["演習"] || 0) + elapsedSec;
-      setLogs(newLogs);
-      await save("logs", newLogs);
-    }
-    sessionStartRef.current = Date.now(); // 次の問題の開始時刻をリセット
-  };
+
   const next = () => {
-    recordElapsed(); // ← 1問終えるたびに経過時間を保存
+    saveElapsed(true); // 1問終えるたびに経過時間を保存
     // セッション: 指定問数に達したら終了
     if (sessionConf && sessionConf.count < 9999 && session.total + 1 >= sessionConf.count) {
       finishSession();

@@ -86,6 +86,12 @@ const RANK_COLOR = {
 };
 const EXAM_DATE = new Date("2027-07-25");
 // JST(UTC+9)基準の日付取得
+// logsの値(秒 or 分)を分に統一して返す
+// 値が100以上なら秒、未満なら分として扱う
+const toMinutes = val => val >= 100 ? Math.floor(val / 60) : val;
+const toSeconds = val => val >= 100 ? val : val * 60;
+const dayTotalMin = dayLog => Object.values(dayLog || {}).reduce((a, v) => a + toMinutes(v), 0);
+const dayTotalSec = dayLog => Object.values(dayLog || {}).reduce((a, v) => a + toSeconds(v), 0);
 const todayStr = () => {
   const d = new Date();
   d.setTime(d.getTime() + 9 * 60 * 60 * 1000);
@@ -2358,15 +2364,14 @@ function QuizTab(_ref10) {
       total: session.total,
       sec: actualSec
     });
-    // 学習時間をlogsに記録（1分以上の場合）
-    const mins = Math.floor(actualSec / 60);
-    if (mins > 0) {
+    // 学習時間をlogsに記録（5秒以上の場合、秒単位で保存）
+    if (actualSec >= 5) {
       const today = todayStr();
       const newLogs = {
         ...logs
       };
       if (!newLogs[today]) newLogs[today] = {};
-      newLogs[today]["演習"] = (newLogs[today]["演習"] || 0) + mins;
+      newLogs[today]["演習"] = (newLogs[today]["演習"] || 0) + actualSec;
       setLogs(newLogs);
       await save("logs", newLogs);
     }
@@ -3658,7 +3663,7 @@ function LogTab(_ref21) {
         date.setUTCDate(startDate.getUTCDate() + w * 7 + d);
         const str = date.toISOString().slice(0, 10);
         const dayLog = logs[str] || {};
-        const min = Object.values(dayLog).reduce((a, b) => a + b, 0);
+        const min = dayTotalMin(dayLog);
         const solved = (questions || []).filter(q => q.lastAnswered === str).length;
         const isFuture = str > todayDateStr;
         days.push({
@@ -3807,26 +3812,28 @@ function LogTab(_ref21) {
       color: "rgba(255,255,255,0.35)",
       marginBottom: 16
     }
-  }, "\u6F14\u7FD2\u30BB\u30C3\u30B7\u30E7\u30F3\u3092\u7D42\u4E86\u3059\u308B\u3068\u81EA\u52D5\u3067\u8A18\u9332\u3055\u308C\u307E\u3059"), todayMin > 0 ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 48,
-      fontWeight: 200,
-      fontVariantNumeric: "tabular-nums",
-      marginBottom: 4
-    }
-  }, todayMin, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 16,
-      color: "rgba(255,255,255,0.4)",
-      marginLeft: 4
-    }
-  }, "\u5206")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 12,
-      color: "rgba(255,255,255,0.4)",
-      marginBottom: 16
-    }
-  }, "\u7D2F\u8A08 ", (Object.values(logs).reduce((a, d) => a + Object.values(d).reduce((b, v) => b + v, 0), 0) / 60).toFixed(1), "\u6642\u9593"), /*#__PURE__*/React.createElement("div", {
+  }, "\u6F14\u7FD2\u30BB\u30C3\u30B7\u30E7\u30F3\u3092\u7D42\u4E86\u3059\u308B\u3068\u81EA\u52D5\u3067\u8A18\u9332\u3055\u308C\u307E\u3059"), dayTotalSec(todayLog) >= 5 ? /*#__PURE__*/React.createElement("div", null, (() => {
+    const totalSec = dayTotalSec(todayLog);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor(totalSec % 3600 / 60);
+    const s = totalSec % 60;
+    const display = h > 0 ? `${h}時間${m}分` : m > 0 ? `${m}分${s}秒` : `${s}秒`;
+    const totalAllSec = Object.values(logs).reduce((a, d) => a + dayTotalSec(d), 0);
+    return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 48,
+        fontWeight: 200,
+        fontVariantNumeric: "tabular-nums",
+        marginBottom: 4
+      }
+    }, display), /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 12,
+        color: "rgba(255,255,255,0.4)",
+        marginBottom: 16
+      }
+    }, "\u7D2F\u8A08 ", (totalAllSec / 3600).toFixed(1), "\u6642\u9593"));
+  })(), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -3836,7 +3843,12 @@ function LogTab(_ref21) {
     let _ref27 = _slicedToArray(_ref26, 2),
       key = _ref27[0],
       val = _ref27[1];
-    return val > 0 && /*#__PURE__*/React.createElement("div", {
+    const sec = toSeconds(val);
+    if (sec < 5) return null;
+    const m = Math.floor(sec / 60),
+      s = sec % 60;
+    const disp = m > 0 ? `${m}分${s > 0 ? s + "秒" : ""}` : `${s}秒`;
+    return /*#__PURE__*/React.createElement("div", {
       key: key,
       style: {
         display: "flex",
@@ -3853,7 +3865,7 @@ function LogTab(_ref21) {
       style: {
         fontVariantNumeric: "tabular-nums"
       }
-    }, val, "\u5206"));
+    }, disp));
   }))) : /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",

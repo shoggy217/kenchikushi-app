@@ -2376,7 +2376,7 @@ function QuizTab(_ref10) {
     if (mode === "AB") arr = arr.filter(q => !q.rank || q.rank === "A" || q.rank === "B");else if (mode === "A") arr = arr.filter(q => q.rank === "A");else if (mode === "weak") arr = arr.filter(q => {
       const r = (q.history || []).slice(-3);
       return r.filter(x => x === "×").length >= 2;
-    });else if (mode === "starred") arr = arr.filter(q => q.starred);else if (mode === "bookmark") arr = arr.filter(q => q.bookmarked);else if (mode === "untried") arr = arr.filter(q => !q.history || !q.history.length);
+    });else if (mode === "starred") arr = arr.filter(q => q.starred);else if (mode === "bookmark") arr = arr.filter(q => q.bookmarked);else if (mode === "nofig") arr = arr.filter(q => !q.hasFig);else if (mode === "untried") arr = arr.filter(q => !q.history || !q.history.length);
     const priority = q => {
       const h = q.history || [];
       if (!h.length) return 1;
@@ -3094,7 +3094,21 @@ function QuizTab(_ref10) {
         fontVariantNumeric: "tabular-nums"
       }
     }, idx % Math.max(pool.length, 1) + 1, "/", pool.length));
-  })(), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement("div", {
+  })(), q && q.hasFig && !done && /*#__PURE__*/React.createElement("div", {
+    style: { padding: "12px 16px", background: "rgba(251,191,36,0.08)", borderRadius: 12, border: "1px solid rgba(251,191,36,0.25)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }
+  },
+    /*#__PURE__*/React.createElement("div", null,
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "#FBBF24", marginBottom: 2 } }, "📖 図が必要な問題です"),
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.55)" } },
+        q.qPage ? `問題集 p.${q.qPage} を開いてください` : "問題集の図を確認してください"
+      )
+    ),
+    /*#__PURE__*/React.createElement("button", {
+      onClick: next,
+      style: { padding: "8px 14px", borderRadius: 10, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.5)", fontSize: 12, cursor: "pointer", flexShrink: 0, fontFamily: "inherit" }
+    }, "スキップ →")
+  ),
+  /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
@@ -3733,7 +3747,7 @@ function FilterBar(_ref18) {
       paddingBottom: 4,
       scrollbarWidth: "none"
     }
-  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null], ["bookmark", "🔖", "#5B9FFF"]].map(_ref19 => {
+  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null], ["bookmark", "🔖", "#5B9FFF"], ["nofig", "図なし", null]].map(_ref19 => {
     let _ref20 = _slicedToArray(_ref19, 3),
       v = _ref20[0],
       l = _ref20[1],

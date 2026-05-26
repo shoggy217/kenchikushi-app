@@ -1891,8 +1891,17 @@ function HomeTab(_ref4) {
     /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
       yesterdayMissed.slice(0, 5).map(q => /*#__PURE__*/React.createElement("div", {
         key: q.id,
-        style: { padding: "8px 10px", background: "rgba(248,113,113,0.07)", borderRadius: 8, border: "1px solid rgba(248,113,113,0.15)", fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.5 }
-      }, q.q.slice(0, 70), q.q.length > 70 ? "…" : ""))
+        style: { padding: "10px 12px", background: "rgba(248,113,113,0.07)", borderRadius: 8, border: "1px solid rgba(248,113,113,0.15)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginBottom: 4, flexWrap: "wrap" } },
+          q.year && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "#F87171", fontWeight: 700 } }, q.year, q.no ? `-${String(q.no).padStart(2,"0")}` : ""),
+          q.topic && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 } }, q.topic),
+          q.refs && /*#__PURE__*/React.createElement("span", { style: { fontSize: 10, color: "rgba(91,159,255,0.7)" } }, "📜 ", q.refs.slice(0, 20), q.refs.length > 20 ? "…" : "")
+        ),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 } },
+          q.q.slice(0, 80), q.q.length > 80 ? "…" : ""
+        )
+      ))
     )
   ),
   redFlagQuestions.length > 0 && /*#__PURE__*/React.createElement(Card, null,
@@ -1901,9 +1910,17 @@ function HomeTab(_ref4) {
     /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
       redFlagQuestions.slice(0, 5).map(q => /*#__PURE__*/React.createElement("div", {
         key: q.id,
-        style: { padding: "8px 10px", background: "rgba(239,68,68,0.08)", borderRadius: 8, border: "1px solid rgba(239,68,68,0.25)", fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.5, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }
-      }, /*#__PURE__*/React.createElement("span", null, q.q.slice(0, 55), q.q.length > 55 ? "…" : ""),
-         /*#__PURE__*/React.createElement("span", { style: { color: "#F87171", fontWeight: 700, flexShrink: 0 } }, "×××")))
+        style: { padding: "10px 12px", background: "rgba(239,68,68,0.08)", borderRadius: 8, border: "1px solid rgba(239,68,68,0.25)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginBottom: 4, flexWrap: "wrap" } },
+          q.year && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "#F87171", fontWeight: 700 } }, q.year, q.no ? `-${String(q.no).padStart(2,"0")}` : ""),
+          q.topic && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 } }, q.topic),
+          /*#__PURE__*/React.createElement("span", { style: { color: "#F87171", fontWeight: 700, marginLeft: "auto" } }, "×××")
+        ),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 } },
+          q.q.slice(0, 80), q.q.length > 80 ? "…" : ""
+        )
+      ))
     )
   ),
   slowQuestions.length > 0 && /*#__PURE__*/React.createElement(Card, null,
@@ -1914,9 +1931,17 @@ function HomeTab(_ref4) {
         const avg = Math.round((q.answerTimes||[]).reduce((a,b)=>a+b,0) / Math.max((q.answerTimes||[1]).length,1));
         return /*#__PURE__*/React.createElement("div", {
           key: q.id,
-          style: { padding: "8px 10px", background: "rgba(251,191,36,0.06)", borderRadius: 8, border: "1px solid rgba(251,191,36,0.2)", fontSize: 12, color: "rgba(255,255,255,0.7)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }
-        }, /*#__PURE__*/React.createElement("span", null, q.q.slice(0, 50), q.q.length > 50 ? "…" : ""),
-           /*#__PURE__*/React.createElement("span", { style: { color: "#FBBF24", fontWeight: 700, flexShrink: 0 } }, "avg ", avg, "s"));
+          style: { padding: "10px 12px", background: "rgba(251,191,36,0.06)", borderRadius: 8, border: "1px solid rgba(251,191,36,0.2)" }
+        },
+          /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginBottom: 4, flexWrap: "wrap" } },
+            q.year && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "#FBBF24", fontWeight: 700 } }, q.year, q.no ? `-${String(q.no).padStart(2,"0")}` : ""),
+            q.topic && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 } }, q.topic),
+            /*#__PURE__*/React.createElement("span", { style: { color: "#FBBF24", fontWeight: 700, fontSize: 11, marginLeft: "auto" } }, "avg ", avg, "s")
+          ),
+          /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 } },
+            q.q.slice(0, 80), q.q.length > 80 ? "…" : ""
+          )
+        );
       })
     )
   ),

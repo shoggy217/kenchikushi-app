@@ -3486,6 +3486,7 @@ function LogTab(_ref20) {
     const maxMin = Math.max(...cells.map(c => c.min), 1);
     const weekGroups = [];
     for (let i = 0; i < cells.length; i += 7) weekGroups.push(cells.slice(i, i + 7));
+    const DOW_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
     return /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u5B66\u7FD2\u30AB\u30EC\u30F3\u30C0\u30FC"), /*#__PURE__*/React.createElement("div", {
       style: {
         overflowX: "auto",
@@ -3496,7 +3497,25 @@ function LogTab(_ref20) {
         display: "flex",
         gap: 3
       }
-    }, weekGroups.map((week, wi) => /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 3,
+        marginRight: 2
+      }
+    }, DOW_LABELS.map((d, i) => /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        width: 16,
+        height: 16,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 8,
+        color: "rgba(255,255,255,0.25)"
+      }
+    }, d))), weekGroups.map((week, wi) => /*#__PURE__*/React.createElement("div", {
       key: wi,
       style: {
         display: "flex",
@@ -3506,9 +3525,24 @@ function LogTab(_ref20) {
     }, week.map((cell, di) => {
       const intensity = cell.min > 0 ? Math.max(0.15, cell.min / maxMin) : 0;
       const isToday = cell.str === todayStr();
+      const d = new Date(cell.str);
+      const isFirst = d.getDate() === 1;
       const bg = cell.min > 0 ? `rgba(91,159,255,${intensity})` : cell.solvedCount > 0 ? "rgba(52,211,153,0.25)" : "rgba(255,255,255,0.05)";
       return /*#__PURE__*/React.createElement("div", {
         key: di,
+        style: {
+          position: "relative"
+        }
+      }, isFirst && di === 0 && /*#__PURE__*/React.createElement("div", {
+        style: {
+          position: "absolute",
+          top: -12,
+          left: 0,
+          fontSize: 7,
+          color: "rgba(255,255,255,0.3)",
+          whiteSpace: "nowrap"
+        }
+      }, d.getMonth() + 1, "\u6708"), /*#__PURE__*/React.createElement("div", {
         title: `${cell.str}: 学習${cell.min}分 / ${cell.solvedCount}問`,
         style: {
           width: 16,
@@ -3517,7 +3551,7 @@ function LogTab(_ref20) {
           background: bg,
           border: isToday ? "1.5px solid #5B9FFF" : "none"
         }
-      });
+      }));
     })))), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",

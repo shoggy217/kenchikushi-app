@@ -88,10 +88,11 @@ const EXAM_DATE = new Date("2027-07-25");
 // JST(UTC+9)基準の日付取得
 // logsの値(秒 or 分)を分に統一して返す
 // 値が100以上なら秒、未満なら分として扱う
-const toMinutes = val => val >= 100 ? Math.floor(val / 60) : val;
-const toSeconds = val => val >= 100 ? val : val * 60;
-const dayTotalMin = dayLog => Object.values(dayLog || {}).reduce((a, v) => a + toMinutes(v), 0);
-const dayTotalSec = dayLog => Object.values(dayLog || {}).reduce((a, v) => a + toSeconds(v), 0);
+// 全て秒単位で統一
+const toMinutes = val => Math.floor(val / 60);
+const toSeconds = val => val;
+const dayTotalSec = dayLog => Object.values(dayLog || {}).reduce((a, v) => a + v, 0);
+const dayTotalMin = dayLog => Math.floor(dayTotalSec(dayLog) / 60);
 const todayStr = () => {
   const d = new Date();
   d.setTime(d.getTime() + 9 * 60 * 60 * 1000);
@@ -966,14 +967,13 @@ function App() {
   const toggleTimer = useCallback(async () => {
     if (timerRunning) {
       // 停止 → 分単位で今日の記録に加算
-      const mins = Math.floor(timerSec / 60);
-      if (mins > 0) {
+      if (timerSec >= 5) {
         const today = todayStr();
         const newLogs = {
           ...logs
         };
         if (!newLogs[today]) newLogs[today] = {};
-        newLogs[today]["学習"] = (newLogs[today]["学習"] || 0) + mins;
+        newLogs[today]["学習"] = (newLogs[today]["学習"] || 0) + timerSec;
         setLogs(newLogs);
         await save("logs", newLogs);
       }
@@ -1027,7 +1027,7 @@ function App() {
   const levelXp = xp - xpForLevel(level);
   const nextXp = xpForLevel(level + 1) - xpForLevel(level);
   const xpPct = Math.min(levelXp / nextXp * 100, 100);
-  const totalStudyMin = useMemo(() => Object.values(logs).reduce((s, d) => s + Object.values(d).reduce((a, b) => a + b, 0), 0), [logs]);
+  const totalStudyMin = useMemo(() => Math.floor(Object.values(logs).reduce((s, d) => s + dayTotalSec(d), 0) / 60), [logs]);
   const weakQuestions = useMemo(() => questions.filter(q => {
     const r = (q.history || []).slice(-3);
     return r.filter(x => x === "×").length >= 2;
@@ -3632,7 +3632,7 @@ function LogTab(_ref21) {
       const dl = logs[key] || {};
       return {
         date: fmtMD(d),
-        minutes: Object.values(dl).reduce((a, b) => a + b, 0)
+        minutes: Math.floor(Object.values(dl).reduce((a, b) => a + b, 0) / 60)
       };
     });
   }, [logs]);

@@ -831,6 +831,10 @@ function App() {
     _useState0 = _slicedToArray(_useState9, 2),
     streak = _useState0[0],
     setStreak = _useState0[1];
+  const _useStateGoal = useState({ keikaku: 181, kankyo: 180, houki: 270, kouzou: 270, sekou: 224 }),
+    _useStateGoal2 = _slicedToArray(_useStateGoal, 2),
+    goalQ = _useStateGoal2[0],
+    setGoalQ = _useStateGoal2[1];
   const _useState1 = useState(true),
     _useState10 = _slicedToArray(_useState1, 2),
     loading = _useState10[0],
@@ -948,6 +952,8 @@ function App() {
       setLogs(lg);
       setXp(savedXp);
       setPendingCount(pend.length);
+      const savedGoalQ = await load("goalQ", { keikaku: 181, kankyo: 180, houki: 270, kouzou: 270, sekou: 224 });
+      setGoalQ(savedGoalQ);
       // streak
       let s = 0,
         d = nowJST();
@@ -1190,6 +1196,10 @@ function App() {
     redFlagQuestions: redFlagQuestions,
     slowQuestions: slowQuestions,
     questions: questions,
+    goalQ: goalQ,
+    setGoalQ: setGoalQ,
+    totalGoal: totalGoal,
+    unregistered: unregistered,
     setTab: setTab,
     logs: logs,
     timerRunning: timerRunning,
@@ -1363,6 +1373,10 @@ function HomeTab(_ref4) {
     redFlagQuestions = _ref4.redFlagQuestions,
     slowQuestions = _ref4.slowQuestions,
     questions = _ref4.questions,
+    goalQ = _ref4.goalQ,
+    setGoalQ = _ref4.setGoalQ,
+    totalGoal = _ref4.totalGoal,
+    unregistered = _ref4.unregistered,
     setTab = _ref4.setTab,
     logs = _ref4.logs,
     timerRunning = _ref4.timerRunning,
@@ -1416,8 +1430,11 @@ function HomeTab(_ref4) {
   const nowMs = nowJST();
   const daysLeft = Math.ceil((EXAM_DATE - nowMs) / 86400000);
   const dueToday = questions.filter(q => (q.history || []).length > 0 && isDueToday(q)).length;
-  const untried = questions.filter(q => !(q.history || []).length).length;
-  const dailyNeeded = untried > 0 ? Math.ceil(untried / daysLeft) : 0;
+  // 目標問題数ベースの未着手数（登録済み未着手 + まだ登録していない問題）
+  const _totalGoal = Object.values(goalQ).reduce((a, b) => a + b, 0);
+  const _unregistered = Math.max(0, _totalGoal - questions.length);
+  const totalUntried = stats.untried + _unregistered;
+  const dailyNeeded = totalUntried > 0 ? Math.ceil(totalUntried / daysLeft) : 0;
   const todaySrsLimit = Math.min(dueToday, 20);
   const todaySrsDone = questions.filter(q => (q.history || []).length > 0 && q.lastAnswered === todayStr() && !isDueToday(q)).length;
   const todayAnswered = questions.filter(q => q.lastAnswered === todayStr()).length;
@@ -1504,21 +1521,40 @@ function HomeTab(_ref4) {
     style: {
       color: daysLeft <= 30 ? "#F87171" : daysLeft <= 90 ? "#FBBF24" : "#fff"
     }
-  }, daysLeft, "\u65E5")), untried > 0 && /*#__PURE__*/React.createElement("div", null, "\u672A\u7740\u624B ", /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: "#FBBF24"
-    }
-  }, untried, "\u554F"), " \u2014 1\u65E5 ", /*#__PURE__*/React.createElement("b", {
-    style: {
-      color: paceOk ? "#34D399" : "#F87171"
-    }
-  }, dailyNeeded, "\u554F"), " \u89E3\u3051\u3070\u8A66\u9A13\u524D\u306B1\u5468\u5B8C\u4E86"),
+  }, daysLeft, "\u65E5")),
+  /*#__PURE__*/React.createElement("div", null,
+    "\u767b\u9332\u6e08 ", /*#__PURE__*/React.createElement("b", { style: { color: "#fff" } }, questions.length, "\u554f"),
+    " / \u76ee\u6a19 ", /*#__PURE__*/React.createElement("b", { style: { color: "#5B9FFF" } }, totalGoal, "\u554f"),
+    unregistered > 0 && /*#__PURE__*/React.createElement("span", { style: { color: "rgba(255,255,255,0.35)", fontSize: 11 } }, "\uff08\u672a\u767b\u9332 ", unregistered, "\u554f\uff09")
+  ),
+  /*#__PURE__*/React.createElement("div", null, "\u672a\u7740\u624b\u5408\u8a08 ", /*#__PURE__*/React.createElement("b", {
+    style: { color: "#FBBF24" }
+  }, totalUntried, "\u554f"), " \u2014 1\u65e5 ", /*#__PURE__*/React.createElement("b", {
+    style: { color: paceOk ? "#34D399" : "#F87171" }
+  }, dailyNeeded, "\u554f"), " \u89e3\u3051\u3070\u8a66\u9a13\u524d\u306b1\u5468\u5b8c\u4e86"),
   !paceOk && dailyNeeded > 0 && /*#__PURE__*/React.createElement("div", { style: { color: "#F87171", fontWeight: 600 } }, "⚠ 今日のノルマ未達（", todayAnswered, "/", dailyNeeded, "問）"),
-  untried === 0 && /*#__PURE__*/React.createElement("div", {
-    style: {
-      color: "#34D399"
-    }
-  }, "\u2713 \u5168\u554F\u984C\u30921\u5468\u5B8C\u4E86\uFF01"))), /*#__PURE__*/React.createElement("div", {
+  totalUntried === 0 && /*#__PURE__*/React.createElement("div", { style: { color: "#34D399" } }, "✓ 全問題を1周完了！"),
+  /*#__PURE__*/React.createElement("div", { style: { marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.06)" } },
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 6 } }, "科目別目標問題数（タップして変更）"),
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } },
+      SUBJECTS.map(s => /*#__PURE__*/React.createElement("div", {
+        key: s.id,
+        onClick: () => {
+          const cur = goalQ[s.id] || 0;
+          const val = window.prompt(`${s.name}の目標問題数`, cur);
+          if (val !== null && !isNaN(parseInt(val))) {
+            const updated = { ...goalQ, [s.id]: parseInt(val) };
+            setGoalQ(updated);
+            save("goalQ", updated);
+          }
+        },
+        style: { padding: "4px 8px", borderRadius: 8, background: s.bg, border: `1px solid ${s.color}40`, cursor: "pointer", fontSize: 11 }
+      },
+        /*#__PURE__*/React.createElement("span", { style: { color: s.color, fontWeight: 600 } }, s.short, " "),
+        /*#__PURE__*/React.createElement("span", { style: { color: "rgba(255,255,255,0.6)" } }, goalQ[s.id] || 0, "問")
+      ))
+    )
+  ))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",

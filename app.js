@@ -2346,7 +2346,7 @@ function QuizTab(_ref10) {
       total: 0
     });
   };
-  const finishSession = () => {
+  const finishSession = async () => {
     clearInterval(timedRef.current);
     setTimedDone(true);
     setTimedResult({
@@ -2354,6 +2354,18 @@ function QuizTab(_ref10) {
       total: session.total,
       sec: timedSec
     });
+    // 学習時間をlogsに記録（1分以上の場合）
+    const mins = Math.floor(timedSec / 60);
+    if (mins > 0) {
+      const today = todayStr();
+      const newLogs = {
+        ...logs
+      };
+      if (!newLogs[today]) newLogs[today] = {};
+      newLogs[today]["演習"] = (newLogs[today]["演習"] || 0) + mins;
+      setLogs(newLogs);
+      await save("logs", newLogs);
+    }
   };
   const resetSession = () => {
     clearInterval(timedRef.current);

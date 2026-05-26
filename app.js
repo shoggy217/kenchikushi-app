@@ -48,6 +48,14 @@ const PULSE_STYLE = `
 `;
 
 // ── CONSTANTS ──────────────────────────────────────────────
+// 科目別設問数・合格ライン（一級建築士学科試験）
+const SUBJECT_EXAM = {
+  keikaku: { total: 20, pass: 11 },  // 計画
+  kankyo:  { total: 20, pass: 11 },  // 環境・設備
+  houki:   { total: 30, pass: 16 },  // 法規（足切り高め）
+  kouzou:  { total: 30, pass: 16 },  // 構造（足切り高め）
+  sekou:   { total: 25, pass: 13 }   // 施工
+};
 const SUBJECTS = [{
   id: "keikaku",
   name: "計画",
@@ -1405,12 +1413,15 @@ function HomeTab(_ref4) {
 
   // 学習ペース計算
   const EXAM_DATE = new Date("2027-07-25");
-  const daysLeft = Math.ceil((EXAM_DATE - new Date()) / 86400000);
+  const nowMs = nowJST();
+  const daysLeft = Math.ceil((EXAM_DATE - nowMs) / 86400000);
   const dueToday = questions.filter(q => (q.history || []).length > 0 && isDueToday(q)).length;
   const untried = questions.filter(q => !(q.history || []).length).length;
   const dailyNeeded = untried > 0 ? Math.ceil(untried / daysLeft) : 0;
   const todaySrsLimit = Math.min(dueToday, 20);
   const todaySrsDone = questions.filter(q => (q.history || []).length > 0 && q.lastAnswered === todayStr() && !isDueToday(q)).length;
+  const todayAnswered = questions.filter(q => q.lastAnswered === todayStr()).length;
+  const paceOk = dailyNeeded === 0 || todayAnswered >= dailyNeeded;
 
   // 科目別1周進捗
   const subjectProgress = SUBJECTS.map(s => {
@@ -1422,6 +1433,19 @@ function HomeTab(_ref4) {
       done
     };
   }).filter(s => s.total > 0);
+
+  // 科目別合格ライン進捗（直近3回の正解率ベース）
+  const passLineProgress = SUBJECTS.map(s => {
+    const exam = SUBJECT_EXAM[s.id];
+    const qs = questions.filter(q => q.subject === s.id && (q.history || []).length > 0);
+    const mastered = qs.filter(q => {
+      const h = (q.history || []).slice(-3);
+      return h.length >= 2 && h.filter(x => x === "○").length === h.length;
+    }).length;
+    // 習得問題数が試験問題数に占める割合で実力を推定
+    const estCorrect = exam ? Math.min(Math.round(mastered / Math.max(qs.length, 1) * exam.total), exam.total) : 0;
+    return { ...s, exam, mastered, estCorrect, qs: qs.length };
+  }).filter(s => s.qs > 0);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
@@ -1478,7 +1502,7 @@ function HomeTab(_ref4) {
     }
   }, /*#__PURE__*/React.createElement("div", null, "\u8A66\u9A13\u307E\u3067 ", /*#__PURE__*/React.createElement("b", {
     style: {
-      color: "#fff"
+      color: daysLeft <= 30 ? "#F87171" : daysLeft <= 90 ? "#FBBF24" : "#fff"
     }
   }, daysLeft, "\u65E5")), untried > 0 && /*#__PURE__*/React.createElement("div", null, "\u672A\u7740\u624B ", /*#__PURE__*/React.createElement("b", {
     style: {
@@ -1486,9 +1510,11 @@ function HomeTab(_ref4) {
     }
   }, untried, "\u554F"), " \u2014 1\u65E5 ", /*#__PURE__*/React.createElement("b", {
     style: {
-      color: "#fff"
+      color: paceOk ? "#34D399" : "#F87171"
     }
-  }, dailyNeeded, "\u554F"), " \u89E3\u3051\u3070\u8A66\u9A13\u524D\u306B1\u5468\u5B8C\u4E86"), untried === 0 && /*#__PURE__*/React.createElement("div", {
+  }, dailyNeeded, "\u554F"), " \u89E3\u3051\u3070\u8A66\u9A13\u524D\u306B1\u5468\u5B8C\u4E86"),
+  !paceOk && dailyNeeded > 0 && /*#__PURE__*/React.createElement("div", { style: { color: "#F87171", fontWeight: 600 } }, "⚠ 今日のノルマ未達（", todayAnswered, "/", dailyNeeded, "問）"),
+  untried === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       color: "#34D399"
     }
@@ -1614,7 +1640,31 @@ function HomeTab(_ref4) {
       fontSize: 20,
       opacity: 0.6
     }
-  }, "\u2192")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u76F4\u8FD17\u65E5"), /*#__PURE__*/React.createElement("div", {
+  }, "\u2192")), /*#__PURE__*/React.createElement(Card, null,
+    /*#__PURE__*/React.createElement(SectionTitle, null, "🎯 合格ライン進捗"),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 12 } }, "習得問題数から本番正解数を推定"),
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+      passLineProgress.length > 0 ? passLineProgress.map(s => {
+        const exam = s.exam || { total: 25, pass: 13 };
+        const pct = Math.min(s.estCorrect / exam.total * 100, 100);
+        const passPct = exam.pass / exam.total * 100;
+        const color = s.estCorrect >= exam.pass ? "#34D399" : s.estCorrect >= exam.pass * 0.8 ? "#FBBF24" : "#F87171";
+        return /*#__PURE__*/React.createElement("div", { key: s.id },
+          /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 } },
+            /*#__PURE__*/React.createElement("span", { style: { color: s.color, fontWeight: 600 } }, s.name),
+            /*#__PURE__*/React.createElement("span", { style: { color, fontVariantNumeric: "tabular-nums" } },
+              s.estCorrect, "/", exam.total, "点推定 ",
+              /*#__PURE__*/React.createElement("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 10 } }, "(合格 ", exam.pass, "点)")
+            )
+          ),
+          /*#__PURE__*/React.createElement("div", { style: { position: "relative", height: 8, background: "rgba(255,255,255,0.07)", borderRadius: 99 } },
+            /*#__PURE__*/React.createElement("div", { style: { height: "100%", width: `${pct}%`, background: color, borderRadius: 99, transition: "width 0.5s" } }),
+            /*#__PURE__*/React.createElement("div", { style: { position: "absolute", top: 0, left: `${passPct}%`, width: 2, height: "100%", background: "rgba(255,255,255,0.5)", borderRadius: 1 } })
+          )
+        );
+      }) : /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "8px 0" } }, "問題に回答すると進捗が表示されます")
+    )
+  ), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u76F4\u8FD17\u65E5"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 6,
@@ -2298,7 +2348,7 @@ function QuizTab(_ref10) {
     if (mode === "AB") arr = arr.filter(q => !q.rank || q.rank === "A" || q.rank === "B");else if (mode === "A") arr = arr.filter(q => q.rank === "A");else if (mode === "weak") arr = arr.filter(q => {
       const r = (q.history || []).slice(-3);
       return r.filter(x => x === "×").length >= 2;
-    });else if (mode === "starred") arr = arr.filter(q => q.starred);else if (mode === "untried") arr = arr.filter(q => !q.history || !q.history.length);
+    });else if (mode === "starred") arr = arr.filter(q => q.starred);else if (mode === "bookmark") arr = arr.filter(q => q.bookmarked);else if (mode === "untried") arr = arr.filter(q => !q.history || !q.history.length);
     const priority = q => {
       const h = q.history || [];
       if (!h.length) return 1;
@@ -2325,6 +2375,13 @@ function QuizTab(_ref10) {
       };
       notDoneToday.sort((a, b) => priority(a) - priority(b));
       return [...notDoneToday, ...doneToday];
+    }
+    // 条文クイズ: refs(参照条文)がある問題のみ
+    if (course === "jomon") {
+      const joArr = [...questions].filter(q => q.refs && q.refs.trim().length > 0);
+      if (subj !== "all") joArr.filter(q => q.subject === subj);
+      joArr.sort((a, b) => priority(a) - priority(b));
+      return joArr;
     }
     return [...notSolvedToday, ...solvedToday];
   }, [questions, subj, mode, course]);
@@ -2448,6 +2505,11 @@ function QuizTab(_ref10) {
     await save("logs", newLogs);
   };
 
+  const toggleBookmark = async (qId) => {
+    const updated = questions.map(qq => qq.id !== qId ? qq : { ...qq, bookmarked: !qq.bookmarked });
+    setQuestions(updated);
+    save("questions_v3", updated);
+  };
   const finishSession = async () => {
     clearInterval(timedRef.current);
     await saveElapsed(false);
@@ -2588,7 +2650,7 @@ function QuizTab(_ref10) {
         display: "flex",
         gap: 8
       }
-    }, [["normal", "🆕 新規"], ["srs", "🔄 反復"]].map(_ref11 => {
+    }, [["normal", "🆕 新規"], ["srs", "🔄 反復"], ["jomon", "📜 条文"]].map(_ref11 => {
       let _ref12 = _slicedToArray(_ref11, 2),
         id = _ref12[0],
         label = _ref12[1];
@@ -2963,7 +3025,12 @@ function QuizTab(_ref10) {
         cursor: "pointer"
       }
     }, "\u7D42\u4E86")));
-  })(), (() => {
+  })(),
+  course === "jomon" && done && q && q.refs && /*#__PURE__*/React.createElement("div", {
+    style: { padding: "10px 14px", background: "rgba(91,159,255,0.07)", borderRadius: 12, border: "1px solid rgba(91,159,255,0.2)", fontSize: 12, marginBottom: 4 }
+  }, /*#__PURE__*/React.createElement("div", { style: { color: "#5B9FFF", fontWeight: 700, marginBottom: 6 } }, "\uD83D\uDCDC \u6761\u6587\u78BA\u8A8D"),
+     /*#__PURE__*/React.createElement("div", { style: { color: "rgba(255,255,255,0.75)", lineHeight: 1.8 } }, q.refs)),
+  (() => {
     const today = todayStr();
     const solvedToday = questions.filter(q => q.lastAnswered === today).length;
     const total = pool.length;
@@ -3076,7 +3143,11 @@ function QuizTab(_ref10) {
       alignItems: "center",
       gap: 10
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => toggleBookmark(q.id),
+    title: q.bookmarked ? "ブックマーク解除" : "ブックマーク",
+    style: { background: "none", border: "none", cursor: "pointer", fontSize: 16, lineHeight: 1, opacity: q.bookmarked ? 1 : 0.2, transition: "opacity 0.15s", padding: 0 }
+  }, "\uD83D\uDD16"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 3
@@ -3634,7 +3705,7 @@ function FilterBar(_ref18) {
       paddingBottom: 4,
       scrollbarWidth: "none"
     }
-  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null]].map(_ref19 => {
+  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null], ["bookmark", "🔖", "#5B9FFF"]].map(_ref19 => {
     let _ref20 = _slicedToArray(_ref19, 3),
       v = _ref20[0],
       l = _ref20[1],

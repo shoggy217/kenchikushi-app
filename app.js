@@ -1888,38 +1888,41 @@ function HomeTab(_ref4) {
   yesterdayMissed.length > 0 && /*#__PURE__*/React.createElement(Card, null,
     /*#__PURE__*/React.createElement(SectionTitle, null, "📋 昨日のミス ", yesterdayMissed.length, "問"),
     /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 10 } }, "今日必ず復習しましょう"),
-    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
       yesterdayMissed.slice(0, 5).map(q => /*#__PURE__*/React.createElement("div", {
         key: q.id,
         style: { padding: "10px 12px", background: "rgba(248,113,113,0.07)", borderRadius: 8, border: "1px solid rgba(248,113,113,0.15)" }
       },
-        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginBottom: 4, flexWrap: "wrap" } },
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" } },
           q.year && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "#F87171", fontWeight: 700 } }, q.year, q.no ? `-${String(q.no).padStart(2,"0")}` : ""),
           q.topic && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 } }, q.topic),
-          q.refs && /*#__PURE__*/React.createElement("span", { style: { fontSize: 10, color: "rgba(91,159,255,0.7)" } }, "📜 ", q.refs.slice(0, 20), q.refs.length > 20 ? "…" : "")
+          q.refs && /*#__PURE__*/React.createElement("span", { style: { fontSize: 10, color: "rgba(91,159,255,0.7)" } }, "📜 ", q.refs.slice(0, 25))
         ),
-        /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 } },
-          q.q.slice(0, 80), q.q.length > 80 ? "…" : ""
-        )
+        (q.opts || []).map((opt, i) => /*#__PURE__*/React.createElement("div", {
+          key: i,
+          style: { fontSize: 11, color: i === q.correct ? "#34D399" : "rgba(255,255,255,0.55)", lineHeight: 1.5, padding: "2px 0", borderLeft: i === q.correct ? "2px solid #34D399" : "2px solid transparent", paddingLeft: 6, marginBottom: 2 }
+        }, opt.slice(0, 60), opt.length > 60 ? "…" : ""))
       ))
     )
   ),
   redFlagQuestions.length > 0 && /*#__PURE__*/React.createElement(Card, null,
     /*#__PURE__*/React.createElement(SectionTitle, null, "🚩 赤フラグ（3連続×） ", redFlagQuestions.length, "問"),
     /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 10 } }, "直近3回すべて不正解。集中的に取り組んでください"),
-    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
       redFlagQuestions.slice(0, 5).map(q => /*#__PURE__*/React.createElement("div", {
         key: q.id,
         style: { padding: "10px 12px", background: "rgba(239,68,68,0.08)", borderRadius: 8, border: "1px solid rgba(239,68,68,0.25)" }
       },
-        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginBottom: 4, flexWrap: "wrap" } },
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" } },
           q.year && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "#F87171", fontWeight: 700 } }, q.year, q.no ? `-${String(q.no).padStart(2,"0")}` : ""),
           q.topic && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 4 } }, q.topic),
-          /*#__PURE__*/React.createElement("span", { style: { color: "#F87171", fontWeight: 700, marginLeft: "auto" } }, "×××")
+          q.refs && /*#__PURE__*/React.createElement("span", { style: { fontSize: 10, color: "rgba(91,159,255,0.7)" } }, "📜 ", q.refs.slice(0, 25)),
+          /*#__PURE__*/React.createElement("span", { style: { color: "#F87171", fontWeight: 700, fontSize: 11, marginLeft: "auto" } }, "×××")
         ),
-        /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 } },
-          q.q.slice(0, 80), q.q.length > 80 ? "…" : ""
-        )
+        (q.opts || []).map((opt, i) => /*#__PURE__*/React.createElement("div", {
+          key: i,
+          style: { fontSize: 11, color: i === q.correct ? "#34D399" : "rgba(255,255,255,0.55)", lineHeight: 1.5, padding: "2px 0", borderLeft: i === q.correct ? "2px solid #34D399" : "2px solid transparent", paddingLeft: 6, marginBottom: 2 }
+        }, opt.slice(0, 60), opt.length > 60 ? "…" : ""))
       ))
     )
   ),

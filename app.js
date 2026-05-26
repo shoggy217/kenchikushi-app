@@ -1520,8 +1520,8 @@ function HomeTab(_ref4) {
   }, daysLeft, "\u65E5")),
   /*#__PURE__*/React.createElement("div", null,
     "\u767b\u9332\u6e08 ", /*#__PURE__*/React.createElement("b", { style: { color: "#fff" } }, questions.length, "\u554f"),
-    " / \u76ee\u6a19 ", /*#__PURE__*/React.createElement("b", { style: { color: "#5B9FFF" } }, totalGoal, "\u554f"),
-    unregistered > 0 && /*#__PURE__*/React.createElement("span", { style: { color: "rgba(255,255,255,0.35)", fontSize: 11 } }, "\uff08\u672a\u767b\u9332 ", unregistered, "\u554f\uff09")
+    " / \u76ee\u6a19 ", /*#__PURE__*/React.createElement("b", { style: { color: "#5B9FFF" } }, _totalGoal, "\u554f"),
+    _unregistered > 0 && /*#__PURE__*/React.createElement("span", { style: { color: "rgba(255,255,255,0.35)", fontSize: 11 } }, "\uff08\u672a\u767b\u9332 ", _unregistered, "\u554f\uff09")
   ),
   /*#__PURE__*/React.createElement("div", null, "\u672a\u7740\u624b\u5408\u8a08 ", /*#__PURE__*/React.createElement("b", {
     style: { color: "#FBBF24" }

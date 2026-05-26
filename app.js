@@ -2699,22 +2699,23 @@ function QuizTab(_ref10) {
       alignItems: "center",
       justifyContent: "space-between",
       marginBottom: 20,
-      flexWrap: "wrap",
       gap: 8
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",
-      gap: 8,
-      flexWrap: "wrap"
+      gap: 6,
+      flexWrap: "wrap",
+      flex: 1
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       width: 8,
       height: 8,
       borderRadius: 99,
-      background: subj_.color
+      background: subj_.color,
+      flexShrink: 0
     }
   }), /*#__PURE__*/React.createElement("span", {
     style: {
@@ -2756,13 +2757,14 @@ function QuizTab(_ref10) {
       padding: "1px 6px",
       borderRadius: 4
     }
-  }, "\u6559\u79D1\u66F8 p.", q.tbPage), q.lastAnswered && /*#__PURE__*/React.createElement("span", {
+  }, "\u6559\u79D1\u66F8 p.", q.tbPage)), q.lastAnswered && /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 10,
-      color: "rgba(255,255,255,0.2)",
-      marginLeft: "auto"
+      color: "rgba(255,255,255,0.25)",
+      flexShrink: 0,
+      whiteSpace: "nowrap"
     }
-  }, "\uD83D\uDD50 ", relativeDate(q.lastAnswered))), /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDD50 ", relativeDate(q.lastAnswered)), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       alignItems: "center",

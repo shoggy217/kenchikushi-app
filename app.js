@@ -4473,8 +4473,17 @@ function HistoryEditor(_ref29) {
     _useState92 = _slicedToArray(_useState91, 2),
     expanded = _useState92[0],
     setExpanded = _useState92[1];
+  const _useStateSort = useState("newest"),
+    _useStateSort2 = _slicedToArray(_useStateSort, 2),
+    sortOrder = _useStateSort2[0],
+    setSortOrder = _useStateSort2[1];
   const answered = questions.filter(q => (q.history || []).length > 0);
-  const filtered = search ? answered.filter(q => q.q.includes(search) || q.topic?.includes(search) || q.year?.includes(search) || q.refs?.includes(search)) : answered;
+  const filtered = (search ? answered.filter(q => q.q.includes(search) || q.topic?.includes(search) || q.year?.includes(search) || q.refs?.includes(search)) : [...answered])
+    .sort((a, b) => {
+      const da = a.lastAnswered || "";
+      const db = b.lastAnswered || "";
+      return sortOrder === "newest" ? db.localeCompare(da) : da.localeCompare(db);
+    });
   const removeLastHistory = async qId => {
     const updated = questions.map(q => {
       if (q.id !== qId) return q;
@@ -4529,22 +4538,37 @@ function HistoryEditor(_ref29) {
       color: "rgba(255,255,255,0.4)",
       marginBottom: 16
     }
-  }, "\u8AA4\u3063\u3066\u56DE\u7B54\u3057\u305F\u8A18\u9332\u3092\u4FEE\u6B63\u30FB\u524A\u9664\u3067\u304D\u307E\u3059"), /*#__PURE__*/React.createElement("input", {
+  }, "\u8AA4\u3063\u3066\u56DE\u7B54\u3057\u305F\u8A18\u9332\u3092\u4FEE\u6B63\u30FB\u524A\u9664\u3067\u304D\u307E\u3059"), /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }
+  }, /*#__PURE__*/React.createElement("input", {
     value: search,
     onChange: e => setSearch(e.target.value),
     placeholder: "\u554F\u984C\u30FB\u6761\u6587\u30FB\u5E74\u5EA6\u3067\u691C\u7D22...",
     style: {
-      width: "100%",
+      flex: 1,
       background: "rgba(255,255,255,0.06)",
       border: "1px solid rgba(255,255,255,0.1)",
       borderRadius: 10,
       padding: "10px 12px",
       fontSize: 13,
       color: "#fff",
-      marginBottom: 12,
       fontFamily: "inherit"
     }
-  }), filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSortOrder(o => o === "newest" ? "oldest" : "newest"),
+    style: {
+      padding: "10px 12px",
+      borderRadius: 10,
+      background: "rgba(91,159,255,0.1)",
+      border: "1px solid rgba(91,159,255,0.25)",
+      color: "#5B9FFF",
+      fontSize: 12,
+      cursor: "pointer",
+      fontFamily: "inherit",
+      flexShrink: 0,
+      whiteSpace: "nowrap"
+    }
+  }, sortOrder === "newest" ? "\u2193 \u6700\u8FD1" : "\u2191 \u53E4\u3044")), filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 13,
       color: "rgba(255,255,255,0.3)",

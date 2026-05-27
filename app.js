@@ -154,7 +154,7 @@ const fmtMD = d => `${d.getMonth() + 1}/${d.getDate()}`;
 const QUESTION_FILES = ["houki", "sekou", "kouzou", "kankyo", "keikaku"];
 const loadAllQuestions = async () => {
   const results = await Promise.allSettled(
-    QUESTION_FILES.map(s => fetch(`questions/${s}.json`).then(r => r.ok ? r.json() : []))
+    QUESTION_FILES.map(s => fetch(`${s}.json`).then(r => r.ok ? r.json() : []))
   );
   return results.flatMap(r => r.status === "fulfilled" ? r.value : []);
 };

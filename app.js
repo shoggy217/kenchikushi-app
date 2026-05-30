@@ -740,6 +740,10 @@ function App() {
     id: "notes",
     icon: "📝",
     label: "ノート"
+  }, {
+    id: "search",
+    icon: "🔍",
+    label: "検索"
   }];
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("style", null, PULSE_STYLE), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -862,7 +866,56 @@ function App() {
     setQuestions: setQuestions,
     pendingCount: pendingCount,
     importPending: importPending
-  }), tab === "notes" && /*#__PURE__*/React.createElement(NotesTab, null)), /*#__PURE__*/React.createElement("div", {
+  }), tab === "notes" && /*#__PURE__*/React.createElement(NotesTab, null)
+  }), tab === "search" && /*#__PURE__*/React.createElement("div", {
+    style: { padding: "12px 0" }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { marginBottom: 12 }
+  }, /*#__PURE__*/React.createElement("input", {
+    value: searchInput,
+    onChange: e => setSearchInput(e.target.value),
+    placeholder: "ID・問題文・条文・年度で検索...",
+    style: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "0.5px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)", color: "#fff", fontSize: 14 }
+  }), searchInput && /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4 }
+  }, `${searchResults.length}件`)), selectedQuestion ? /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setSelectedQuestion(null),
+    style: { background: "rgba(91,159,255,0.1)", border: "0.5px solid rgba(91,159,255,0.2)", borderRadius: 8, padding: "8px 12px", color: "#5B9FFF", cursor: "pointer", fontSize: 13, marginBottom: 12 }
+  }, "← 戻る"), /*#__PURE__*/React.createElement("div", {
+    style: { background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: 16 }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { marginBottom: 12 }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 4 }
+  }, selectedQuestion.id, selectedQuestion.year ? ` (${selectedQuestion.year}-${selectedQuestion.no})` : "", selectedQuestion.rank ? ` [${selectedQuestion.rank}]` : ""), /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 14, fontWeight: 500, marginBottom: 12, lineHeight: 1.6 }
+  }, selectedQuestion.q)), /*#__PURE__*/React.createElement("div", {
+    style: { marginBottom: 12 }
+  }, selectedQuestion.opts && selectedQuestion.opts.map((opt, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: { padding: "8px 12px", background: selectedQuestion.correct === i ? "rgba(52,211,153,0.1)" : "rgba(255,255,255,0.03)", border: "0.5px solid " + (selectedQuestion.correct === i ? "rgba(52,211,153,0.2)" : "rgba(255,255,255,0.07)"), borderRadius: 6, marginBottom: 6, fontSize: 13, color: selectedQuestion.correct === i ? "#34D399" : "#fff" }
+  }, /*#__PURE__*/React.createElement("strong", null, i + 1), ". ", opt))), selectedQuestion.svg && /*#__PURE__*/React.createElement("div", {
+    style: { background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 12, marginBottom: 12, maxHeight: 320, overflow: "auto", border: "0.5px solid rgba(255,255,255,0.07)" }
+  }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 8 } }, "図"), /*#__PURE__*/React.createElement("div", { dangerouslySetInnerHTML: { __html: selectedQuestion.svg } })), selectedQuestion.explain && /*#__PURE__*/React.createElement("div", {
+    style: { marginBottom: 12 }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.7)", marginBottom: 6 }
+  }, "解説"), /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 13, lineHeight: 1.6, color: "rgba(255,255,255,0.6)", whiteSpace: "pre-wrap" }
+  }, selectedQuestion.explain)), selectedQuestion.refs && /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 12, color: "rgba(255,255,255,0.4)", borderTop: "0.5px solid rgba(255,255,255,0.07)", paddingTop: 12 }
+  }, "参照: ", selectedQuestion.refs))) : /*#__PURE__*/React.createElement("div", {
+    style: { display: "grid", gap: 8 }
+  }, searchResults.map(q => /*#__PURE__*/React.createElement("button", {
+    key: q.id,
+    onClick: () => setSelectedQuestion(q),
+    style: { background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 8, padding: 12, textAlign: "left", cursor: "pointer", color: "#fff" }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 4 }
+  }, q.id, q.rank && ` [${q.rank}]`, q.hasFig && " 📐"), /*#__PURE__*/React.createElement("div", {
+    style: { fontSize: 13, lineHeight: 1.4 }
+  }, q.q.substring(0, 80) + (q.q.length > 80 ? "..." : ""))))))
+), /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
       bottom: 0,
@@ -4324,9 +4377,7 @@ function ManageTab(_ref30) {
       topic: "",
       textbook: "",
       qPage: "",
-      tbPage: "",
-      svg: "",
-      hasFig: false
+      tbPage: ""
     }),
     _useState102 = _slicedToArray(_useState101, 2),
     form = _useState102[0],
@@ -4342,6 +4393,30 @@ function ManageTab(_ref30) {
     setImporting(false);
     setImportDone(n || 0);
   };
+
+  // 検索機能
+  const _useState109 = useState(""),
+    _useState110 = _slicedToArray(_useState109, 2),
+    searchInput = _useState110[0],
+    setSearchInput = _useState110[1];
+  const _useState111 = useState(null),
+    _useState112 = _slicedToArray(_useState111, 2),
+    selectedQuestion = _useState111[0],
+    setSelectedQuestion = _useState112[1];
+  
+  const searchQuestions = () => {
+    if (!searchInput.trim()) return [];
+    const query = searchInput.toLowerCase();
+    return questions.filter(q => 
+      q.id.toLowerCase().includes(query) ||
+      q.q.toLowerCase().includes(query) ||
+      (q.topic || "").toLowerCase().includes(query) ||
+      (q.refs || "").toLowerCase().includes(query) ||
+      (q.year || "").toLowerCase().includes(query)
+    ).slice(0, 50);
+  };
+  
+  const searchResults = searchInput.trim() ? searchQuestions() : [];
   const addManual = () => {
     if (!form.q.trim() || form.opts.some(o => !o.trim())) {
       setMsg("問題文と全選択肢を入力してください");
@@ -4698,7 +4773,7 @@ function ManageTab(_ref30) {
     }),
     placeholder: "\u53C2\u7167\u6761\u6587(\u6CD52\u6761\u4E5D\u53F7 \u7B49)",
     style: inp
-  }), form.hasFig && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", { style: { fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 8, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 12 } }, /*#__PURE__*/React.createElement("input", { type: "checkbox", checked: form.hasFig || false, onChange: e => setForm({ ...form, hasFig: e.target.checked }), style: { cursor: "pointer", width: 16, height: 16 } }), "図あり"), form.hasFig && /*#__PURE__*/React.createElement("textarea", { value: form.svg || "", onChange: e => setForm({ ...form, svg: e.target.value }), placeholder: "<svg ...> SVGコード </svg>", rows: 4, style: { ...inp, resize: "none", marginTop: 8, fontFamily: "monospace", fontSize: 11 } }), form.svg && /*#__PURE__*/React.createElement("div", { style: { marginTop: 12, padding: 12, background: "rgba(91,159,255,0.08)", borderRadius: 8, maxHeight: 300, overflow: "auto", border: "0.5px solid rgba(91,159,255,0.2)" } }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.7)", marginBottom: 8 } }, "📐 SVGプレビュー"), /*#__PURE__*/React.createElement("div", { dangerouslySetInnerHTML: { __html: form.svg }, style: { background: "#1c1c1e", padding: 8, borderRadius: 4 } }))), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
       gridTemplateColumns: "1fr 1fr",

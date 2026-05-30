@@ -4324,7 +4324,9 @@ function ManageTab(_ref30) {
       topic: "",
       textbook: "",
       qPage: "",
-      tbPage: ""
+      tbPage: "",
+      svg: "",
+      hasFig: false
     }),
     _useState102 = _slicedToArray(_useState101, 2),
     form = _useState102[0],
@@ -4696,7 +4698,7 @@ function ManageTab(_ref30) {
     }),
     placeholder: "\u53C2\u7167\u6761\u6587(\u6CD52\u6761\u4E5D\u53F7 \u7B49)",
     style: inp
-  }), /*#__PURE__*/React.createElement("div", {
+  }), form.hasFig && /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", { style: { fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 8, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginTop: 12 } }, /*#__PURE__*/React.createElement("input", { type: "checkbox", checked: form.hasFig || false, onChange: e => setForm({ ...form, hasFig: e.target.checked }), style: { cursor: "pointer", width: 16, height: 16 } }), "図あり"), form.hasFig && /*#__PURE__*/React.createElement("textarea", { value: form.svg || "", onChange: e => setForm({ ...form, svg: e.target.value }), placeholder: "<svg ...> SVGコード </svg>", rows: 4, style: { ...inp, resize: "none", marginTop: 8, fontFamily: "monospace", fontSize: 11 } }), form.svg && /*#__PURE__*/React.createElement("div", { style: { marginTop: 12, padding: 12, background: "rgba(91,159,255,0.08)", borderRadius: 8, maxHeight: 300, overflow: "auto", border: "0.5px solid rgba(91,159,255,0.2)" } }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.7)", marginBottom: 8 } }, "📐 SVGプレビュー"), /*#__PURE__*/React.createElement("div", { dangerouslySetInnerHTML: { __html: form.svg }, style: { background: "#1c1c1e", padding: 8, borderRadius: 4 } }))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "grid",
       gridTemplateColumns: "1fr 1fr",

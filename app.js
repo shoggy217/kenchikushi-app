@@ -1223,6 +1223,27 @@ function HomeTab(_ref4) {
       /*#__PURE__*/React.createElement("div", { style: { fontSize: 36, fontWeight: 200, lineHeight: 1 } }, todayMin),
       /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 4 } }, "\u5206")
     )
+  ),
+  /*#__PURE__*/React.createElement(Card, null,
+    /*#__PURE__*/React.createElement(SectionTitle, null, "\u79D1\u76EE\u5225\u9054\u6210\u72B6\u6CC1"),
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+      subjectProgress.length === 0
+        ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "12px 0" } }, "\u307E\u3060\u56DE\u7B54\u304C\u3042\u308A\u307E\u305B\u3093")
+        : subjectProgress.map(s => /*#__PURE__*/React.createElement("div", { key: s.id },
+            /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 5 } },
+              /*#__PURE__*/React.createElement("span", { style: { color: s.color, fontWeight: 600 } }, s.name),
+              /*#__PURE__*/React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontVariantNumeric: "tabular-nums" } },
+                s.done, " / ", s.total, "\u554F",
+                s.total > 0 ? /*#__PURE__*/React.createElement("span", { style: { color: "rgba(255,255,255,0.3)", marginLeft: 6 } },
+                  "(" + Math.round(s.done / s.total * 100) + "%)"
+                ) : null
+              )
+            ),
+            /*#__PURE__*/React.createElement("div", { style: { height: 5, background: "rgba(255,255,255,0.07)", borderRadius: 99 } },
+              /*#__PURE__*/React.createElement("div", { style: { height: "100%", width: (s.total > 0 ? s.done / s.total * 100 : 0) + "%", background: s.color, borderRadius: 99, opacity: 0.8, transition: "width 0.4s" } })
+            )
+          ))
+    )
   ));
 }
 

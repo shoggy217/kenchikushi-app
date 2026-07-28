@@ -200,9 +200,8 @@ const CHAPTERS = {
   }, {
     id: "h_2",
     name: "第2章 一般構造",
-    page: 50,
-    textbook: "【第2章 一般構造 テキストより p.50〜69】\n\n■ 居室の採光（法28条1項、令19条）p.50\n・採光を必要とする居室と割合\n  住宅の居室：1/7以上\n  学校（幼稚園〜高校）の教室：1/5以上\n  保育所・幼保連携型認定こども園の保育室：1/5以上\n  病院・診療所の病室、寄宿舎の寝室：1/7以上\n  大学・専修学校などの教室、病院等の談話室：1/10以上\n・採光有効面積＝開口部面積×採光補正係数\n\n■ 採光補正係数（令20条）p.52\n・住居系地域：6×d/h－1.4　緩和7m\n・工業系地域：8×d/h－1　　緩和5m\n・商業系・用途地域指定なし：10×d/h－1　緩和4m\n・道に面する場合で計算結果が1.0未満→1.0とする\n・計算結果が負→0（採光上無効）\n・最大値は3\n・天窓がある場合：算定値の3倍\n・外側に90cm以上の縁側（ぬれ縁除く）：算定値の0.7倍\n\n■ 居室の換気（法28条2項）p.55\n・居室には換気上有効な開口部を設け、床面積の1/20以上\n・換気設備を設けた場合は1/20未満でもよい\n・随時開放できるふすま・障子等で仕切られた2室→1室として計算\n・集会場等（劇場・映画館・演芸場・観覧場・公会堂・集会場）：機械換気設備・中央管理方式の空気調和設備・大臣認定のいずれかが必要\n\n■ 石綿・シックハウス対策（法28条の2）p.58\n・石綿：建築材料に添加・使用禁止\n・石綿使用の既存建築物→既存不適格建築物（増改築時は除去が原則）\n・除去義務の緩和条件：①増改築部分が基準時の延べ面積の1/2以下 ②増改築部分に石綿を使用しない ③既存部分を大臣基準（被覆・固着）に適合させる\n・クロルビリホス：添加・使用禁止（5年以上経過したものは除かれる）\n・ホルムアルデヒド発散建築材料：第一種（使用禁止）、第二種・第三種（面積制限）\n・24時間換気の機械換気設備の設置義務（住宅等：0.5回/時以上、その他：0.3回/時以上）\n\n■ 居室の天井の高さ（令21条）p.62\n・居室の天井の高さは2.1m以上\n・1室で天井の高さが異なる場合→平均の高さ\n・平均天井高＝室の容積÷床面積＝室の断面積÷底辺の長さ\n\n■ 居室の床の高さ・防湿方法（令22条）p.62\n・床が木造の場合：床高45cm以上（直下の地面から床の上面）\n・床下換気孔：設置間隔5m以内、大きさ300㎝²以上\n\n■ 長屋・共同住宅の遮音（法30条、令22条の3）p.63\n・各戸の界壁：政令で定める技術的基準（遮音性能）に適合すること\n・遮音基準（透過損失）：125Hz→25dB以上、500Hz→40dB以上、2,000Hz→50dB以上\n・小屋裏又は天井裏に達するものであること\n・注意：寄宿舎・児童福祉施設等には適用しない\n\n■ 階段の各部寸法（令23条）p.63\n・(1)小学校（児童用）：幅140以上、蹴上16以下、踏面26以上\n・(2)中学校〜高校（生徒用）・1,500㎡超の物販・劇場など：幅140以上、蹴上18以下、踏面26以上\n・(3)居室面積200㎡超の地上階、100㎡超の地階：幅120以上、蹴上20以下、踏面24以上\n・(4)(1)〜(3)以外：幅75以上、蹴上22以下、踏面21以上\n・(5)住宅の階段（共同住宅の共用階段を除く）：幅75以上、蹴上23以下、踏面15以上\n・(6)エレベーター機械室に通ずる階段：任意\n・屋外階段の幅：直通階段は90cm以上、その他は60cm以上\n\n■ 踊場の位置と踏幅（令24条）p.65\n・(1)(2)の階段：高さ3m以内ごとに踊場\n・その他の階段：高さ4m以内ごとに踊場\n・直階段の踊場の踏幅：1.2m以上\n\n■ 階段の手すり（令25条）p.65\n・階段には手すりを設けること（高さ1m以下の部分は不要）\n・幅が3mを超える場合：中間に手すりを設ける（蹴上15cm以下かつ踏面30cm以上なら不要）\n\n■ 傾斜路（令26条）p.66\n・令23条〜25条を準用（蹴上・踏面の部分を除く）\n・表面は粗面または滑りにくい材料\n・勾配は1/8以下\n\n■ 便所（法31条、令28条〜35条）p.66\n・処理区域内：水洗便所としなければならない\n・便所には直接外気に接する窓を設けること（水洗便所で照明・換気設備あれば不要）\n・屎尿浄化槽のBOD除去率・放流水のBOD基準あり",
-    topics: ["居室", "天井高", "採光", "換気", "階段", "石綿", "シックハウス", "界壁", "便所"]
+    page: 57,
+    topics: ["居室", "天井高", "採光", "換気", "階段"]
   }, {
     id: "h_3",
     name: "第3章 構造強度",
@@ -1008,11 +1007,148 @@ function Card(_ref2) {
   let children = _ref2.children,
     _ref2$style = _ref2.style,
     style = _ref2$style === void 0 ? {} : _ref2$style;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "rgba(255,255,255,0.04)",
+      borderRadius: 16,
+      padding: 20,
+      ...style
+    }
+  }, children);
+}
+function SectionTitle(_ref3) {
+  let children = _ref3.children;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      letterSpacing: "0.15em",
+      color: "rgba(255,255,255,0.3)",
+      marginBottom: 14,
+      textTransform: "uppercase"
+    }
+  }, children);
+}
+
+// ── HOME TAB ───────────────────────────────────────────────
+function HomeTab(_ref4) {
+  let streak = _ref4.streak,
+    todayMin = _ref4.todayMin,
+    totalStudyMin = _ref4.totalStudyMin,
+    weakQuestions = _ref4.weakQuestions,
+    redFlagQuestions = _ref4.redFlagQuestions,
+    slowQuestions = _ref4.slowQuestions,
+    questions = _ref4.questions,
+    goalQ = _ref4.goalQ,
+    setGoalQ = _ref4.setGoalQ,
+    setTab = _ref4.setTab,
+    logs = _ref4.logs,
+    timerRunning = _ref4.timerRunning,
+    timerSec = _ref4.timerSec,
+    toggleTimer = _ref4.toggleTimer,
+    todayDone = _ref4.todayDone,
+    setTodayDone = _ref4.setTodayDone;
+
+  const _todayDateN = nowJST();
+  const _todayKeyN = _todayDateN.toISOString().slice(0, 10);
+  const _monthKeyN = _todayKeyN.slice(0, 7);
+  const _isWeekend = _todayDateN.getDay() === 0 || _todayDateN.getDay() === 6;
+  const _todayTarget = _isWeekend ? STUDY_SCHEDULE.holidayTarget : STUDY_SCHEDULE.weekdayTarget;
+  const _curSubjId = STUDY_SCHEDULE.monthSubject[_monthKeyN] || "all";
+  const _curSubj = _curSubjId === "all" ? { name: "\u5168\u79D1\u76EE", color: "#5B9FFF" } : (SUBJECTS.find(s => s.id === _curSubjId) || { name: _curSubjId, color: "#5B9FFF" });
+  const handleNormaDone = async () => {
+    const newDone = !todayDone;
+    setTodayDone(newDone);
+    const nl = await load("norma_log", {});
+    nl[_todayKeyN] = newDone;
+    await save("norma_log", nl);
+  };
+
+  const last7 = useMemo(() => {
+    return Array.from({
+      length: 7
+    }, (_, i) => {
+      const d = nowJST();
+      d.setUTCDate(d.getUTCDate() - (6 - i));
+      const key = d.toISOString().slice(0, 10);
+      return {
+        date: fmtMD(d),
+        key
+      };
+    });
+  }, []);
+  const stats = useMemo(() => {
+    let mastered = 0,
+      learning = 0,
+      weak = 0,
+      untried = 0;
+    questions.forEach(q => {
+      const h = (q.history || []).slice(-3);
+      if (!h.length) {
+        untried++;
+        return;
+      }
+      if (h.filter(x => x === "○").length === h.length && h.length >= 2) mastered++;else if (h.filter(x => x === "×").length >= 2) weak++;else learning++;
+    });
+    return {
+      mastered,
+      learning,
+      weak,
+      untried,
+      total: questions.length
+    };
+  }, [questions]);
+
+  // 前日ミス問題
+  const yesterdayMissed = useMemo(() => {
+    const y = nowJST();
+    y.setUTCDate(y.getUTCDate() - 1);
+    const yk = y.toISOString().slice(0, 10);
+    return questions.filter(q => q.lastAnswered === yk && (q.history || []).slice(-1)[0] === "×");
+  }, [questions]);
+
+  // 学習ペース計算
+  const EXAM_DATE = new Date("2027-07-25");
+  const nowMs = nowJST();
+  const daysLeft = Math.ceil((EXAM_DATE - nowMs) / 86400000);
+  const dueToday = questions.filter(q => (q.history || []).length > 0 && isDueToday(q)).length;
+  // 目標問題数ベースの未着手数（登録済み未着手 + まだ登録していない問題）
+  const _totalGoal = Object.values(goalQ).reduce((a, b) => a + b, 0);
+  const _unregistered = Math.max(0, _totalGoal - questions.length);
+  const totalUntried = stats.untried + _unregistered;
+  const dailyNeeded = totalUntried > 0 ? Math.ceil(totalUntried / daysLeft) : 0;
+  const todaySrsLimit = Math.min(dueToday, 20);
+  const todaySrsDone = questions.filter(q => (q.history || []).length > 0 && q.lastAnswered === todayStr() && !isDueToday(q)).length;
+  const todayAnswered = questions.filter(q => q.lastAnswered === todayStr()).length;
+  const paceOk = dailyNeeded === 0 || todayAnswered >= dailyNeeded;
+
+  // 科目別1周進捗
+  const subjectProgress = SUBJECTS.map(s => {
+    const qs = questions.filter(q => q.subject === s.id);
+    const done = qs.filter(q => (q.history || []).length > 0).length;
+    return {
+      ...s,
+      total: qs.length,
+      done
+    };
+  }).filter(s => s.total > 0);
+
+  // 科目別合格ライン進捗（直近3回の正解率ベース）
+  const passLineProgress = SUBJECTS.map(s => {
+    const exam = SUBJECT_EXAM[s.id];
+    const qs = questions.filter(q => q.subject === s.id && (q.history || []).length > 0);
+    const mastered = qs.filter(q => {
+      const h = (q.history || []).slice(-3);
+      return h.length >= 2 && h.filter(x => x === "○").length === h.length;
+    }).length;
+    // 習得問題数が試験問題数に占める割合で実力を推定
+    const estCorrect = exam ? Math.min(Math.round(mastered / Math.max(qs.length, 1) * exam.total), exam.total) : 0;
+    return { ...s, exam, mastered, estCorrect, qs: qs.length };
+  }).filter(s => s.qs > 0);
   // フェーズ計算
   const _phases = [
-    { label: "フェーズ1\nインプット", start: "2026-08", end: "2026-11", color: "#5B9FFF" },
-    { label: "フェーズ2\n反復強化",   start: "2026-12", end: "2027-03", color: "#A78BFA" },
-    { label: "フェーズ3\n総仕上げ",   start: "2027-04", end: "2027-07", color: "#34D399" }
+    { label: "F1 インプット", start: "2026-08", end: "2026-11", color: "#5B9FFF" },
+    { label: "F2 反復強化",   start: "2026-12", end: "2027-03", color: "#A78BFA" },
+    { label: "F3 総仕上げ",   start: "2027-04", end: "2027-07", color: "#34D399" }
   ];
   const _totalStart = new Date("2026-08-01");
   const _totalEnd = new Date("2027-07-25");
@@ -1020,82 +1156,76 @@ function Card(_ref2) {
   const _elapsed = Math.max(0, (nowJST() - _totalStart) / 86400000);
   const _overallPct = Math.min(100, _elapsed / _totalDays * 100);
   const _curPhaseIdx = _phases.findIndex(p => _monthKeyN >= p.start && _monthKeyN <= p.end);
-  const _curPhase = _curPhaseIdx >= 0 ? _phases[_curPhaseIdx] : _phases[0];
-
-  // 今後の科目スケジュール（今月以降）
+  const _curPhase = _phases[_curPhaseIdx >= 0 ? _curPhaseIdx : 0];
   const _scheduleMonths = [
-    { month: "2026-08", label: "8月", subj: "法規" },
-    { month: "2026-09", label: "9月", subj: "施工" },
-    { month: "2026-10", label: "10月", subj: "計画" },
-    { month: "2026-11", label: "11月", subj: "環境" },
-    { month: "2026-12", label: "12月〜", subj: "構造" },
-    { month: "2027-01", label: "1〜3月", subj: "全科目反復" },
-    { month: "2027-04", label: "4〜7月", subj: "総仕上げ" },
+    { month: "2026-08", label: "8月", subj: "\u6CD5\u898F" },
+    { month: "2026-09", label: "9\u6708", subj: "\u65BD\u5DE5" },
+    { month: "2026-10", label: "10\u6708", subj: "\u8A08\u753B" },
+    { month: "2026-11", label: "11\u6708", subj: "\u74B0\u5883" },
+    { month: "2026-12", label: "12\u6708", subj: "\u69CB\u9020" },
+    { month: "2027-01", label: "1\u301C3\u6708", subj: "\u5168\u79D1\u76EE\u53CD\u5FA9" },
+    { month: "2027-04", label: "4\u301C7\u6708", subj: "\u7DCF\u4ED5\u4E0A\u3052" },
   ];
   const _upcomingMonths = _scheduleMonths.filter(m => m.month >= _monthKeyN).slice(0, 5);
 
   return /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } },
-
   /*#__PURE__*/React.createElement(Card, null,
     /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 } },
       /*#__PURE__*/React.createElement("div", null,
-        /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 2 } }, "試験まで"),
-        /*#__PURE__*/React.createElement("div", { style: { fontSize: 32, fontWeight: 200, color: daysLeft <= 30 ? "#F87171" : daysLeft <= 90 ? "#FBBF24" : "#fff", lineHeight: 1 } }, daysLeft, /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, marginLeft: 4, opacity: 0.6 } }, "日"))
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 2 } }, "\u8A66\u9A13\u307E\u3067"),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 32, fontWeight: 200, color: daysLeft <= 30 ? "#F87171" : daysLeft <= 90 ? "#FBBF24" : "#fff", lineHeight: 1 } }, daysLeft, /*#__PURE__*/React.createElement("span", { style: { fontSize: 14, marginLeft: 4, opacity: 0.6 } }, "\u65E5"))
       ),
       /*#__PURE__*/React.createElement("div", { style: { textAlign: "right" } },
-        /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: _curPhase.color, fontWeight: 600 } }, _curPhase.label.replace("\n", " ")),
-        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 } }, "〜" + _phases[_curPhaseIdx >= 0 ? _curPhaseIdx : 0].end.replace("-", "年") + "月")
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: _curPhase.color, fontWeight: 600 } }, _curPhase.label),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 } }, "\u301C", _curPhase.end.replace("-", "\u5E74"), "\u6708")
       )
     ),
-    /*#__PURE__*/React.createElement("div", { style: { position: "relative", height: 6, background: "rgba(255,255,255,0.07)", borderRadius: 99, marginBottom: 16 } },
-      /*#__PURE__*/React.createElement("div", { style: { position: "absolute", left: 0, top: 0, height: "100%", width: _overallPct + "%", background: "linear-gradient(90deg, #5B9FFF, #A78BFA, #34D399)", borderRadius: 99, transition: "width 0.6s" } }),
+    /*#__PURE__*/React.createElement("div", { style: { position: "relative", height: 6, background: "rgba(255,255,255,0.07)", borderRadius: 99, marginBottom: 14 } },
+      /*#__PURE__*/React.createElement("div", { style: { position: "absolute", left: 0, top: 0, height: "100%", width: _overallPct + "%", background: "linear-gradient(90deg,#5B9FFF,#A78BFA,#34D399)", borderRadius: 99 } }),
       _phases.map((p, i) => {
-        const phasePct = (new Date(p.start + "-01") - _totalStart) / 86400000 / _totalDays * 100;
-        return /*#__PURE__*/React.createElement("div", { key: i, style: { position: "absolute", top: -3, left: phasePct + "%", width: 12, height: 12, borderRadius: "50%", background: _monthKeyN >= p.start ? p.color : "rgba(255,255,255,0.15)", border: "2px solid " + (_curPhaseIdx === i ? "#fff" : "transparent"), transform: "translateX(-50%)", transition: "background 0.3s" } });
+        const pct = (new Date(p.start + "-01") - _totalStart) / 86400000 / _totalDays * 100;
+        return /*#__PURE__*/React.createElement("div", { key: i, style: { position: "absolute", top: -4, left: pct + "%", width: 14, height: 14, borderRadius: "50%", background: _monthKeyN >= p.start ? p.color : "rgba(255,255,255,0.12)", border: "2px solid " + (_curPhaseIdx === i ? "#fff" : "transparent"), transform: "translateX(-50%)" } });
       })
     ),
     /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
-      _upcomingMonths.map((m, i) => /*#__PURE__*/React.createElement("div", { key: i, style: { padding: "5px 10px", borderRadius: 20, background: m.month === _monthKeyN ? "rgba(91,159,255,0.2)" : "rgba(255,255,255,0.04)", border: "0.5px solid " + (m.month === _monthKeyN ? "rgba(91,159,255,0.4)" : "rgba(255,255,255,0.08)"), fontSize: 11 } },
-        /*#__PURE__*/React.createElement("span", { style: { color: m.month === _monthKeyN ? "#5B9FFF" : "rgba(255,255,255,0.4)" } }, m.label, " "),
-        /*#__PURE__*/React.createElement("span", { style: { color: m.month === _monthKeyN ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: m.month === _monthKeyN ? 600 : 400 } }, m.subj)
+      _upcomingMonths.map((m, i) => /*#__PURE__*/React.createElement("div", { key: i, style: { padding: "5px 10px", borderRadius: 20, background: m.month === _monthKeyN ? "rgba(91,159,255,0.18)" : "rgba(255,255,255,0.04)", border: "0.5px solid " + (m.month === _monthKeyN ? "rgba(91,159,255,0.4)" : "rgba(255,255,255,0.07)"), fontSize: 11 } },
+        /*#__PURE__*/React.createElement("span", { style: { color: "rgba(255,255,255,0.4)" } }, m.label, "\u00A0"),
+        /*#__PURE__*/React.createElement("span", { style: { color: m.month === _monthKeyN ? "#fff" : "rgba(255,255,255,0.55)", fontWeight: m.month === _monthKeyN ? 600 : 400 } }, m.subj)
       ))
     )
   ),
-
   /*#__PURE__*/React.createElement(Card, null,
-    /*#__PURE__*/React.createElement(SectionTitle, null, "今日のノルマ"),
+    /*#__PURE__*/React.createElement(SectionTitle, null, "\u4ECA\u65E5\u306E\u30CE\u30EB\u30DE"),
     /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: todayDone ? "rgba(52,211,153,0.1)" : "rgba(91,159,255,0.08)", borderRadius: 10, border: "0.5px solid " + (todayDone ? "rgba(52,211,153,0.3)" : "rgba(91,159,255,0.2)"), marginBottom: 10 } },
       /*#__PURE__*/React.createElement("div", null,
-        /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 3 } }, "今月: ", _curSubj.name),
-        /*#__PURE__*/React.createElement("div", { style: { fontSize: 17, fontWeight: 600, color: todayDone ? "#34D399" : "#fff" } }, todayDone ? "✓ 達成！" : (_isWeekend ? "休日" : "平日") + " " + _todayTarget + "問")
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 3 } }, "\u4ECA\u6708: ", _curSubj.name),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 17, fontWeight: 600, color: todayDone ? "#34D399" : "#fff" } }, todayDone ? "\u2713 \u9054\u6210\uFF01" : (_isWeekend ? "\u4F11\u65E5" : "\u5E73\u65E5") + " " + _todayTarget + "\u554F")
       ),
-      /*#__PURE__*/React.createElement("button", { onClick: handleNormaDone, style: { width: 40, height: 40, borderRadius: "50%", border: "2px solid " + (todayDone ? "#34D399" : "rgba(255,255,255,0.25)"), background: todayDone ? "#34D399" : "transparent", color: todayDone ? "#000" : "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, todayDone ? "✓" : "")
+      /*#__PURE__*/React.createElement("button", { onClick: handleNormaDone, style: { width: 40, height: 40, borderRadius: "50%", border: "2px solid " + (todayDone ? "#34D399" : "rgba(255,255,255,0.25)"), background: todayDone ? "#34D399" : "transparent", color: todayDone ? "#000" : "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, todayDone ? "\u2713" : "")
     ),
     /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6 } },
-      /*#__PURE__*/React.createElement("span", { style: { color: "rgba(255,255,255,0.5)" } }, "🔄 間隔反復（上限20問）"),
-      /*#__PURE__*/React.createElement("span", { style: { color: todaySrsDone >= todaySrsLimit ? "#34D399" : "#fff", fontVariantNumeric: "tabular-nums" } }, todaySrsDone, " / ", todaySrsLimit, "問")
+      /*#__PURE__*/React.createElement("span", { style: { color: "rgba(255,255,255,0.5)" } }, "\uD83D\uDD04 \u9593\u9694\u53CD\u5FA9\uFF08\u4E0A\u9650" + todaySrsLimit + "\u554F\uFF09"),
+      /*#__PURE__*/React.createElement("span", { style: { color: todaySrsDone >= todaySrsLimit ? "#34D399" : "#fff" } }, todaySrsDone, " / ", todaySrsLimit, "\u554F")
     ),
-    /*#__PURE__*/React.createElement("div", { style: { height: 4, background: "rgba(255,255,255,0.07)", borderRadius: 99, marginBottom: 10 } },
-      /*#__PURE__*/React.createElement("div", { style: { height: "100%", width: Math.min(todaySrsDone / Math.max(todaySrsLimit, 1) * 100, 100) + "%", background: todaySrsDone >= todaySrsLimit ? "#34D399" : "#5B9FFF", borderRadius: 99, transition: "width 0.4s" } })
+    /*#__PURE__*/React.createElement("div", { style: { height: 4, background: "rgba(255,255,255,0.07)", borderRadius: 99, marginBottom: 8 } },
+      /*#__PURE__*/React.createElement("div", { style: { height: "100%", width: Math.min(todaySrsDone / Math.max(todaySrsLimit, 1) * 100, 100) + "%", background: todaySrsDone >= todaySrsLimit ? "#34D399" : "#5B9FFF", borderRadius: 99 } })
     ),
-    /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.2)", textAlign: "right" } }, "繰り越しなし — サボった日は記録に残ります")
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.2)", textAlign: "right" } }, "\u7E70\u308A\u8D8A\u3057\u306A\u3057 \u2014 \u30B5\u30DC\u3063\u305F\u65E5\u306F\u8A18\u9332\u306B\u6B8B\u308A\u307E\u3059")
   ),
-
   /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } },
     /*#__PURE__*/React.createElement(Card, null,
-      /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 8 } }, "🔥 連続日数"),
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 8 } }, "\uD83D\uDD25 \u9023\u7D9A\u65E5\u6570"),
       /*#__PURE__*/React.createElement("div", { style: { fontSize: 36, fontWeight: 200, lineHeight: 1 } }, streak),
       /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 4 } }, "day streak")
     ),
     /*#__PURE__*/React.createElement(Card, null,
-      /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 8 } }, "⏱ 今日"),
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 8 } }, "\u23F1 \u4ECA\u65E5"),
       /*#__PURE__*/React.createElement("div", { style: { fontSize: 36, fontWeight: 200, lineHeight: 1 } }, todayMin),
-      /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 4 } }, "分")
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 4 } }, "\u5206")
     )
-  )
-
-  );
+  ));
 }
+
 
 // ── QUIZ TAB ───────────────────────────────────────────────
 function QuizTab(_ref10) {
@@ -4032,33 +4162,11 @@ function SearchTab(_ref40) {
     setSelectedQuestion = _useStateS4[1];
   const query = searchInput.trim().toLowerCase();
   const searchResults = query ? questions.filter(q => (q.id || "").toLowerCase().includes(query) || (q.q || "").toLowerCase().includes(query) || (q.topic || "").toLowerCase().includes(query) || (q.refs || "").toLowerCase().includes(query) || (q.year || "").toLowerCase().includes(query)).slice(0, 50) : [];
-
   if (selectedQuestion) {
     const sq = selectedQuestion;
-    return /*#__PURE__*/React.createElement("div", { style: { paddingBottom: 20 } }, /*#__PURE__*/React.createElement("button", {
-      onClick: () => setSelectedQuestion(null),
-      style: { background: "rgba(91,159,255,0.1)", border: "0.5px solid rgba(91,159,255,0.2)", borderRadius: 8, padding: "8px 12px", color: "#5B9FFF", cursor: "pointer", fontSize: 13, marginBottom: 12 }
-    }, "\u2190 \u623B\u308B"), /*#__PURE__*/React.createElement("div", {
-      style: { background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: 16 }
-    }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 8 } }, sq.id, sq.year ? " (" + sq.year + "-" + sq.no + ")" : "", sq.rank ? " [" + sq.rank + "]" : ""), /*#__PURE__*/React.createElement("div", { style: { fontSize: 14, fontWeight: 500, marginBottom: 14, lineHeight: 1.6 } }, sq.q), (sq.opts || []).map((opt, i) => /*#__PURE__*/React.createElement("div", {
-      key: i,
-      style: { padding: "8px 12px", background: sq.correct === i ? "rgba(52,211,153,0.1)" : "rgba(255,255,255,0.03)", border: "0.5px solid " + (sq.correct === i ? "rgba(52,211,153,0.2)" : "rgba(255,255,255,0.07)"), borderRadius: 6, marginBottom: 6, fontSize: 13, color: sq.correct === i ? "#34D399" : "#fff" }
-    }, /*#__PURE__*/React.createElement("strong", null, i + 1), ". ", opt)), sq.svg ? /*#__PURE__*/React.createElement("div", {
-      style: { background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 12, marginTop: 12, maxHeight: 320, overflow: "auto", border: "0.5px solid rgba(255,255,255,0.07)" },
-      dangerouslySetInnerHTML: { __html: sq.svg }
-    }) : null, sq.explain ? /*#__PURE__*/React.createElement("div", { style: { marginTop: 14, paddingTop: 14, borderTop: "0.5px solid rgba(255,255,255,0.07)" } }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.7)", marginBottom: 6 } }, "\u89E3\u8AAC"), /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, lineHeight: 1.6, color: "rgba(255,255,255,0.6)", whiteSpace: "pre-wrap" } }, sq.explain)) : null, sq.refs ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 12 } }, "\u53C2\u7167: ", sq.refs) : null));
+    return /*#__PURE__*/React.createElement("div", { style: { paddingBottom: 20 } }, /*#__PURE__*/React.createElement("button", { onClick: () => setSelectedQuestion(null), style: { background: "rgba(91,159,255,0.1)", border: "0.5px solid rgba(91,159,255,0.2)", borderRadius: 8, padding: "8px 12px", color: "#5B9FFF", cursor: "pointer", fontSize: 13, marginBottom: 12 } }, "\u2190 \u623B\u308B"), /*#__PURE__*/React.createElement("div", { style: { background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: 16 } }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 8 } }, sq.id, sq.year ? " (" + sq.year + "-" + sq.no + ")" : "", sq.rank ? " [" + sq.rank + "]" : ""), /*#__PURE__*/React.createElement("div", { style: { fontSize: 14, fontWeight: 500, marginBottom: 14, lineHeight: 1.6 } }, sq.q), (sq.opts || []).map((opt, i) => /*#__PURE__*/React.createElement("div", { key: i, style: { padding: "8px 12px", background: sq.correct === i ? "rgba(52,211,153,0.1)" : "rgba(255,255,255,0.03)", border: "0.5px solid " + (sq.correct === i ? "rgba(52,211,153,0.2)" : "rgba(255,255,255,0.07)"), borderRadius: 6, marginBottom: 6, fontSize: 13, color: sq.correct === i ? "#34D399" : "#fff" } }, /*#__PURE__*/React.createElement("strong", null, i + 1), ". ", opt)), sq.svg ? /*#__PURE__*/React.createElement("div", { style: { background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 12, marginTop: 12, maxHeight: 320, overflow: "auto" }, dangerouslySetInnerHTML: { __html: sq.svg } }) : null, sq.explain ? /*#__PURE__*/React.createElement("div", { style: { marginTop: 14, paddingTop: 14, borderTop: "0.5px solid rgba(255,255,255,0.07)" } }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.7)", marginBottom: 6 } }, "\u89E3\u8AAC"), /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, lineHeight: 1.6, color: "rgba(255,255,255,0.6)", whiteSpace: "pre-wrap" } }, sq.explain)) : null, sq.refs ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 12 } }, "\u53C2\u7167: ", sq.refs) : null));
   }
-
-  return /*#__PURE__*/React.createElement("div", { style: { paddingBottom: 20 } }, /*#__PURE__*/React.createElement("input", {
-    value: searchInput,
-    onChange: e => setSearchInput(e.target.value),
-    placeholder: "ID\u30FB\u554F\u984C\u6587\u30FB\u6761\u6587\u30FB\u5E74\u5EA6\u3067\u691C\u7D22...",
-    style: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "0.5px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)", color: "#fff", fontSize: 14, marginBottom: 12, boxSizing: "border-box" }
-  }), searchInput ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.3)", marginBottom: 12 } }, searchResults.length, "\u4EF6") : null, /*#__PURE__*/React.createElement("div", { style: { display: "grid", gap: 8 } }, searchResults.map(q => /*#__PURE__*/React.createElement("button", {
-    key: q.id,
-    onClick: () => setSelectedQuestion(q),
-    style: { background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 8, padding: 12, textAlign: "left", cursor: "pointer", color: "#fff", width: "100%" }
-  }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 4 } }, q.id, q.rank ? " [" + q.rank + "]" : "", q.hasFig ? " \uD83D\uDCD0" : ""), /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, lineHeight: 1.4 } }, (q.q || "").substring(0, 80) + ((q.q || "").length > 80 ? "..." : ""))))));
+  return /*#__PURE__*/React.createElement("div", { style: { paddingBottom: 20 } }, /*#__PURE__*/React.createElement("input", { value: searchInput, onChange: e => setSearchInput(e.target.value), placeholder: "ID\u30FB\u554F\u984C\u6587\u30FB\u6761\u6587\u30FB\u5E74\u5EA6\u3067\u691C\u7D22...", style: { width: "100%", padding: "10px 12px", borderRadius: 8, border: "0.5px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)", color: "#fff", fontSize: 14, marginBottom: 12, boxSizing: "border-box" } }), searchInput ? /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.3)", marginBottom: 12 } }, searchResults.length, "\u4EF6") : null, /*#__PURE__*/React.createElement("div", { style: { display: "grid", gap: 8 } }, searchResults.map(q => /*#__PURE__*/React.createElement("button", { key: q.id, onClick: () => setSelectedQuestion(q), style: { background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.07)", borderRadius: 8, padding: 12, textAlign: "left", cursor: "pointer", color: "#fff", width: "100%" } }, /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 4 } }, q.id, q.rank ? " [" + q.rank + "]" : ""), /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, lineHeight: 1.4 } }, (q.q || "").substring(0, 80) + ((q.q || "").length > 80 ? "..." : ""))))));
 }
 
 function NotesTab() {

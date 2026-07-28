@@ -165,6 +165,18 @@ const TEXTBOOK_MAP = {
 };
 
 
+// ── 学習スケジュール ─────────────────────────────────────
+const STUDY_SCHEDULE = {
+  monthSubject: {
+    "2026-08": "houki", "2026-09": "sekou", "2026-10": "keikaku",
+    "2026-11": "kankyo", "2026-12": "kouzou",
+    "2027-01": "all", "2027-02": "all", "2027-03": "all",
+    "2027-04": "all", "2027-05": "all", "2027-06": "all", "2027-07": "all"
+  },
+  weekdayTarget: 5,
+  holidayTarget: 20,
+};
+
 // ── 問題集目次(法規) p番号は問題解説集のページ ──────────────
 const CHAPTERS = {
   houki: [{
@@ -464,6 +476,10 @@ function App() {
     _useStateGoal2 = _slicedToArray(_useStateGoal, 2),
     goalQ = _useStateGoal2[0],
     setGoalQ = _useStateGoal2[1];
+  const _useState119 = useState(false),
+    _useState120 = _slicedToArray(_useState119, 2),
+    todayDone = _useState120[0],
+    setTodayDone = _useState120[1];
   const _useState1 = useState(true),
     _useState10 = _slicedToArray(_useState1, 2),
     loading = _useState10[0],
@@ -563,6 +579,9 @@ function App() {
       setPendingCount(pend.length);
       const savedGoalQ = await load("goalQ", { keikaku: 181, kankyo: 180, houki: 270, kouzou: 270, sekou: 224 });
       setGoalQ(savedGoalQ);
+      const _normaLog = await load("norma_log", {});
+      const _todayKey0 = nowJST().toISOString().slice(0, 10);
+      setTodayDone(_normaLog[_todayKey0] === true);
       // streak
       let s = 0,
         d = nowJST();
@@ -847,7 +866,9 @@ function App() {
     logs: logs,
     timerRunning: timerRunning,
     timerSec: timerSec,
-    toggleTimer: toggleTimer
+    toggleTimer: toggleTimer,
+    todayDone: todayDone,
+    setTodayDone: setTodayDone
   }), tab === "quiz" && /*#__PURE__*/React.createElement(QuizTab, {
     questions: questions,
     setQuestions: setQuestions,
@@ -1024,7 +1045,26 @@ function HomeTab(_ref4) {
     logs = _ref4.logs,
     timerRunning = _ref4.timerRunning,
     timerSec = _ref4.timerSec,
-    toggleTimer = _ref4.toggleTimer;
+    toggleTimer = _ref4.toggleTimer,
+    todayDone = _ref4.todayDone,
+    setTodayDone = _ref4.setTodayDone;
+
+  const _todayDateN = nowJST();
+  const _todayKeyN = _todayDateN.toISOString().slice(0, 10);
+  const _monthKeyN = _todayKeyN.slice(0, 7);
+  const _isWeekend = _todayDateN.getDay() === 0 || _todayDateN.getDay() === 6;
+  const _todayTarget = _isWeekend ? STUDY_SCHEDULE.holidayTarget : STUDY_SCHEDULE.weekdayTarget;
+  const _curSubjId = STUDY_SCHEDULE.monthSubject[_monthKeyN] || "all";
+  const _curSubj = _curSubjId === "all" ? { name: "全科目", color: "#5B9FFF" } : (SUBJECTS.find(s => s.id === _curSubjId) || { name: _curSubjId, color: "#5B9FFF" });
+
+  const handleNormaDone = async () => {
+    const newDone = !todayDone;
+    setTodayDone(newDone);
+    const nl = await load("norma_log", {});
+    nl[_todayKeyN] = newDone;
+    await save("norma_log", nl);
+  };
+
   const last7 = useMemo(() => {
     return Array.from({
       length: 7
@@ -1113,12 +1153,16 @@ function HomeTab(_ref4) {
       gap: 16
     }
   }, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(SectionTitle, null, "\u4ECA\u65E5\u306E\u30CE\u30EB\u30DE"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexDirection: "column",
-      gap: 10
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", flexDirection: "column", gap: 10 }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: todayDone ? "rgba(52,211,153,0.1)" : "rgba(91,159,255,0.08)", borderRadius: 10, border: "0.5px solid " + (todayDone ? "rgba(52,211,153,0.3)" : "rgba(91,159,255,0.2)"), marginBottom: 4 }
+  }, /*#__PURE__*/React.createElement("div", null,
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 3 } }, "\u4ECA\u6708: ", _curSubj.name),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 15, fontWeight: 600, color: todayDone ? "#34D399" : "#fff" } }, todayDone ? "✓ \u9054\u6210\uFF01" : (_isWeekend ? "\u4F11\u65E5" : "\u5E73\u65E5") + "\u30CE\u30EB\u30DE " + _todayTarget + "\u554F")
+  ), /*#__PURE__*/React.createElement("button", {
+    onClick: handleNormaDone,
+    style: { width: 36, height: 36, borderRadius: "50%", border: "2px solid " + (todayDone ? "#34D399" : "rgba(255,255,255,0.3)"), background: todayDone ? "#34D399" : "transparent", color: todayDone ? "#000" : "rgba(255,255,255,0.5)", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }
+  }, todayDone ? "✓" : "")), /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.25)", textAlign: "right", marginBottom: 6 } }, "\u7E70\u308A\u8D8A\u3057\u306A\u3057 \u2014 \u30B5\u30DC\u3063\u305F\u65E5\u306F\u8A18\u9332\u306B\u6B8B\u308A\u307E\u3059"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "space-between",

@@ -1593,6 +1593,12 @@ function QuizTab(_ref10) {
     }
     return () => clearInterval(timedRef.current);
   }, [sessionConf, timedDone, paused]);
+  // 問題が変わるたびにタイマーを次の問題の開始点にリセット
+  useEffect(() => {
+    if (sessionConf && sessionConf.secPerQ > 0) {
+      setTimedSec(s => Math.ceil(s / sessionConf.secPerQ) * sessionConf.secPerQ);
+    }
+  }, [idx]);
   const startSession = conf => {
     setSessionConf(conf);
     setTimedSec(0);
@@ -3664,6 +3670,26 @@ function ManageTab(_ref30) {
     setIoMsg = _useState100[1];
 
   // データをJSONファイルとして保存
+
+  const exportCSV = () => {
+    const header = ["\u554F\u984CID","\u79D1\u76EE","\u5E74\u5EA6","No","\u30C8\u30D4\u30C3\u30AF","\u6B63\u89E3\u7387(%)","\u56DE\u7B54\u56DE\u6570","\u6700\u7D42\u56DE\u7B54\u65E5","\u6559\u79D1\u66F8\u30DA\u30FC\u30B8"];
+    const rows = questions.map(q => {
+      const hist = q.history || [];
+      const total = hist.length;
+      const correct = hist.filter(h => h === "\u25CB").length;
+      const rate = total > 0 ? Math.round(correct / total * 100) : "";
+      return [q.id, q.subject, q.year||"", q.no||"", (q.topic||"").replace(/,/g,"\u3001"), rate, total, q.lastAnswered||"", q.tbPage||""].join(",");
+    });
+    const csv = [header.join(","), ...rows].join("\n");
+    const blob = new Blob(["\uFEFF"+csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "kenchikushi_"+new Date().toISOString().slice(0,10)+".csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const exportData = async () => {
     try {
       const logs = await load("logs", {});
@@ -3860,7 +3886,7 @@ function ManageTab(_ref30) {
     style: {
       display: "none"
     }
-  }))), ioMsg && /*#__PURE__*/React.createElement("div", {
+  }))), /*#__PURE__*/React.createElement("button", { onClick: exportCSV, style: { width: "100%", marginTop: 10, padding: "13px", borderRadius: 12, background: "rgba(52,211,153,0.15)", color: "#34D399", fontSize: 14, fontWeight: 600, border: "1px solid rgba(52,211,153,0.3)", cursor: "pointer" } }, "\uD83D\uDCCA CSV\u51FA\u529B\uFF08\u5B66\u7FD2\u5C65\u6B74\uFF09"), ioMsg && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 12,
       fontSize: 12,

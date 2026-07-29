@@ -1248,6 +1248,104 @@ function HomeTab(_ref4) {
 }
 
 
+// ── 専門用語ポップアップ ────────────────────────────────────────
+function HighlightedText(_ref0) {
+  let text = _ref0.text,
+    onTermClick = _ref0.onTermClick;
+  if (!text) return null;
+  // 専門用語を長い順にソート（部分一致を防ぐ）
+  const sorted = [...TERMS].sort((a, b) => b.length - a.length);
+  const regex = new RegExp(`(${sorted.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "g");
+  const parts = text.split(regex);
+  return /*#__PURE__*/React.createElement("span", null, parts.map((part, i) => TERMS.includes(part) ? /*#__PURE__*/React.createElement("span", {
+    key: i,
+    onClick: () => onTermClick(part),
+    style: {
+      color: "#5B9FFF",
+      borderBottom: "1px dashed rgba(91,159,255,0.5)",
+      cursor: "pointer"
+    }
+  }, part) : /*#__PURE__*/React.createElement("span", {
+    key: i
+  }, part)));
+}
+function TermPopup(_ref1) {
+  let term = _ref1.term,
+    onClose = _ref1.onClose;
+  const _useState23 = useState(""),
+    _useState24 = _slicedToArray(_useState23, 2),
+    explanation = _useState24[0],
+    setExplanation = _useState24[1];
+  const _useState25 = useState(true),
+    _useState26 = _slicedToArray(_useState25, 2),
+    loading = _useState26[0],
+    setLoading = _useState26[1];
+  useEffect(() => {
+    if (!term) return;
+    setLoading(true);
+    setExplanation("");
+    callClaude("あなたは一級建築士試験の専門講師です。建築用語を中学生でも分かるように説明してください。\n形式(厳守):\n📖 [用語名]: [1行の定義]\n• [ポイント1]\n• [ポイント2]\n▶ 根拠条文: [条文番号]\n\n80字以内。", `「${term}」を分かりやすく説明してください。`).then(text => {
+      setExplanation(text);
+      setLoading(false);
+    });
+  }, [term]);
+  if (!term) return null;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 500,
+      display: "flex",
+      alignItems: "flex-end"
+    },
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    style: {
+      width: "100%",
+      background: "#1a1a2e",
+      borderRadius: "20px 20px 0 0",
+      padding: "24px 20px 40px",
+      boxShadow: "0 -4px 40px rgba(0,0,0,0.5)",
+      border: "1px solid rgba(91,159,255,0.2)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 16
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 16,
+      fontWeight: 600,
+      color: "#5B9FFF"
+    }
+  }, term), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    style: {
+      background: "none",
+      border: "none",
+      color: "rgba(255,255,255,0.4)",
+      fontSize: 20,
+      cursor: "pointer"
+    }
+  }, "\u2715")), loading ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      color: "rgba(255,255,255,0.3)"
+    }
+  }, "\u89E3\u8AAC\u3092\u751F\u6210\u4E2D...") : /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      lineHeight: 1.9,
+      color: "rgba(255,255,255,0.85)",
+      whiteSpace: "pre-wrap"
+    }
+  }, explanation)));
+}
+
 // ── QUIZ TAB ───────────────────────────────────────────────
 function QuizTab(_ref10) {
   let questions = _ref10.questions,

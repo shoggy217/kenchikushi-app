@@ -3672,13 +3672,13 @@ function ManageTab(_ref30) {
   // データをJSONファイルとして保存
 
   const exportCSV = () => {
-    const header = ["\u554F\u984CID","\u79D1\u76EE","\u5E74\u5EA6","No","\u30C8\u30D4\u30C3\u30AF","\u6B63\u89E3\u7387(%)","\u56DE\u7B54\u56DE\u6570","\u6700\u7D42\u56DE\u7B54\u65E5","\u6559\u79D1\u66F8\u30DA\u30FC\u30B8"];
+    const header = ["\u554F\u984CID","\u79D1\u76EE","\u5E74\u5EA6","No","\u30C8\u30D4\u30C3\u30AF","\u6B63\u89E3\u7387(%)","\u56DE\u7B54\u56DE\u6570","\u6700\u7D42\u56DE\u7B54\u65E5","\u554F\u984C\u96C6p.","\u6559\u79D1\u66F8p."];
     const rows = questions.map(q => {
       const hist = q.history || [];
       const total = hist.length;
       const correct = hist.filter(h => h === "\u25CB").length;
       const rate = total > 0 ? Math.round(correct / total * 100) : "";
-      return [q.id, q.subject, q.year||"", q.no||"", (q.topic||"").replace(/,/g,"\u3001"), rate, total, q.lastAnswered||"", q.tbPage||""].join(",");
+      return [q.id, q.subject, q.year||"", q.no||"", (q.topic||"").replace(/,/g,"\u3001"), rate, total, q.lastAnswered||"", q.qPage||"", q.tbPage||""].join(",");
     });
     const csv = [header.join(","), ...rows].join("\n");
     const blob = new Blob(["\uFEFF"+csv], { type: "text/csv;charset=utf-8;" });

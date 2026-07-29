@@ -3592,11 +3592,23 @@ function HistoryEditor(_ref29) {
         borderRadius: 8,
         whiteSpace: "pre-wrap"
       }
-    }, q.q), /*#__PURE__*/React.createElement("div", {
+    }, q.q), (q.opts || []).map((opt, i) => /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        fontSize: 12,
+        padding: "6px 10px",
+        marginBottom: 4,
+        borderRadius: 6,
+        background: q.correct === i ? "rgba(52,211,153,0.1)" : "rgba(255,255,255,0.02)",
+        border: "0.5px solid " + (q.correct === i ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.06)"),
+        color: q.correct === i ? "#34D399" : "rgba(255,255,255,0.5)"
+      }
+    }, /*#__PURE__*/React.createElement("strong", null, i + 1, ". "), opt)), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 11,
         color: "rgba(255,255,255,0.4)",
-        marginBottom: 8
+        marginBottom: 8,
+        marginTop: 8
       }
     }, "\u30BF\u30C3\u30D7\u3067\u25CB\u2194\xD7\u5207\u308A\u66FF\u3048"), /*#__PURE__*/React.createElement("div", {
       style: {

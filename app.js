@@ -3544,9 +3544,14 @@ function HistoryEditor(_ref29) {
     }, /*#__PURE__*/React.createElement("span", {
       style: {
         color: "rgba(255,255,255,0.4)",
-        marginRight: 6
+        marginRight: 6,
+        fontSize: 11
       }
-    }, q.year), q.q.slice(0, 40), q.q.length > 40 ? "…" : ""), /*#__PURE__*/React.createElement("div", {
+    }, q.year, " [", q.topic || q.subject, "]"), /*#__PURE__*/React.createElement("span", {
+      style: { color: "rgba(255,255,255,0.5)", fontSize: 11 }
+    }, q.refs ? " " + q.refs : ""), /*#__PURE__*/React.createElement("div", {
+      style: { fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }
+    }, q.q.slice(0, 30), q.q.length > 30 ? "…" : "")), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 2,

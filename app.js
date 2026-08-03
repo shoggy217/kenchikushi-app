@@ -3547,7 +3547,9 @@ function HistoryEditor(_ref29) {
         marginRight: 6,
         fontSize: 11
       }
-    }, q.year, " [", q.topic || q.subject, "]"), /*#__PURE__*/React.createElement("span", {
+    }, q.year, " [", q.topic || q.subject, "]"), q.qPage && /*#__PURE__*/React.createElement("span", {
+      style: { color: "#5B9FFF", fontSize: 11, marginRight: 6 }
+    }, "\u554F\u96C6 p." + q.qPage), /*#__PURE__*/React.createElement("span", {
       style: { color: "rgba(255,255,255,0.5)", fontSize: 11 }
     }, q.refs ? " " + q.refs : ""), /*#__PURE__*/React.createElement("div", {
       style: { fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }
@@ -3592,7 +3594,13 @@ function HistoryEditor(_ref29) {
         borderRadius: 8,
         whiteSpace: "pre-wrap"
       }
-    }, q.q), (q.opts || []).map((opt, i) => /*#__PURE__*/React.createElement("div", {
+    }, (q.qPage || q.tbPage) && /*#__PURE__*/React.createElement("div", {
+      style: { display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }
+    }, q.qPage && /*#__PURE__*/React.createElement("span", {
+      style: { fontSize: 11, fontWeight: 600, color: "#5B9FFF", background: "rgba(91,159,255,0.12)", padding: "2px 8px", borderRadius: 6 }
+    }, "\u554F\u96C6 p." + q.qPage), q.tbPage && /*#__PURE__*/React.createElement("span", {
+      style: { fontSize: 11, fontWeight: 600, color: "#34D399", background: "rgba(52,211,153,0.12)", padding: "2px 8px", borderRadius: 6 }
+    }, "\u6559\u79D1\u66F8 p." + q.tbPage)), q.q), (q.opts || []).map((opt, i) => /*#__PURE__*/React.createElement("div", {
       key: i,
       style: {
         fontSize: 12,

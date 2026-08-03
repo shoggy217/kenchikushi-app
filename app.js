@@ -3746,6 +3746,98 @@ function HistoryEditor(_ref29) {
   })));
 }
 
+// ── 登録内容チェック（科目別・全文表示） ──────────────────
+function RegisteredList(_refRL) {
+  const questions = _refRL.questions;
+  const _rl1 = useState("houki"), _rl1b = _slicedToArray(_rl1, 2), rlSubj = _rl1b[0], setRlSubj = _rl1b[1];
+  const _rl2 = useState(null), _rl2b = _slicedToArray(_rl2, 2), rlOpen = _rl2b[0], setRlOpen = _rl2b[1];
+  const _rl3 = useState(""), _rl3b = _slicedToArray(_rl3, 2), rlSearch = _rl3b[0], setRlSearch = _rl3b[1];
+
+  const list = questions
+    .filter(q => q.subject === rlSubj)
+    .filter(q => !rlSearch || (q.q || "").includes(rlSearch) || (q.id || "").includes(rlSearch) || (q.year || "").includes(rlSearch) || (q.refs || "").includes(rlSearch) || (q.topic || "").includes(rlSearch))
+    .sort((a, b) => {
+      const pa = parseInt(a.qPage) || 9999, pb = parseInt(b.qPage) || 9999;
+      if (pa !== pb) return pa - pb;
+      return (a.id || "").localeCompare(b.id || "");
+    });
+
+  return /*#__PURE__*/React.createElement("div", {
+    style: { background: "rgba(255,255,255,0.04)", borderRadius: 16, padding: 20, marginBottom: 16 }
+  },
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 15, fontWeight: 700, marginBottom: 4 } }, "\uD83D\uDCCB \u767B\u9332\u5185\u5BB9\u30C1\u30A7\u30C3\u30AF"),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 12 } }, "\u554F\u984C\u30FB\u9078\u629E\u80A2\u30FB\u6B63\u7B54\u30FB\u89E3\u8AAC\u3092\u5168\u6587\u8868\u793A\u3057\u3066\u3001\u554F\u984C\u96C6\u3068\u306E\u4E00\u81F4\u3092\u78BA\u8A8D\u3067\u304D\u307E\u3059"),
+    // 科目タブ
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" } },
+      SUBJECTS.map(s => {
+        const cnt = questions.filter(q => q.subject === s.id).length;
+        const on = rlSubj === s.id;
+        return /*#__PURE__*/React.createElement("button", {
+          key: s.id,
+          onClick: () => { setRlSubj(s.id); setRlOpen(null); },
+          style: {
+            padding: "6px 12px", borderRadius: 10,
+            background: on ? s.bg : "rgba(255,255,255,0.04)",
+            border: on ? "1px solid " + s.color : "1px solid rgba(255,255,255,0.1)",
+            color: on ? s.color : "rgba(255,255,255,0.5)",
+            fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit"
+          }
+        }, s.name + " " + cnt);
+      })
+    ),
+    // 検索
+    /*#__PURE__*/React.createElement("input", {
+      value: rlSearch, onChange: e => setRlSearch(e.target.value),
+      placeholder: "ID\u30FB\u554F\u984C\u6587\u30FB\u5E74\u5EA6\u30FB\u6761\u6587\u3067\u7D5E\u308A\u8FBC\u307F...",
+      style: { width: "100%", padding: "9px 12px", borderRadius: 8, border: "0.5px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.03)", color: "#fff", fontSize: 13, marginBottom: 12, boxSizing: "border-box", fontFamily: "inherit" }
+    }),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 10 } }, list.length + "\u554F"),
+    list.length === 0 && /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "16px 0" } }, "\u767B\u9332\u3055\u308C\u305F\u554F\u984C\u306F\u3042\u308A\u307E\u305B\u3093"),
+    // リスト
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+      list.map(q => {
+        const open = rlOpen === q.id;
+        return /*#__PURE__*/React.createElement("div", { key: q.id, style: { background: "rgba(255,255,255,0.03)", borderRadius: 12, border: "0.5px solid rgba(255,255,255,0.07)" } },
+          // ヘッダ行
+          /*#__PURE__*/React.createElement("div", {
+            onClick: () => setRlOpen(open ? null : q.id),
+            style: { padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }
+          },
+            /*#__PURE__*/React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+              /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 3, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" } },
+                /*#__PURE__*/React.createElement("span", null, q.id),
+                q.qPage && /*#__PURE__*/React.createElement("span", { style: { color: "#5B9FFF" } }, "\u554F\u96C6p." + q.qPage),
+                q.tbPage && /*#__PURE__*/React.createElement("span", { style: { color: "#34D399" } }, "\u6559\u79D1\u66F8p." + q.tbPage),
+                q.rank && /*#__PURE__*/React.createElement("span", { style: { color: "rgba(255,255,255,0.4)" } }, "[" + q.rank + "]"),
+                q.hasFig && !q.svg && /*#__PURE__*/React.createElement("span", { style: { color: "#FBBF24" } }, "\u26A0\u56F3\u306A\u3057")
+              ),
+              /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, lineHeight: 1.4, color: "rgba(255,255,255,0.85)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: open ? "normal" : "nowrap" } }, q.q)
+            ),
+            /*#__PURE__*/React.createElement("span", { style: { color: "rgba(255,255,255,0.3)", fontSize: 12 } }, open ? "\u25B2" : "\u25BC")
+          ),
+          // 展開部：全文
+          open && /*#__PURE__*/React.createElement("div", { style: { padding: "0 14px 14px" } },
+            /*#__PURE__*/React.createElement("div", { style: { fontSize: 14, fontWeight: 500, lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap" } }, q.q),
+            (q.opts || []).map((opt, i) => /*#__PURE__*/React.createElement("div", {
+              key: i,
+              style: { padding: "8px 12px", marginBottom: 6, borderRadius: 6, fontSize: 13, lineHeight: 1.5,
+                background: q.correct === i ? "rgba(52,211,153,0.12)" : "rgba(255,255,255,0.02)",
+                border: "0.5px solid " + (q.correct === i ? "rgba(52,211,153,0.35)" : "rgba(255,255,255,0.06)"),
+                color: q.correct === i ? "#34D399" : "rgba(255,255,255,0.75)" }
+            }, /*#__PURE__*/React.createElement("strong", null, (i + 1) + ". "), opt, q.correct === i && /*#__PURE__*/React.createElement("span", { style: { marginLeft: 6, fontSize: 11 } }, "\u2190 \u6B63\u7B54"))),
+            q.svg && /*#__PURE__*/React.createElement("div", { style: { background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 12, marginTop: 10, maxHeight: 340, overflow: "auto" }, dangerouslySetInnerHTML: { __html: q.svg } }),
+            q.explain && /*#__PURE__*/React.createElement("div", { style: { marginTop: 12, paddingTop: 12, borderTop: "0.5px solid rgba(255,255,255,0.07)" } },
+              /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)", marginBottom: 6 } }, "\u89E3\u8AAC"),
+              /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, lineHeight: 1.7, color: "rgba(255,255,255,0.65)", whiteSpace: "pre-wrap" } }, q.explain)
+            ),
+            q.refs && /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 10 } }, "\u53C2\u7167: " + q.refs)
+          )
+        );
+      })
+    )
+  );
+}
+
 // ── MANAGE TAB ─────────────────────────────────────────────
 function ManageTab(_ref30) {
   let questions = _ref30.questions,
@@ -3993,7 +4085,9 @@ function ManageTab(_ref30) {
       fontSize: 12,
       color: "#34D399"
     }
-  }, ioMsg)), /*#__PURE__*/React.createElement(HistoryEditor, {
+  }, ioMsg)), /*#__PURE__*/React.createElement(RegisteredList, {
+    questions: questions
+  }), /*#__PURE__*/React.createElement(HistoryEditor, {
     questions: questions,
     setQuestions: setQuestions,
     saveHistory: saveHistory

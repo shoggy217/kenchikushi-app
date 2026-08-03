@@ -556,6 +556,7 @@ function App() {
         starred: histData[q.id]?.starred || q.starred || false,
         bookmarked: histData[q.id]?.bookmarked || q.bookmarked || false,
         needsCheck: histData[q.id]?.needsCheck || q.needsCheck || false,
+        checkStatus: histData[q.id]?.checkStatus || q.checkStatus || ((histData[q.id]?.needsCheck || q.needsCheck) ? "flagged" : ""),
         checkNote: histData[q.id]?.checkNote || q.checkNote || "",
         answerTimes: histData[q.id]?.answerTimes || q.answerTimes || []
       }));
@@ -613,13 +614,14 @@ function App() {
     const histData = {};
     for (const q of qs) {
       const h = q.history || [];
-      if (h.length > 0 || q.lastAnswered || q.starred || q.bookmarked || q.needsCheck) {
+      if (h.length > 0 || q.lastAnswered || q.starred || q.bookmarked || q.needsCheck || q.checkStatus) {
         histData[q.id] = {
           history: h,
           lastAnswered: q.lastAnswered || null,
           starred: q.starred || false,
           bookmarked: q.bookmarked || false,
           needsCheck: q.needsCheck || false,
+          checkStatus: q.checkStatus || "",
           checkNote: q.checkNote || "",
           answerTimes: q.answerTimes || []
         };
@@ -656,13 +658,14 @@ function App() {
       const histData = {};
       for (const q of questions) {
         const h = q.history || [];
-        if (h.length > 0 || q.lastAnswered || q.starred || q.bookmarked || q.needsCheck) {
+        if (h.length > 0 || q.lastAnswered || q.starred || q.bookmarked || q.needsCheck || q.checkStatus) {
           histData[q.id] = {
             history: h,
             lastAnswered: q.lastAnswered || null,
             starred: q.starred || false,
             bookmarked: q.bookmarked || false,
             needsCheck: q.needsCheck || false,
+            checkStatus: q.checkStatus || "",
             checkNote: q.checkNote || "",
             answerTimes: q.answerTimes || []
           };
@@ -1645,7 +1648,11 @@ function QuizTab(_ref10) {
     saveHistory(updated);
   };
   const toggleNeedsCheck = async (qId) => {
-    const updated = questions.map(qq => qq.id !== qId ? qq : { ...qq, needsCheck: !qq.needsCheck });
+    const updated = questions.map(qq => {
+      if (qq.id !== qId) return qq;
+      const on = qq.checkStatus === "flagged" || qq.checkStatus === "done";
+      return { ...qq, checkStatus: on ? "" : "flagged", needsCheck: !on };
+    });
     setQuestions(updated);
     saveHistory(updated);
   };
@@ -2499,7 +2506,7 @@ function QuizTab(_ref10) {
       color: "rgba(91,159,255,0.8)",
       marginBottom: 10
     }
-  }, "\uD83D\uDCD6 ", q.refs), /*#__PURE__*/React.createElement("button", { onClick: function(e){ var b=e.currentTarget; var plain=function(s){return (s||"").replace(/<[^>]+>/g,"");}; var t="【問題】"+(q.year?" ("+q.year+"-"+q.no+")":"")+"\n"+q.q+"\n\n【選択肢】\n"+(q.opts||[]).map(function(o,i){return (i+1)+". "+o;}).join("\n")+"\n\n【正答】"+(q.correct+1)+"番\n\n【解説】\n"+plain(q.explain)+(q.refs?"\n\n【参照】"+q.refs:""); navigator.clipboard.writeText(t).then(function(){b.textContent="✓ コピーしました";setTimeout(function(){b.textContent="📋 問題・解説をコピー";},1500);}); }, style:{width:"100%",padding:"10px",borderRadius:8,background:"rgba(91,159,255,0.12)",color:"#5B9FFF",fontSize:13,fontWeight:600,border:"0.5px solid rgba(91,159,255,0.25)",cursor:"pointer",marginBottom:10} }, "📋 問題・解説をコピー"), /*#__PURE__*/React.createElement("button", { onClick: () => toggleNeedsCheck(q.id), style:{width:"100%",padding:"10px",borderRadius:8,background: q.needsCheck ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",color: q.needsCheck ? "#FBBF24" : "rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,border: q.needsCheck ? "0.5px solid rgba(251,191,36,0.4)" : "0.5px solid rgba(255,255,255,0.1)",cursor:"pointer",marginBottom:10} }, q.needsCheck ? "🚩 要確認マーク済み（タップで解除）" : "🚩 この問題に要確認マークを付ける"), q.tbPage && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCD6 ", q.refs), /*#__PURE__*/React.createElement("button", { onClick: function(e){ var b=e.currentTarget; var plain=function(s){return (s||"").replace(/<[^>]+>/g,"");}; var t="【問題】"+(q.year?" ("+q.year+"-"+q.no+")":"")+"\n"+q.q+"\n\n【選択肢】\n"+(q.opts||[]).map(function(o,i){return (i+1)+". "+o;}).join("\n")+"\n\n【正答】"+(q.correct+1)+"番\n\n【解説】\n"+plain(q.explain)+(q.refs?"\n\n【参照】"+q.refs:""); navigator.clipboard.writeText(t).then(function(){b.textContent="✓ コピーしました";setTimeout(function(){b.textContent="📋 問題・解説をコピー";},1500);}); }, style:{width:"100%",padding:"10px",borderRadius:8,background:"rgba(91,159,255,0.12)",color:"#5B9FFF",fontSize:13,fontWeight:600,border:"0.5px solid rgba(91,159,255,0.25)",cursor:"pointer",marginBottom:10} }, "📋 問題・解説をコピー"), /*#__PURE__*/React.createElement("button", { onClick: () => toggleNeedsCheck(q.id), style:{width:"100%",padding:"10px",borderRadius:8,background: q.checkStatus ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",color: q.checkStatus ? "#FBBF24" : "rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,border: q.checkStatus ? "0.5px solid rgba(251,191,36,0.4)" : "0.5px solid rgba(255,255,255,0.1)",cursor:"pointer",marginBottom:10} }, q.checkStatus ? "🚩 要確認マーク済み（タップで解除）" : "🚩 この問題に要確認マークを付ける"), q.tbPage && /*#__PURE__*/React.createElement("div", {
     style: {
       background: "rgba(181,123,255,0.1)",
       border: "1px solid rgba(181,123,255,0.3)",
@@ -3422,15 +3429,21 @@ function HistoryEditor(_ref29) {
     _useStateSort2 = _slicedToArray(_useStateSort, 2),
     sortOrder = _useStateSort2[0],
     setSortOrder = _useStateSort2[1];
-  const _useStateChk = useState(false),
+  const _useStateChk = useState("all"),
     _useStateChk2 = _slicedToArray(_useStateChk, 2),
-    checkOnly = _useStateChk2[0],
-    setCheckOnly = _useStateChk2[1];
-  const answered = questions.filter(q => (q.history || []).length > 0 || q.needsCheck);
-  const checkCount = questions.filter(q => q.needsCheck).length;
-  const base = checkOnly ? answered.filter(q => q.needsCheck) : answered;
+    checkFilter = _useStateChk2[0],
+    setCheckFilter = _useStateChk2[1];
+  const answered = questions.filter(q => (q.history || []).length > 0 || q.checkStatus);
+  const flaggedCount = questions.filter(q => q.checkStatus === "flagged").length;
+  const doneCount = questions.filter(q => q.checkStatus === "done").length;
+  const base = checkFilter === "flagged" ? answered.filter(q => q.checkStatus === "flagged")
+    : checkFilter === "done" ? answered.filter(q => q.checkStatus === "done")
+    : answered;
+  const _rank = s => s === "flagged" ? 0 : s === "done" ? 1 : 2;
   const filtered = (search ? base.filter(q => q.q.includes(search) || q.topic?.includes(search) || q.year?.includes(search) || q.refs?.includes(search)) : [...base])
     .sort((a, b) => {
+      const ra = _rank(a.checkStatus), rb = _rank(b.checkStatus);
+      if (ra !== rb) return ra - rb;
       const da = a.lastAnswered || "";
       const db = b.lastAnswered || "";
       return sortOrder === "newest" ? db.localeCompare(da) : da.localeCompare(db);
@@ -3471,8 +3484,8 @@ function HistoryEditor(_ref29) {
     setQuestions(updated);
     await saveHistory(updated);
   };
-  const toggleCheck = async qId => {
-    const updated = questions.map(q => q.id !== qId ? q : { ...q, needsCheck: !q.needsCheck });
+  const setCheckStatus = async (qId, status) => {
+    const updated = questions.map(q => q.id !== qId ? q : { ...q, checkStatus: status, needsCheck: status === "flagged" });
     setQuestions(updated);
     await saveHistory(updated);
   };
@@ -3524,29 +3537,36 @@ function HistoryEditor(_ref29) {
       flexShrink: 0,
       whiteSpace: "nowrap"
     }
-  }, sortOrder === "newest" ? "\u2193 \u6700\u8FD1" : "\u2191 \u53E4\u3044")), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setCheckOnly(v => !v),
-    style: {
-      width: "100%",
-      padding: "8px 12px",
-      marginBottom: 12,
-      borderRadius: 10,
-      background: checkOnly ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",
-      border: checkOnly ? "1px solid rgba(251,191,36,0.4)" : "1px solid rgba(255,255,255,0.1)",
-      color: checkOnly ? "#FBBF24" : "rgba(255,255,255,0.5)",
-      fontSize: 12,
-      fontWeight: 600,
-      cursor: "pointer",
-      fontFamily: "inherit"
-    }
-  }, checkOnly ? "\uD83D\uDEA9 \u8981\u78BA\u8A8D\u306E\u307F\u8868\u793A\u4E2D\uFF08\u30BF\u30C3\u30D7\u3067\u89E3\u9664\uFF09" : "\uD83D\uDEA9 \u8981\u78BA\u8A8D\u306E\u307F\u8868\u793A" + (checkCount > 0 ? "\uFF08" + checkCount + "\u4EF6\uFF09" : "")), filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, sortOrder === "newest" ? "\u2193 \u6700\u8FD1" : "\u2191 \u53E4\u3044")), /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", gap: 6, marginBottom: 12 }
+  }, [["all", "\u3059\u3079\u3066"], ["flagged", "\uD83D\uDEA9 \u672A\u78BA\u8A8D" + (flaggedCount > 0 ? " " + flaggedCount : "")], ["done", "\u2705 \u78BA\u8A8D\u6E08" + (doneCount > 0 ? " " + doneCount : "")]].map(_seg => {
+    const key = _seg[0], lbl = _seg[1], on = checkFilter === key;
+    const accent = key === "flagged" ? "251,191,36" : key === "done" ? "52,211,153" : "91,159,255";
+    return /*#__PURE__*/React.createElement("button", {
+      key: key,
+      onClick: () => setCheckFilter(key),
+      style: {
+        flex: 1,
+        padding: "8px 4px",
+        borderRadius: 10,
+        background: on ? "rgba(" + accent + ",0.15)" : "rgba(255,255,255,0.04)",
+        border: on ? "1px solid rgba(" + accent + ",0.4)" : "1px solid rgba(255,255,255,0.1)",
+        color: on ? "rgb(" + accent + ")" : "rgba(255,255,255,0.5)",
+        fontSize: 11,
+        fontWeight: 600,
+        cursor: "pointer",
+        fontFamily: "inherit",
+        whiteSpace: "nowrap"
+      }
+    }, lbl);
+  })), filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 13,
       color: "rgba(255,255,255,0.3)",
       textAlign: "center",
       padding: "16px 0"
     }
-  }, search ? "該当なし" : checkOnly ? "要確認マークの問題はありません" : "回答済みの問題がありません"), /*#__PURE__*/React.createElement("div", {
+  }, search ? "該当なし" : checkFilter === "flagged" ? "未確認マークの問題はありません" : checkFilter === "done" ? "確認済みの問題はありません" : "回答済みの問題がありません"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -3561,8 +3581,10 @@ function HistoryEditor(_ref29) {
     return /*#__PURE__*/React.createElement("div", {
       key: q.id,
       style: {
-        background: "rgba(255,255,255,0.04)",
-        borderRadius: 12
+        background: q.checkStatus === "flagged" ? "rgba(251,191,36,0.06)" : "rgba(255,255,255,0.04)",
+        borderRadius: 12,
+        borderLeft: q.checkStatus === "flagged" ? "3px solid rgba(251,191,36,0.5)" : q.checkStatus === "done" ? "3px solid rgba(52,211,153,0.4)" : "3px solid transparent",
+        opacity: q.checkStatus === "done" && !isExpanded ? 0.55 : 1
       }
     }, /*#__PURE__*/React.createElement("div", {
       onClick: () => setExpanded(isExpanded ? null : q.id),
@@ -3586,7 +3608,7 @@ function HistoryEditor(_ref29) {
         marginRight: 6,
         fontSize: 11
       }
-    }, q.needsCheck ? "\uD83D\uDEA9 " : "", q.year, " [", q.topic || q.subject, "]"), q.qPage && /*#__PURE__*/React.createElement("span", {
+    }, q.checkStatus === "flagged" ? "\uD83D\uDEA9 " : q.checkStatus === "done" ? "\u2705 " : "", q.year, " [", q.topic || q.subject, "]"), q.qPage && /*#__PURE__*/React.createElement("span", {
       style: { color: "#5B9FFF", fontSize: 11, marginRight: 6 }
     }, "\u554F\u96C6 p." + q.qPage), /*#__PURE__*/React.createElement("span", {
       style: { color: "rgba(255,255,255,0.5)", fontSize: 11 }
@@ -3677,21 +3699,21 @@ function HistoryEditor(_ref29) {
         fontSize: 12,
         cursor: "pointer"
       }
-    }, v))), /*#__PURE__*/React.createElement("button", {
-      onClick: () => toggleCheck(q.id),
-      style: {
-        width: "100%",
-        padding: "8px",
-        marginBottom: 8,
-        borderRadius: 10,
-        background: q.needsCheck ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",
-        border: q.needsCheck ? "1px solid rgba(251,191,36,0.4)" : "1px solid rgba(255,255,255,0.1)",
-        color: q.needsCheck ? "#FBBF24" : "rgba(255,255,255,0.5)",
-        fontSize: 12,
-        fontWeight: 600,
-        cursor: "pointer"
-      }
-    }, q.needsCheck ? "\uD83D\uDEA9 \u8981\u78BA\u8A8D\u3092\u89E3\u9664" : "\uD83D\uDEA9 \u8981\u78BA\u8A8D\u30DE\u30FC\u30AF\u3092\u4ED8\u3051\u308B"), /*#__PURE__*/React.createElement("div", {
+    }, v))), /*#__PURE__*/React.createElement("div", {
+      style: { display: "flex", gap: 8, marginBottom: 8 }
+    }, q.checkStatus === "flagged" && /*#__PURE__*/React.createElement("button", {
+      onClick: () => setCheckStatus(q.id, "done"),
+      style: { flex: 1, padding: "8px", borderRadius: 10, background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.4)", color: "#34D399", fontSize: 12, fontWeight: 600, cursor: "pointer" }
+    }, "\u2705 \u78BA\u8A8D\u6E08\u307F\u306B\u3059\u308B"), q.checkStatus === "done" && /*#__PURE__*/React.createElement("button", {
+      onClick: () => setCheckStatus(q.id, "flagged"),
+      style: { flex: 1, padding: "8px", borderRadius: 10, background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.4)", color: "#FBBF24", fontSize: 12, fontWeight: 600, cursor: "pointer" }
+    }, "\uD83D\uDEA9 \u672A\u78BA\u8A8D\u306B\u623B\u3059"), !q.checkStatus && /*#__PURE__*/React.createElement("button", {
+      onClick: () => setCheckStatus(q.id, "flagged"),
+      style: { flex: 1, padding: "8px", borderRadius: 10, background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.25)", color: "#FBBF24", fontSize: 12, fontWeight: 600, cursor: "pointer" }
+    }, "\uD83D\uDEA9 \u8981\u78BA\u8A8D\u30DE\u30FC\u30AF\u3092\u4ED8\u3051\u308B"), q.checkStatus && /*#__PURE__*/React.createElement("button", {
+      onClick: () => setCheckStatus(q.id, ""),
+      style: { flex: 1, padding: "8px", borderRadius: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 600, cursor: "pointer" }
+    }, "\u30DE\u30FC\u30AF\u3092\u5916\u3059")), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8

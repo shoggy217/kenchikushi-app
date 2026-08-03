@@ -555,6 +555,8 @@ function App() {
         lastAnswered: histData[q.id]?.lastAnswered || q.lastAnswered || null,
         starred: histData[q.id]?.starred || q.starred || false,
         bookmarked: histData[q.id]?.bookmarked || q.bookmarked || false,
+        needsCheck: histData[q.id]?.needsCheck || q.needsCheck || false,
+        checkNote: histData[q.id]?.checkNote || q.checkNote || "",
         answerTimes: histData[q.id]?.answerTimes || q.answerTimes || []
       }));
 
@@ -611,12 +613,14 @@ function App() {
     const histData = {};
     for (const q of qs) {
       const h = q.history || [];
-      if (h.length > 0 || q.lastAnswered || q.starred || q.bookmarked) {
+      if (h.length > 0 || q.lastAnswered || q.starred || q.bookmarked || q.needsCheck) {
         histData[q.id] = {
           history: h,
           lastAnswered: q.lastAnswered || null,
           starred: q.starred || false,
           bookmarked: q.bookmarked || false,
+          needsCheck: q.needsCheck || false,
+          checkNote: q.checkNote || "",
           answerTimes: q.answerTimes || []
         };
       }
@@ -652,12 +656,14 @@ function App() {
       const histData = {};
       for (const q of questions) {
         const h = q.history || [];
-        if (h.length > 0 || q.lastAnswered || q.starred || q.bookmarked) {
+        if (h.length > 0 || q.lastAnswered || q.starred || q.bookmarked || q.needsCheck) {
           histData[q.id] = {
             history: h,
             lastAnswered: q.lastAnswered || null,
             starred: q.starred || false,
             bookmarked: q.bookmarked || false,
+            needsCheck: q.needsCheck || false,
+            checkNote: q.checkNote || "",
             answerTimes: q.answerTimes || []
           };
         }
@@ -885,6 +891,7 @@ function App() {
   }), tab === "manage" && /*#__PURE__*/React.createElement(ManageTab, {
     questions: questions,
     setQuestions: setQuestions,
+    saveHistory: saveHistory,
     pendingCount: pendingCount,
     importPending: importPending
   }), tab === "notes" && /*#__PURE__*/React.createElement(NotesTab, null), tab === "search" && /*#__PURE__*/React.createElement(SearchTab, {
@@ -1634,6 +1641,11 @@ function QuizTab(_ref10) {
 
   const toggleBookmark = async (qId) => {
     const updated = questions.map(qq => qq.id !== qId ? qq : { ...qq, bookmarked: !qq.bookmarked });
+    setQuestions(updated);
+    saveHistory(updated);
+  };
+  const toggleNeedsCheck = async (qId) => {
+    const updated = questions.map(qq => qq.id !== qId ? qq : { ...qq, needsCheck: !qq.needsCheck });
     setQuestions(updated);
     saveHistory(updated);
   };
@@ -2487,7 +2499,7 @@ function QuizTab(_ref10) {
       color: "rgba(91,159,255,0.8)",
       marginBottom: 10
     }
-  }, "\uD83D\uDCD6 ", q.refs), /*#__PURE__*/React.createElement("button", { onClick: function(e){ var b=e.currentTarget; var plain=function(s){return (s||"").replace(/<[^>]+>/g,"");}; var t="【問題】"+(q.year?" ("+q.year+"-"+q.no+")":"")+"\n"+q.q+"\n\n【選択肢】\n"+(q.opts||[]).map(function(o,i){return (i+1)+". "+o;}).join("\n")+"\n\n【正答】"+(q.correct+1)+"番\n\n【解説】\n"+plain(q.explain)+(q.refs?"\n\n【参照】"+q.refs:""); navigator.clipboard.writeText(t).then(function(){b.textContent="✓ コピーしました";setTimeout(function(){b.textContent="📋 問題・解説をコピー";},1500);}); }, style:{width:"100%",padding:"10px",borderRadius:8,background:"rgba(91,159,255,0.12)",color:"#5B9FFF",fontSize:13,fontWeight:600,border:"0.5px solid rgba(91,159,255,0.25)",cursor:"pointer",marginBottom:10} }, "📋 問題・解説をコピー"), q.tbPage && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCD6 ", q.refs), /*#__PURE__*/React.createElement("button", { onClick: function(e){ var b=e.currentTarget; var plain=function(s){return (s||"").replace(/<[^>]+>/g,"");}; var t="【問題】"+(q.year?" ("+q.year+"-"+q.no+")":"")+"\n"+q.q+"\n\n【選択肢】\n"+(q.opts||[]).map(function(o,i){return (i+1)+". "+o;}).join("\n")+"\n\n【正答】"+(q.correct+1)+"番\n\n【解説】\n"+plain(q.explain)+(q.refs?"\n\n【参照】"+q.refs:""); navigator.clipboard.writeText(t).then(function(){b.textContent="✓ コピーしました";setTimeout(function(){b.textContent="📋 問題・解説をコピー";},1500);}); }, style:{width:"100%",padding:"10px",borderRadius:8,background:"rgba(91,159,255,0.12)",color:"#5B9FFF",fontSize:13,fontWeight:600,border:"0.5px solid rgba(91,159,255,0.25)",cursor:"pointer",marginBottom:10} }, "📋 問題・解説をコピー"), /*#__PURE__*/React.createElement("button", { onClick: () => toggleNeedsCheck(q.id), style:{width:"100%",padding:"10px",borderRadius:8,background: q.needsCheck ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",color: q.needsCheck ? "#FBBF24" : "rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,border: q.needsCheck ? "0.5px solid rgba(251,191,36,0.4)" : "0.5px solid rgba(255,255,255,0.1)",cursor:"pointer",marginBottom:10} }, q.needsCheck ? "🚩 要確認マーク済み（タップで解除）" : "🚩 この問題に要確認マークを付ける"), q.tbPage && /*#__PURE__*/React.createElement("div", {
     style: {
       background: "rgba(181,123,255,0.1)",
       border: "1px solid rgba(181,123,255,0.3)",
@@ -3396,7 +3408,8 @@ function AITab(_ref28) {
 // ── HISTORY EDITOR ─────────────────────────────────────────
 function HistoryEditor(_ref29) {
   let questions = _ref29.questions,
-    setQuestions = _ref29.setQuestions;
+    setQuestions = _ref29.setQuestions,
+    saveHistory = _ref29.saveHistory;
   const _useState89 = useState(""),
     _useState90 = _slicedToArray(_useState89, 2),
     search = _useState90[0],
@@ -3409,8 +3422,14 @@ function HistoryEditor(_ref29) {
     _useStateSort2 = _slicedToArray(_useStateSort, 2),
     sortOrder = _useStateSort2[0],
     setSortOrder = _useStateSort2[1];
-  const answered = questions.filter(q => (q.history || []).length > 0);
-  const filtered = (search ? answered.filter(q => q.q.includes(search) || q.topic?.includes(search) || q.year?.includes(search) || q.refs?.includes(search)) : [...answered])
+  const _useStateChk = useState(false),
+    _useStateChk2 = _slicedToArray(_useStateChk, 2),
+    checkOnly = _useStateChk2[0],
+    setCheckOnly = _useStateChk2[1];
+  const answered = questions.filter(q => (q.history || []).length > 0 || q.needsCheck);
+  const checkCount = questions.filter(q => q.needsCheck).length;
+  const base = checkOnly ? answered.filter(q => q.needsCheck) : answered;
+  const filtered = (search ? base.filter(q => q.q.includes(search) || q.topic?.includes(search) || q.year?.includes(search) || q.refs?.includes(search)) : [...base])
     .sort((a, b) => {
       const da = a.lastAnswered || "";
       const db = b.lastAnswered || "";
@@ -3449,6 +3468,11 @@ function HistoryEditor(_ref29) {
         history: h
       };
     });
+    setQuestions(updated);
+    await saveHistory(updated);
+  };
+  const toggleCheck = async qId => {
+    const updated = questions.map(q => q.id !== qId ? q : { ...q, needsCheck: !q.needsCheck });
     setQuestions(updated);
     await saveHistory(updated);
   };
@@ -3500,14 +3524,29 @@ function HistoryEditor(_ref29) {
       flexShrink: 0,
       whiteSpace: "nowrap"
     }
-  }, sortOrder === "newest" ? "\u2193 \u6700\u8FD1" : "\u2191 \u53E4\u3044")), filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, sortOrder === "newest" ? "\u2193 \u6700\u8FD1" : "\u2191 \u53E4\u3044")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setCheckOnly(v => !v),
+    style: {
+      width: "100%",
+      padding: "8px 12px",
+      marginBottom: 12,
+      borderRadius: 10,
+      background: checkOnly ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",
+      border: checkOnly ? "1px solid rgba(251,191,36,0.4)" : "1px solid rgba(255,255,255,0.1)",
+      color: checkOnly ? "#FBBF24" : "rgba(255,255,255,0.5)",
+      fontSize: 12,
+      fontWeight: 600,
+      cursor: "pointer",
+      fontFamily: "inherit"
+    }
+  }, checkOnly ? "\uD83D\uDEA9 \u8981\u78BA\u8A8D\u306E\u307F\u8868\u793A\u4E2D\uFF08\u30BF\u30C3\u30D7\u3067\u89E3\u9664\uFF09" : "\uD83D\uDEA9 \u8981\u78BA\u8A8D\u306E\u307F\u8868\u793A" + (checkCount > 0 ? "\uFF08" + checkCount + "\u4EF6\uFF09" : "")), filtered.length === 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 13,
       color: "rgba(255,255,255,0.3)",
       textAlign: "center",
       padding: "16px 0"
     }
-  }, search ? "該当なし" : "回答済みの問題がありません"), /*#__PURE__*/React.createElement("div", {
+  }, search ? "該当なし" : checkOnly ? "要確認マークの問題はありません" : "回答済みの問題がありません"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       flexDirection: "column",
@@ -3547,7 +3586,7 @@ function HistoryEditor(_ref29) {
         marginRight: 6,
         fontSize: 11
       }
-    }, q.year, " [", q.topic || q.subject, "]"), q.qPage && /*#__PURE__*/React.createElement("span", {
+    }, q.needsCheck ? "\uD83D\uDEA9 " : "", q.year, " [", q.topic || q.subject, "]"), q.qPage && /*#__PURE__*/React.createElement("span", {
       style: { color: "#5B9FFF", fontSize: 11, marginRight: 6 }
     }, "\u554F\u96C6 p." + q.qPage), /*#__PURE__*/React.createElement("span", {
       style: { color: "rgba(255,255,255,0.5)", fontSize: 11 }
@@ -3638,7 +3677,21 @@ function HistoryEditor(_ref29) {
         fontSize: 12,
         cursor: "pointer"
       }
-    }, v))), /*#__PURE__*/React.createElement("div", {
+    }, v))), /*#__PURE__*/React.createElement("button", {
+      onClick: () => toggleCheck(q.id),
+      style: {
+        width: "100%",
+        padding: "8px",
+        marginBottom: 8,
+        borderRadius: 10,
+        background: q.needsCheck ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",
+        border: q.needsCheck ? "1px solid rgba(251,191,36,0.4)" : "1px solid rgba(255,255,255,0.1)",
+        color: q.needsCheck ? "#FBBF24" : "rgba(255,255,255,0.5)",
+        fontSize: 12,
+        fontWeight: 600,
+        cursor: "pointer"
+      }
+    }, q.needsCheck ? "\uD83D\uDEA9 \u8981\u78BA\u8A8D\u3092\u89E3\u9664" : "\uD83D\uDEA9 \u8981\u78BA\u8A8D\u30DE\u30FC\u30AF\u3092\u4ED8\u3051\u308B"), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8
@@ -3675,6 +3728,7 @@ function HistoryEditor(_ref29) {
 function ManageTab(_ref30) {
   let questions = _ref30.questions,
     setQuestions = _ref30.setQuestions,
+    saveHistory = _ref30.saveHistory,
     pendingCount = _ref30.pendingCount,
     importPending = _ref30.importPending;
   const _useState93 = useState(false),
@@ -3919,7 +3973,8 @@ function ManageTab(_ref30) {
     }
   }, ioMsg)), /*#__PURE__*/React.createElement(HistoryEditor, {
     questions: questions,
-    setQuestions: setQuestions
+    setQuestions: setQuestions,
+    saveHistory: saveHistory
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       background: pendingCount > 0 ? "rgba(91,159,255,0.1)" : "rgba(255,255,255,0.04)",

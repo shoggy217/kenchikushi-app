@@ -2487,7 +2487,7 @@ function QuizTab(_ref10) {
       color: "rgba(91,159,255,0.8)",
       marginBottom: 10
     }
-  }, "\uD83D\uDCD6 ", q.refs), q.tbPage && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCD6 ", q.refs), /*#__PURE__*/React.createElement("button", { onClick: function(e){ var b=e.currentTarget; var plain=function(s){return (s||"").replace(/<[^>]+>/g,"");}; var t="【問題】"+(q.year?" ("+q.year+"-"+q.no+")":"")+"\n"+q.q+"\n\n【選択肢】\n"+(q.opts||[]).map(function(o,i){return (i+1)+". "+o;}).join("\n")+"\n\n【正答】"+(q.correct+1)+"番\n\n【解説】\n"+plain(q.explain)+(q.refs?"\n\n【参照】"+q.refs:""); navigator.clipboard.writeText(t).then(function(){b.textContent="✓ コピーしました";setTimeout(function(){b.textContent="📋 問題・解説をコピー";},1500);}); }, style:{width:"100%",padding:"10px",borderRadius:8,background:"rgba(91,159,255,0.12)",color:"#5B9FFF",fontSize:13,fontWeight:600,border:"0.5px solid rgba(91,159,255,0.25)",cursor:"pointer",marginBottom:10} }, "📋 問題・解説をコピー"), q.tbPage && /*#__PURE__*/React.createElement("div", {
     style: {
       background: "rgba(181,123,255,0.1)",
       border: "1px solid rgba(181,123,255,0.3)",

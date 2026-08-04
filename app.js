@@ -1428,6 +1428,7 @@ function QuizTab(_ref10) {
     _useState54 = _slicedToArray(_useState53, 2),
     session = _useState54[0],
     setSession = _useState54[1];
+  const sessionRef = useRef({ correct: 0, total: 0 });
   const _useState55 = useState(""),
     _useState56 = _slicedToArray(_useState55, 2),
     aiHint = _useState56[0],
@@ -1536,6 +1537,7 @@ function QuizTab(_ref10) {
     setKnowledge("");
     setKnowledgeLoading(false);
     setKnowledgeSkipped(false);
+    sessionRef.current = { correct: 0, total: 0 };
     setSession({
       correct: 0,
       total: 0
@@ -1549,10 +1551,11 @@ function QuizTab(_ref10) {
     setSel(i);
     setDone(true);
     addXp(correct ? XP_PER_CORRECT : XP_PER_WRONG);
-    setSession(s => ({
-      correct: s.correct + (correct ? 1 : 0),
-      total: s.total + 1
-    }));
+    sessionRef.current = {
+      correct: sessionRef.current.correct + (correct ? 1 : 0),
+      total: sessionRef.current.total + 1
+    };
+    setSession({ correct: sessionRef.current.correct, total: sessionRef.current.total });
     // 解答時間を計算（pausedElapsed = 問題を見てから回答するまでの秒数）
     const qSec = sessionStartRef._pausedElapsed || 0;
     const updatedQuestions = questions.map(qq => qq.id !== q.id ? qq : {
@@ -1621,6 +1624,7 @@ function QuizTab(_ref10) {
     setIdx(0);
     setSel(null);
     setDone(false);
+    sessionRef.current = { correct: 0, total: 0 };
     setSession({
       correct: 0,
       total: 0
@@ -1667,8 +1671,8 @@ function QuizTab(_ref10) {
     const sec = timedSec;
     setTimedDone(true);
     setTimedResult({
-      correct: session.correct,
-      total: session.total,
+      correct: sessionRef.current.correct,
+      total: sessionRef.current.total,
       sec
     });
   };
@@ -1686,6 +1690,7 @@ function QuizTab(_ref10) {
       correct: 0,
       total: 0
     });
+    sessionRef.current = { correct: 0, total: 0 };
     sessionStartRef.current = null;
     sessionStartRef._pausedElapsed = 0;
   };

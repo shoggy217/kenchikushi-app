@@ -111,6 +111,12 @@ const nowJST = () => {
   d.setTime(d.getTime() + 9 * 60 * 60 * 1000);
   return d;
 };
+// 解答日時をソート・表示用に記録するためのJSTタイムスタンプ（ISO風文字列。localeCompareで正しく並ぶ）
+const nowStamp = () => {
+  const d = new Date();
+  d.setTime(d.getTime() + 9 * 60 * 60 * 1000);
+  return d.toISOString().slice(0, 19).replace("T", " ");
+};
 const relativeDate = dateStr => {
   if (!dateStr) return null;
   const todayJST = nowJST();
@@ -553,6 +559,7 @@ function App() {
         ...(histData[q.id] || {}),
         history: (histData[q.id]?.history) || q.history || [],
         lastAnswered: histData[q.id]?.lastAnswered || q.lastAnswered || null,
+        answeredAt: histData[q.id]?.answeredAt || q.answeredAt || null,
         starred: histData[q.id]?.starred || q.starred || false,
         bookmarked: histData[q.id]?.bookmarked || q.bookmarked || false,
         needsCheck: histData[q.id]?.needsCheck || q.needsCheck || false,
@@ -618,6 +625,7 @@ function App() {
         histData[q.id] = {
           history: h,
           lastAnswered: q.lastAnswered || null,
+          answeredAt: q.answeredAt || null,
           starred: q.starred || false,
           bookmarked: q.bookmarked || false,
           needsCheck: q.needsCheck || false,
@@ -662,6 +670,7 @@ function App() {
           histData[q.id] = {
             history: h,
             lastAnswered: q.lastAnswered || null,
+            answeredAt: q.answeredAt || null,
             starred: q.starred || false,
             bookmarked: q.bookmarked || false,
             needsCheck: q.needsCheck || false,
@@ -973,20 +982,69 @@ function App() {
     onClick: async () => {
       setSyncLabel("⟳");
       try {
-        const res = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&order=updated_at.desc&limit=1&select=data", {
-          headers: {
-            "apikey": SUPABASE_KEY,
-            "Authorization": "Bearer " + SUPABASE_KEY
-          }
-        });
+        // 最新のstudy_dataをSupabaseから取り直し（起動時と同じマージ処理）
+        const [masterQs, res] = await Promise.all([
+          loadAllQuestions(),
+          fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&order=updated_at.desc&limit=1&select=data", {
+            headers: SB_GET_HEADERS
+          })
+        ]);
         if (res.ok) {
           const rows = await res.json();
           if (rows.length > 0 && rows[0].data) {
             const d = rows[0].data;
-            if (d.questions_v3) setQuestions(d.questions_v3);
-            if (d.logs) setLogs(d.logs);
-            if (d.xp !== undefined) setXp(d.xp);
+            // メモリキャッシュとlocalStorageを最新に更新（以降の自動保存が最新ベースになる）
+            _store = d;
             localStorage.setItem("store_v1", JSON.stringify(d));
+
+            const histData = d.question_history || {};
+            const pend = d.claude_pending_questions || [];
+
+            // 問題マスタ(JSON)に履歴をマージ
+            const merged = masterQs.map(q => ({
+              ...q,
+              ...(histData[q.id] || {}),
+              history: (histData[q.id]?.history) || q.history || [],
+              lastAnswered: histData[q.id]?.lastAnswered || q.lastAnswered || null,
+              answeredAt: histData[q.id]?.answeredAt || q.answeredAt || null,
+              starred: histData[q.id]?.starred || q.starred || false,
+              bookmarked: histData[q.id]?.bookmarked || q.bookmarked || false,
+              needsCheck: histData[q.id]?.needsCheck || q.needsCheck || false,
+              checkStatus: histData[q.id]?.checkStatus || q.checkStatus || ((histData[q.id]?.needsCheck || q.needsCheck) ? "flagged" : ""),
+              checkNote: histData[q.id]?.checkNote || q.checkNote || "",
+              answerTimes: histData[q.id]?.answerTimes || q.answerTimes || []
+            }));
+            const mergedMap = new Map(merged.map(q => [q.id, q]));
+            for (const pq of pend) {
+              if (!mergedMap.has(pq.id)) mergedMap.set(pq.id, { ...pq, history: [], lastAnswered: null });
+            }
+            // lastAnswered補完（historyありで未設定なら昨日）
+            const ystJST = nowJST();
+            ystJST.setUTCDate(ystJST.getUTCDate() - 1);
+            const yesterdayStr = ystJST.toISOString().slice(0, 10);
+            const fixedQs = Array.from(mergedMap.values()).map(q =>
+              (q.history || []).length > 0 && !q.lastAnswered ? { ...q, lastAnswered: yesterdayStr } : q
+            );
+            setQuestions(fixedQs);
+            setPendingCount(pend.length);
+
+            const lg = d.logs || {};
+            setLogs(lg);
+            if (d.xp !== undefined) setXp(d.xp);
+            if (d.goalQ) setGoalQ(d.goalQ);
+            const normaLog = d.norma_log || {};
+            const todayKey = nowJST().toISOString().slice(0, 10);
+            setTodayDone(normaLog[todayKey] === true);
+            // streak再計算
+            let s = 0, dd = nowJST();
+            while (true) {
+              const k = dd.toISOString().slice(0, 10);
+              const dl = lg[k];
+              if (!dl || dayTotalSec(dl) === 0) break;
+              s++;
+              dd.setUTCDate(dd.getUTCDate() - 1);
+            }
+            setStreak(s);
           }
         }
       } catch (e) {
@@ -1562,6 +1620,8 @@ function QuizTab(_ref10) {
       ...qq,
       history: [...(qq.history || []), correct ? "○" : "×"].slice(-10),
       lastAnswered: todayStr(),
+      // 解答した正確な日時（YYYY-MM-DD HH:MM:SS JST）。同日内の並べ替えに使う
+      answeredAt: nowStamp(),
       // 解答時間の移動平均（直近5回）
       answerTimes: [...(qq.answerTimes || []), qSec].slice(-5)
     });
@@ -3503,8 +3563,9 @@ function HistoryEditor(_ref29) {
     .sort((a, b) => {
       const ra = _rank(a.checkStatus), rb = _rank(b.checkStatus);
       if (ra !== rb) return ra - rb;
-      const da = a.lastAnswered || "";
-      const db = b.lastAnswered || "";
+      // answeredAt(日時)優先。旧データはlastAnswered(日付)にフォールバック
+      const da = a.answeredAt || a.lastAnswered || "";
+      const db = b.answeredAt || b.lastAnswered || "";
       return sortOrder === "newest" ? db.localeCompare(da) : da.localeCompare(db);
     });
   const removeLastHistory = async qId => {
@@ -3512,10 +3573,12 @@ function HistoryEditor(_ref29) {
       if (q.id !== qId) return q;
       const newHistory = [...(q.history || [])].slice(0, -1);
       const newLastAnswered = newHistory.length > 0 ? q.lastAnswered : null;
+      const newAnsweredAt = newHistory.length > 0 ? q.answeredAt : null;
       return {
         ...q,
         history: newHistory,
-        lastAnswered: newLastAnswered
+        lastAnswered: newLastAnswered,
+        answeredAt: newAnsweredAt
       };
     });
     setQuestions(updated);
@@ -3525,7 +3588,8 @@ function HistoryEditor(_ref29) {
     const updated = questions.map(q => q.id !== qId ? q : {
       ...q,
       history: [],
-      lastAnswered: null
+      lastAnswered: null,
+      answeredAt: null
     });
     setQuestions(updated);
     await saveHistory(updated);
@@ -3673,7 +3737,9 @@ function HistoryEditor(_ref29) {
       style: { color: "rgba(255,255,255,0.5)", fontSize: 11 }
     }, q.refs ? " " + q.refs : ""), /*#__PURE__*/React.createElement("div", {
       style: { fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }
-    }, q.q.slice(0, 30), q.q.length > 30 ? "…" : "")), /*#__PURE__*/React.createElement("div", {
+    }, q.q.slice(0, 30), q.q.length > 30 ? "…" : ""), (q.answeredAt || q.lastAnswered) && /*#__PURE__*/React.createElement("div", {
+      style: { fontSize: 10, color: "rgba(91,159,255,0.7)", marginTop: 2 }
+    }, "\uD83D\uDD50 ", q.answeredAt ? q.answeredAt.slice(5, 16).replace("-", "/") : q.lastAnswered)), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 2,
@@ -4800,5 +4866,4 @@ function NotesTab() {
     }, memo) : null);
   })));
 }
-window.App = App;
 window.App=App;

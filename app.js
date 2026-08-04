@@ -1614,7 +1614,13 @@ function QuizTab(_ref10) {
       total: sessionRef.current.total + 1
     };
     setSession({ correct: sessionRef.current.correct, total: sessionRef.current.total });
-    // 解答時間を計算（pausedElapsed = 問題を見てから回答するまでの秒数）
+    // 解説読み中はタイマーを止める（この問題にかけた経過時間をここで確定）
+    if (sessionStartRef.current) {
+      const elapsed = Math.floor((Date.now() - sessionStartRef.current) / 1000);
+      sessionStartRef._pausedElapsed = (sessionStartRef._pausedElapsed || 0) + elapsed;
+      sessionStartRef.current = null;
+    }
+    // 解答時間を計算（pausedElapsed = 問題を見てから回答するまでの秒数。上で確定済み）
     const qSec = sessionStartRef._pausedElapsed || 0;
     const updatedQuestions = questions.map(qq => qq.id !== q.id ? qq : {
       ...qq,
@@ -1628,12 +1634,6 @@ function QuizTab(_ref10) {
     setQuestions(updatedQuestions);
     // 回答直後に即時保存（タブを閉じても記録が消えないよう）
     saveHistory(updatedQuestions);
-    // 解説読み中はタイマーを止める（経過時間をここまでで確定）
-    if (sessionStartRef.current) {
-      const elapsed = Math.floor((Date.now() - sessionStartRef.current) / 1000);
-      sessionStartRef._pausedElapsed = (sessionStartRef._pausedElapsed || 0) + elapsed;
-      sessionStartRef.current = null;
-    }
     setAiHint("");
     setShowHint(false);
     setKnowledge("");

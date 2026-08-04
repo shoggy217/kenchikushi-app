@@ -1,4 +1,4 @@
-const CACHE = "kenchikushi-v6";
+const CACHE = "kenchikushi-v7";
 const ASSETS = ["/", "/index.html", "/manifest.json"];
 
 self.addEventListener("install", e => {

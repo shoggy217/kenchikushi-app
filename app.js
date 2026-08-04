@@ -1409,6 +1409,10 @@ function QuizTab(_ref10) {
     _useState48 = _slicedToArray(_useState47, 2),
     activeTerm = _useState48[0],
     setActiveTerm = _useState48[1];
+  const _useStateRel = useState(null),
+    _useStateRel2 = _slicedToArray(_useStateRel, 2),
+    relatedView = _useStateRel2[0],
+    setRelatedView = _useStateRel2[1];
   const _useState49 = useState(null),
     _useState50 = _slicedToArray(_useState49, 2),
     sel = _useState50[0],
@@ -2053,7 +2057,37 @@ function QuizTab(_ref10) {
       flexDirection: "column",
       gap: 12
     }
+  }, relatedView && /*#__PURE__*/React.createElement("div", {
+    onClick: () => setRelatedView(null),
+    style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 12px", overflowY: "auto" }
   }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    style: { background: "#1a1a1a", borderRadius: 16, padding: 18, maxWidth: 560, width: "100%", border: "0.5px solid rgba(255,255,255,0.1)" }
+  },
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } },
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)" } }, relatedView.id, relatedView.year ? " (" + relatedView.year + "-" + relatedView.no + ")" : "", relatedView.rank ? " [" + relatedView.rank + "]" : ""),
+      /*#__PURE__*/React.createElement("button", { onClick: () => setRelatedView(null), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, width: 28, height: 28, color: "#fff", fontSize: 16, cursor: "pointer" } }, "\u00D7")
+    ),
+    (relatedView.qPage || relatedView.tbPage) && /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" } },
+      relatedView.qPage && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: "#5B9FFF", background: "rgba(91,159,255,0.12)", padding: "2px 8px", borderRadius: 6 } }, "\u554F\u96C6 p." + relatedView.qPage),
+      relatedView.tbPage && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: "#34D399", background: "rgba(52,211,153,0.12)", padding: "2px 8px", borderRadius: 6 } }, "\u6559\u79D1\u66F8 p." + relatedView.tbPage)
+    ),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 14, fontWeight: 500, lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap" } }, relatedView.q),
+    (relatedView.opts || []).map((opt, i) => /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: { padding: "8px 12px", marginBottom: 6, borderRadius: 6, fontSize: 13, lineHeight: 1.5,
+        background: relatedView.correct === i ? "rgba(52,211,153,0.12)" : "rgba(255,255,255,0.02)",
+        border: "0.5px solid " + (relatedView.correct === i ? "rgba(52,211,153,0.35)" : "rgba(255,255,255,0.06)"),
+        color: relatedView.correct === i ? "#34D399" : "rgba(255,255,255,0.75)" }
+    }, /*#__PURE__*/React.createElement("strong", null, (i + 1) + ". "), opt, relatedView.correct === i && /*#__PURE__*/React.createElement("span", { style: { marginLeft: 6, fontSize: 11 } }, "\u2190 \u6B63\u7B54"))),
+    relatedView.figImg && /*#__PURE__*/React.createElement("div", { style: { background: "#fff", borderRadius: 8, padding: 8, marginTop: 10, textAlign: "center" } }, /*#__PURE__*/React.createElement("img", { src: relatedView.figImg, alt: "\u56F3", style: { maxWidth: "100%", height: "auto", borderRadius: 4 }, loading: "lazy" })),
+    relatedView.svg && /*#__PURE__*/React.createElement("div", { style: { background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 12, marginTop: 10, maxHeight: 340, overflow: "auto" }, dangerouslySetInnerHTML: { __html: relatedView.svg } }),
+    relatedView.explain && /*#__PURE__*/React.createElement("div", { style: { marginTop: 12, paddingTop: 12, borderTop: "0.5px solid rgba(255,255,255,0.07)" } },
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)", marginBottom: 6 } }, "\u89E3\u8AAC"),
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, lineHeight: 1.7, color: "rgba(255,255,255,0.65)", whiteSpace: "pre-wrap" } }, relatedView.explain)
+    ),
+    relatedView.refs && /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 10 } }, "\u53C2\u7167: " + relatedView.refs)
+  )), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8
@@ -2513,7 +2547,20 @@ function QuizTab(_ref10) {
       color: "rgba(91,159,255,0.8)",
       marginBottom: 10
     }
-  }, "\uD83D\uDCD6 ", q.refs), /*#__PURE__*/React.createElement("button", { onClick: function(e){ var b=e.currentTarget; var plain=function(s){return (s||"").replace(/<[^>]+>/g,"");}; var t="【問題】"+(q.year?" ("+q.year+"-"+q.no+")":"")+"\n"+q.q+"\n\n【選択肢】\n"+(q.opts||[]).map(function(o,i){return (i+1)+". "+o;}).join("\n")+"\n\n【正答】"+(q.correct+1)+"番\n\n【解説】\n"+plain(q.explain)+(q.refs?"\n\n【参照】"+q.refs:""); navigator.clipboard.writeText(t).then(function(){b.textContent="✓ コピーしました";setTimeout(function(){b.textContent="📋 問題・解説をコピー";},1500);}); }, style:{width:"100%",padding:"10px",borderRadius:8,background:"rgba(91,159,255,0.12)",color:"#5B9FFF",fontSize:13,fontWeight:600,border:"0.5px solid rgba(91,159,255,0.25)",cursor:"pointer",marginBottom:10} }, "📋 問題・解説をコピー"), /*#__PURE__*/React.createElement("button", { onClick: () => toggleNeedsCheck(q.id), style:{width:"100%",padding:"10px",borderRadius:8,background: q.checkStatus ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",color: q.checkStatus ? "#FBBF24" : "rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,border: q.checkStatus ? "0.5px solid rgba(251,191,36,0.4)" : "0.5px solid rgba(255,255,255,0.1)",cursor:"pointer",marginBottom:10} }, q.checkStatus ? "🚩 要確認マーク済み（タップで解除）" : "🚩 この問題に要確認マークを付ける"), q.tbPage && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDCD6 ", q.refs), /*#__PURE__*/React.createElement("button", { onClick: function(e){ var b=e.currentTarget; var plain=function(s){return (s||"").replace(/<[^>]+>/g,"");}; var t="【問題】"+(q.year?" ("+q.year+"-"+q.no+")":"")+"\n"+q.q+"\n\n【選択肢】\n"+(q.opts||[]).map(function(o,i){return (i+1)+". "+o;}).join("\n")+"\n\n【正答】"+(q.correct+1)+"番\n\n【解説】\n"+plain(q.explain)+(q.refs?"\n\n【参照】"+q.refs:""); navigator.clipboard.writeText(t).then(function(){b.textContent="✓ コピーしました";setTimeout(function(){b.textContent="📋 問題・解説をコピー";},1500);}); }, style:{width:"100%",padding:"10px",borderRadius:8,background:"rgba(91,159,255,0.12)",color:"#5B9FFF",fontSize:13,fontWeight:600,border:"0.5px solid rgba(91,159,255,0.25)",cursor:"pointer",marginBottom:10} }, "📋 問題・解説をコピー"), /*#__PURE__*/React.createElement("button", { onClick: () => toggleNeedsCheck(q.id), style:{width:"100%",padding:"10px",borderRadius:8,background: q.checkStatus ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",color: q.checkStatus ? "#FBBF24" : "rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,border: q.checkStatus ? "0.5px solid rgba(251,191,36,0.4)" : "0.5px solid rgba(255,255,255,0.1)",cursor:"pointer",marginBottom:10} }, q.checkStatus ? "🚩 要確認マーク済み（タップで解除）" : "🚩 この問題に要確認マークを付ける"), (() => {
+    const related = questions.filter(x => x.subject === q.subject && x.topic === q.topic && x.id !== q.id).sort((a,b) => (a.id||"").localeCompare(b.id||""));
+    if (related.length === 0) return null;
+    return /*#__PURE__*/React.createElement("div", { style: { marginBottom: 10, padding: "10px 12px", borderRadius: 8, background: "rgba(139,92,246,0.08)", border: "0.5px solid rgba(139,92,246,0.25)" } },
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, fontWeight: 600, color: "#A78BFA", marginBottom: 8 } }, "\uD83D\uDD17 \u95A2\u9023\u554F\u984C\uFF08" + (q.topic || "\u540C\u3058\u8AD6\u70B9") + "\uFF09"),
+      /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } },
+        related.map(r => /*#__PURE__*/React.createElement("button", {
+          key: r.id,
+          onClick: () => setRelatedView(r),
+          style: { padding: "5px 10px", borderRadius: 8, background: "rgba(139,92,246,0.12)", border: "0.5px solid rgba(139,92,246,0.3)", color: "#C4B5FD", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
+        }, (r.year || "") + "-" + r.no))
+      )
+    );
+  })(), q.tbPage && /*#__PURE__*/React.createElement("div", {
     style: {
       background: "rgba(181,123,255,0.1)",
       border: "1px solid rgba(181,123,255,0.3)",

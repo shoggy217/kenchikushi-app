@@ -1756,9 +1756,7 @@ function QuizTab(_ref10) {
   };
 
   const next = () => {
-    // 次の問題開始 → タイマー再開
-    sessionStartRef.current = Date.now();
-    sessionStartRef._pausedElapsed = 0;
+    // 先に経過時間を保存してからタイマーをリセット（saveElapsed(true)が内部でリセットも行う）
     saveElapsed(true); // 1問終えるたびに経過時間を保存
     // セッション: 指定問数に達したら終了
     if (sessionConf && sessionConf.count < 9999 && session.total + 1 >= sessionConf.count) {
@@ -2994,6 +2992,12 @@ function LogTab(_ref21) {
   const today = todayStr();
   const todayLog = logs[today] || {};
   const todayMin = dayTotalMin(todayLog);
+  // 今日解いた問題数（answeredAtの日付が今日、なければlastAnsweredが今日）
+  const todaySolvedCount = (questions || []).filter(q => {
+    const day = q.answeredAt ? q.answeredAt.slice(0, 10) : q.lastAnswered;
+    return day === today;
+  }).length;
+  const hasTodayRecord = dayTotalSec(todayLog) >= 5 || todaySolvedCount > 0;
 
   // 週別正答率グラフ用データ（過去8週）
   const weeklyStats = useMemo(() => {
@@ -3255,7 +3259,7 @@ function LogTab(_ref21) {
       color: "rgba(255,255,255,0.35)",
       marginBottom: 16
     }
-  }, "\u6F14\u7FD2\u30BB\u30C3\u30B7\u30E7\u30F3\u3092\u7D42\u4E86\u3059\u308B\u3068\u81EA\u52D5\u3067\u8A18\u9332\u3055\u308C\u307E\u3059"), dayTotalSec(todayLog) >= 5 ? /*#__PURE__*/React.createElement("div", null, (() => {
+  }, "\u6F14\u7FD2\u30BB\u30C3\u30B7\u30E7\u30F3\u3092\u7D42\u4E86\u3059\u308B\u3068\u81EA\u52D5\u3067\u8A18\u9332\u3055\u308C\u307E\u3059"), hasTodayRecord ? /*#__PURE__*/React.createElement("div", null, (() => {
     const totalSec = dayTotalSec(todayLog);
     const h = Math.floor(totalSec / 3600);
     const m = Math.floor(totalSec % 3600 / 60);
@@ -3275,7 +3279,17 @@ function LogTab(_ref21) {
         color: "rgba(255,255,255,0.4)",
         marginBottom: 16
       }
-    }, "\u7D2F\u8A08 ", (totalAllSec / 3600).toFixed(1), "\u6642\u9593"));
+    }, "\u7D2F\u8A08 ", (totalAllSec / 3600).toFixed(1), "\u6642\u9593"), todaySolvedCount > 0 && /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "inline-block",
+        fontSize: 13,
+        color: "#5B9FFF",
+        background: "rgba(91,159,255,0.12)",
+        padding: "4px 12px",
+        borderRadius: 8,
+        marginBottom: 16
+      }
+    }, "\u4ECA\u65E5\u89E3\u3044\u305F\u554F\u984C: ", todaySolvedCount, "\u554F"));
   })(), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",

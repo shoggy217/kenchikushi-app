@@ -3813,7 +3813,14 @@ function HistoryEditor(_ref29) {
       style: { fontSize: 11, fontWeight: 600, color: "#5B9FFF", background: "rgba(91,159,255,0.12)", padding: "2px 8px", borderRadius: 6 }
     }, "\u554F\u96C6 p." + q.qPage), q.tbPage && /*#__PURE__*/React.createElement("span", {
       style: { fontSize: 11, fontWeight: 600, color: "#34D399", background: "rgba(52,211,153,0.12)", padding: "2px 8px", borderRadius: 6 }
-    }, "\u6559\u79D1\u66F8 p." + q.tbPage)), q.q), (q.opts || []).map((opt, i) => /*#__PURE__*/React.createElement("div", {
+    }, "\u6559\u79D1\u66F8 p." + q.tbPage)), q.q), q.figImg && /*#__PURE__*/React.createElement("div", {
+      style: { background: "#fff", borderRadius: 8, padding: 8, margin: "10px 0", textAlign: "center" }
+    }, /*#__PURE__*/React.createElement("img", {
+      src: q.figImg,
+      alt: "\u554F\u984C\u56F3",
+      style: { maxWidth: "100%", height: "auto", borderRadius: 4 },
+      loading: "lazy"
+    })), (q.opts || []).map((opt, i) => /*#__PURE__*/React.createElement("div", {
       key: i,
       style: {
         fontSize: 12,
@@ -3824,7 +3831,29 @@ function HistoryEditor(_ref29) {
         border: "0.5px solid " + (q.correct === i ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.06)"),
         color: q.correct === i ? "#34D399" : "rgba(255,255,255,0.5)"
       }
-    }, /*#__PURE__*/React.createElement("strong", null, i + 1, ". "), opt)), /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement("strong", null, i + 1, ". "), opt)), q.explain && /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 12,
+        color: "rgba(255,255,255,0.6)",
+        lineHeight: 1.7,
+        marginTop: 10,
+        padding: "8px 10px",
+        background: "rgba(91,159,255,0.06)",
+        borderRadius: 8,
+        whiteSpace: "pre-wrap"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: { fontSize: 11, fontWeight: 600, color: "#5B9FFF", marginBottom: 6 }
+    }, "\u89E3\u8AAC"), q.explain), q.explainImg && /*#__PURE__*/React.createElement("div", {
+      style: { background: "#fff", borderRadius: 8, padding: 8, margin: "10px 0", textAlign: "center" }
+    }, /*#__PURE__*/React.createElement("img", {
+      src: q.explainImg,
+      alt: "\u89E3\u8AAC\u56F3",
+      style: { maxWidth: "100%", height: "auto", borderRadius: 4 },
+      loading: "lazy"
+    })), q.refs && /*#__PURE__*/React.createElement("div", {
+      style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 8 }
+    }, "\u53C2\u7167: " + q.refs), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 11,
         color: "rgba(255,255,255,0.4)",

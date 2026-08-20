@@ -1779,8 +1779,9 @@ function QuizTab(_ref10) {
       answeredAt: nowStamp(),
       // 解答時間の移動平均（直近5回）
       answerTimes: [...(qq.answerTimes || []), qSec].slice(-5),
-      // 解いた日付を記録（同日は重複させない）。日付別復習に使う
-      answerDates: (qq.answerDates || []).includes(todayStr()) ? (qq.answerDates || []) : [...(qq.answerDates || []), todayStr()]
+      // 解いた日付を記録（同日は重複させない）。日付別復習に使う。
+      // ただし日付別復習セッション中は追記しない（前日分を復習しても今日に流入させないため）
+      answerDates: course === "date" ? (qq.answerDates || []) : ((qq.answerDates || []).includes(todayStr()) ? (qq.answerDates || []) : [...(qq.answerDates || []), todayStr()])
     });
     setQuestions(updatedQuestions);
     // 回答直後に即時保存（タブを閉じても記録が消えないよう）

@@ -461,6 +461,11 @@ function App() {
     _useState2 = _slicedToArray(_useState, 2),
     tab = _useState2[0],
     setTab = _useState2[1];
+  // ホームの「日付で復習」から渡す初期日付（null=通常のクイズタブ）
+  const _useStatePRD = useState(null),
+    _useStatePRD2 = _slicedToArray(_useStatePRD, 2),
+    pendingReviewDate = _useStatePRD2[0],
+    setPendingReviewDate = _useStatePRD2[1];
   const _useState3 = useState([]),
     _useState4 = _slicedToArray(_useState3, 2),
     questions = _useState4[0],
@@ -565,7 +570,8 @@ function App() {
         needsCheck: histData[q.id]?.needsCheck || q.needsCheck || false,
         checkStatus: histData[q.id]?.checkStatus || q.checkStatus || ((histData[q.id]?.needsCheck || q.needsCheck) ? "flagged" : ""),
         checkNote: histData[q.id]?.checkNote || q.checkNote || "",
-        answerTimes: histData[q.id]?.answerTimes || q.answerTimes || []
+        answerTimes: histData[q.id]?.answerTimes || q.answerTimes || [],
+        answerDates: (histData[q.id]?.answerDates && histData[q.id].answerDates.length) ? histData[q.id].answerDates : (q.answerDates && q.answerDates.length ? q.answerDates : ((histData[q.id]?.lastAnswered || q.lastAnswered) ? [histData[q.id]?.lastAnswered || q.lastAnswered] : []))
       }));
 
       // 4. pendingをマージ
@@ -631,7 +637,8 @@ function App() {
           needsCheck: q.needsCheck || false,
           checkStatus: q.checkStatus || "",
           checkNote: q.checkNote || "",
-          answerTimes: q.answerTimes || []
+          answerTimes: q.answerTimes || [],
+          answerDates: (q.answerDates && q.answerDates.length) ? q.answerDates : (q.lastAnswered ? [q.lastAnswered] : [])
         };
       }
     }
@@ -676,7 +683,8 @@ function App() {
             needsCheck: q.needsCheck || false,
             checkStatus: q.checkStatus || "",
             checkNote: q.checkNote || "",
-            answerTimes: q.answerTimes || []
+            answerTimes: q.answerTimes || [],
+            answerDates: (q.answerDates && q.answerDates.length) ? q.answerDates : (q.lastAnswered ? [q.lastAnswered] : [])
           };
         }
       }
@@ -880,6 +888,7 @@ function App() {
     goalQ: goalQ,
     setGoalQ: setGoalQ,
     setTab: setTab,
+    openDateReview: () => { setPendingReviewDate(todayStr()); setTab("quiz"); },
     logs: logs,
     timerRunning: timerRunning,
     timerSec: timerSec,
@@ -891,7 +900,9 @@ function App() {
     setQuestions: setQuestions,
     addXp: addXp,
     logs: logs,
-    setLogs: setLogs
+    setLogs: setLogs,
+    initialReviewDate: pendingReviewDate,
+    clearPendingReviewDate: () => setPendingReviewDate(null)
   }), tab === "log" && /*#__PURE__*/React.createElement(LogTab, {
     logs: logs,
     setLogs: setLogs,
@@ -1012,7 +1023,8 @@ function App() {
               needsCheck: histData[q.id]?.needsCheck || q.needsCheck || false,
               checkStatus: histData[q.id]?.checkStatus || q.checkStatus || ((histData[q.id]?.needsCheck || q.needsCheck) ? "flagged" : ""),
               checkNote: histData[q.id]?.checkNote || q.checkNote || "",
-              answerTimes: histData[q.id]?.answerTimes || q.answerTimes || []
+              answerTimes: histData[q.id]?.answerTimes || q.answerTimes || [],
+              answerDates: (histData[q.id]?.answerDates && histData[q.id].answerDates.length) ? histData[q.id].answerDates : (q.answerDates && q.answerDates.length ? q.answerDates : ((histData[q.id]?.lastAnswered || q.lastAnswered) ? [histData[q.id]?.lastAnswered || q.lastAnswered] : []))
             }));
             const mergedMap = new Map(merged.map(q => [q.id, q]));
             for (const pq of pend) {
@@ -1109,6 +1121,7 @@ function HomeTab(_ref4) {
     goalQ = _ref4.goalQ,
     setGoalQ = _ref4.setGoalQ,
     setTab = _ref4.setTab,
+    openDateReview = _ref4.openDateReview,
     logs = _ref4.logs,
     timerRunning = _ref4.timerRunning,
     timerSec = _ref4.timerSec,
@@ -1237,6 +1250,10 @@ function HomeTab(_ref4) {
   const _upcomingMonths = _scheduleMonths.filter(m => m.month >= _monthKeyN).slice(0, 5);
 
   return /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } },
+    /*#__PURE__*/React.createElement("button", {
+      onClick: openDateReview,
+      style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "13px", borderRadius: 14, border: "1px solid rgba(167,139,250,0.35)", background: "rgba(167,139,250,0.1)", color: "#A78BFA", fontSize: 14, fontWeight: 700, cursor: "pointer" }
+    }, /*#__PURE__*/React.createElement("span", { style: { fontSize: 16 } }, "\uD83D\uDCC5"), "\u65E5\u4ED8\u3067\u5FA9\u7FD2\uFF08\u89E3\u3044\u305F\u65E5\u3092\u9078\u3076\uFF09"),
   /*#__PURE__*/React.createElement(Card, null,
     /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 } },
       /*#__PURE__*/React.createElement("div", null,
@@ -1415,6 +1432,106 @@ function TermPopup(_ref1) {
 }
 
 // ── QUIZ TAB ───────────────────────────────────────────────
+// 日付別復習カレンダー: 月グリッドを描き、解いた日をハイライト、タップで日付選択→開始
+function DateReviewCalendar(props) {
+  const dateCounts = props.dateCounts || {};
+  const selected = props.selected;
+  const onSelect = props.onSelect;
+  const onStart = props.onStart;
+  const poolCount = props.poolCount || 0;
+  // 表示中の月（初期は選択日 or 今日の月）
+  const initMonth = (selected || todayStr()).slice(0, 7);
+  const _msY = useState(initMonth),
+    _msY2 = _slicedToArray(_msY, 2),
+    viewMonth = _msY2[0],
+    setViewMonth = _msY2[1];
+  const [yy, mm] = viewMonth.split("-").map(Number);
+  const first = new Date(yy, mm - 1, 1);
+  const startDow = first.getDay(); // 0=日
+  const daysInMonth = new Date(yy, mm, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  const key = d => `${yy}-${String(mm).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const shiftMonth = delta => {
+    let nY = yy, nM = mm + delta;
+    if (nM < 1) { nM = 12; nY--; } else if (nM > 12) { nM = 1; nY++; }
+    setViewMonth(`${nY}-${String(nM).padStart(2, "0")}`);
+  };
+  const monthTotal = Object.keys(dateCounts).filter(k => k.startsWith(viewMonth)).reduce((a, k) => a + dateCounts[k], 0);
+  const todayK = todayStr();
+  return /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", flexDirection: "column", gap: 12 }
+  },
+  // 月ヘッダ（前月/月表示/次月）
+  /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 2px" }
+  },
+  /*#__PURE__*/React.createElement("button", {
+    onClick: () => shiftMonth(-1),
+    style: { background: "rgba(255,255,255,0.06)", border: "none", borderRadius: 8, color: "#fff", width: 36, height: 36, fontSize: 16, cursor: "pointer" }
+  }, "‹"),
+  /*#__PURE__*/React.createElement("div", { style: { textAlign: "center" } },
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 15, fontWeight: 700, color: "#fff" } }, `${yy}年${mm}月`),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)" } }, monthTotal > 0 ? `この月に${monthTotal}問` : "解答記録なし")
+  ),
+  /*#__PURE__*/React.createElement("button", {
+    onClick: () => shiftMonth(1),
+    style: { background: "rgba(255,255,255,0.06)", border: "none", borderRadius: 8, color: "#fff", width: 36, height: 36, fontSize: 16, cursor: "pointer" }
+  }, "›")),
+  // 曜日ヘッダ
+  /*#__PURE__*/React.createElement("div", {
+    style: { display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4, textAlign: "center" }
+  }, ["日", "月", "火", "水", "木", "金", "土"].map((w, i) => /*#__PURE__*/React.createElement("div", {
+    key: "w" + i,
+    style: { fontSize: 10, color: i === 0 ? "rgba(248,113,113,0.6)" : i === 6 ? "rgba(91,159,255,0.6)" : "rgba(255,255,255,0.3)", padding: "2px 0" }
+  }, w))),
+  // 日付グリッド
+  /*#__PURE__*/React.createElement("div", {
+    style: { display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4 }
+  }, cells.map((d, i) => {
+    if (d === null) return /*#__PURE__*/React.createElement("div", { key: "e" + i });
+    const k = key(d);
+    const cnt = dateCounts[k] || 0;
+    const isSel = selected === k;
+    const isToday = k === todayK;
+    const hasData = cnt > 0;
+    return /*#__PURE__*/React.createElement("button", {
+      key: k,
+      onClick: () => hasData && onSelect(k),
+      disabled: !hasData,
+      style: {
+        aspectRatio: "1",
+        borderRadius: 10,
+        border: isSel ? "1.5px solid #5B9FFF" : isToday ? "1px solid rgba(255,255,255,0.25)" : "1px solid transparent",
+        background: isSel ? "rgba(91,159,255,0.22)" : hasData ? "rgba(91,159,255,0.08)" : "transparent",
+        color: hasData ? "#fff" : "rgba(255,255,255,0.2)",
+        cursor: hasData ? "pointer" : "default",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        fontSize: 13, fontWeight: isSel ? 700 : 500, gap: 1, padding: 0
+      }
+    },
+    /*#__PURE__*/React.createElement("span", null, d),
+    hasData && /*#__PURE__*/React.createElement("span", {
+      style: { fontSize: 8, color: isSel ? "#5B9FFF" : "rgba(91,159,255,0.7)", fontWeight: 600 }
+    }, cnt));
+  })),
+  // 選択日の情報＋開始ボタン
+  selected && /*#__PURE__*/React.createElement("div", {
+    style: { padding: "12px 14px", background: "rgba(91,159,255,0.08)", borderRadius: 12, border: "1px solid rgba(91,159,255,0.2)", display: "flex", flexDirection: "column", gap: 10 }
+  },
+  /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.85)" } },
+    (() => { const p = selected.split("-"); return `${p[0]}年${Number(p[1])}月${Number(p[2])}日`; })(),
+    " に解いた ",
+    /*#__PURE__*/React.createElement("span", { style: { color: "#5B9FFF", fontWeight: 700 } }, poolCount),
+    " 問"),
+  /*#__PURE__*/React.createElement("button", {
+    onClick: onStart,
+    disabled: poolCount === 0,
+    style: { padding: "12px", borderRadius: 12, border: "none", background: poolCount > 0 ? "#5B9FFF" : "rgba(255,255,255,0.1)", color: poolCount > 0 ? "#fff" : "rgba(255,255,255,0.3)", fontSize: 14, fontWeight: 700, cursor: poolCount > 0 ? "pointer" : "default" }
+  }, "この日の問題を復習する")));
+}
+
 function QuizTab(_ref10) {
   let questions = _ref10.questions,
     setQuestions = _ref10.setQuestions,
@@ -1432,7 +1549,21 @@ function QuizTab(_ref10) {
   const _useState31 = useState("normal"),
     _useState32 = _slicedToArray(_useState31, 2),
     course = _useState32[0],
-    setCourse = _useState32[1]; // normal / srs
+    setCourse = _useState32[1]; // normal / srs / date
+  // 日付別復習: 選択された日付(YYYY-MM-DD)。ホームから initialReviewDate で初期化
+  const _useStateRD = useState(_ref10.initialReviewDate || null),
+    _useStateRD2 = _slicedToArray(_useStateRD, 2),
+    reviewDate = _useStateRD2[0],
+    setReviewDate = _useStateRD2[1];
+  // ホームの「日付で復習」から来たら日付モードで開く（初回のみ）
+  useEffect(() => {
+    if (_ref10.initialReviewDate) {
+      setCourse("date");
+      setReviewDate(_ref10.initialReviewDate);
+      if (_ref10.clearPendingReviewDate) _ref10.clearPendingReviewDate();
+    }
+    // eslint-disable-next-line
+  }, []);
   const _useState33 = useState(null),
     _useState34 = _slicedToArray(_useState33, 2),
     sessionConf = _useState34[0],
@@ -1570,6 +1701,15 @@ function QuizTab(_ref10) {
       notDoneToday.sort((a, b) => priority(a) - priority(b));
       return [...notDoneToday, ...doneToday];
     }
+    // 日付別復習: 選択日に解いた問題のみ（answerDatesに含まれるもの）
+    if (course === "date") {
+      if (!reviewDate) return [];
+      let dArr = questions.filter(q => (q.answerDates || []).includes(reviewDate));
+      if (subj !== "all") dArr = dArr.filter(q => q.subject === subj);
+      // 要復習(直近×2回以上)を先頭へ
+      dArr.sort((a, b) => priority(a) - priority(b));
+      return dArr;
+    }
     // 条文クイズ: refs(参照条文)がある問題のみ
     if (course === "jomon") {
       const joArr = [...questions].filter(q => q.refs && q.refs.trim().length > 0);
@@ -1578,7 +1718,16 @@ function QuizTab(_ref10) {
       return joArr;
     }
     return [...notSolvedToday, ...solvedToday];
-  }, [questions, subj, mode, course]);
+  }, [questions, subj, mode, course, reviewDate]);
+
+  // 日付別復習: 「解いた日付 -> 問題数」の集計マップ
+  const answerDateCounts = useMemo(() => {
+    const m = {};
+    questions.forEach(q => {
+      (q.answerDates || []).forEach(d => { m[d] = (m[d] || 0) + 1; });
+    });
+    return m;
+  }, [questions]);
 
   // pool変化でqがずれないようIDで固定
   const poolQ = pool[idx % Math.max(pool.length, 1)];
@@ -1629,7 +1778,9 @@ function QuizTab(_ref10) {
       // 解答した正確な日時（YYYY-MM-DD HH:MM:SS JST）。同日内の並べ替えに使う
       answeredAt: nowStamp(),
       // 解答時間の移動平均（直近5回）
-      answerTimes: [...(qq.answerTimes || []), qSec].slice(-5)
+      answerTimes: [...(qq.answerTimes || []), qSec].slice(-5),
+      // 解いた日付を記録（同日は重複させない）。日付別復習に使う
+      answerDates: (qq.answerDates || []).includes(todayStr()) ? (qq.answerDates || []) : [...(qq.answerDates || []), todayStr()]
     });
     setQuestions(updatedQuestions);
     // 回答直後に即時保存（タブを閉じても記録が消えないよう）
@@ -1866,7 +2017,7 @@ function QuizTab(_ref10) {
         display: "flex",
         gap: 8
       }
-    }, [["normal", "🆕 新規"], ["srs", "🔄 反復"], ["jomon", "📜 条文"]].map(_ref11 => {
+    }, [["normal", "🆕 新規"], ["srs", "🔄 反復"], ["jomon", "📜 条文"], ["date", "📅 日付"]].map(_ref11 => {
       let _ref12 = _slicedToArray(_ref11, 2),
         id = _ref12[0],
         label = _ref12[1];
@@ -1888,7 +2039,15 @@ function QuizTab(_ref10) {
           color: course === id ? "#5B9FFF" : "rgba(255,255,255,0.5)"
         }
       }, label);
-    })), course === "srs" && /*#__PURE__*/React.createElement("div", {
+    })), course === "date" && /*#__PURE__*/React.createElement(DateReviewCalendar, {
+      dateCounts: answerDateCounts,
+      selected: reviewDate,
+      onSelect: setReviewDate,
+      poolCount: pool.length,
+      onStart: () => {
+        if (pool.length > 0) startSession({ count: 9999, secPerQ: 0 });
+      }
+    }), course === "srs" && /*#__PURE__*/React.createElement("div", {
       style: {
         padding: "8px 12px",
         background: "rgba(52,211,153,0.07)",
@@ -1901,12 +2060,12 @@ function QuizTab(_ref10) {
         color: "#34D399",
         fontWeight: 600
       }
-    }, "\u4ECA\u65E5\u306E\u5FA9\u7FD2: ", questions.filter(q => (q.history || []).length > 0 && isDueToday(q)).length, "\u554F")), /*#__PURE__*/React.createElement(FilterBar, {
+    }, "\u4ECA\u65E5\u306E\u5FA9\u7FD2: ", questions.filter(q => (q.history || []).length > 0 && isDueToday(q)).length, "\u554F")), course !== "date" && /*#__PURE__*/React.createElement(FilterBar, {
       questions: questions,
       subj: subj,
       mode: mode,
       reset: reset
-    }), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement("div", {
+    }), course !== "date" && /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 14,
         fontWeight: 600,
@@ -4110,14 +4269,18 @@ function ManageTab(_ref30) {
           if (!existing) {
             existingMap.set(q.id, q);
           } else {
-            // historyが多い方を採用
-            if ((q.history || []).length > (existing.history || []).length) {
-              existingMap.set(q.id, {
-                ...existing,
-                history: q.history,
-                starred: q.starred || existing.starred
-              });
-            }
+            // historyが多い方を採用し、日付情報もマージ
+            const takeIncoming = (q.history || []).length > (existing.history || []).length;
+            // answerDatesは両者を統合（重複排除・昇順）
+            const mergedDates = Array.from(new Set([...(existing.answerDates || []), ...(q.answerDates || [])])).sort();
+            existingMap.set(q.id, {
+              ...existing,
+              history: takeIncoming ? q.history : existing.history,
+              starred: q.starred || existing.starred,
+              lastAnswered: existing.lastAnswered && existing.lastAnswered >= (q.lastAnswered || "") ? existing.lastAnswered : (q.lastAnswered || existing.lastAnswered),
+              answeredAt: existing.answeredAt && existing.answeredAt >= (q.answeredAt || "") ? existing.answeredAt : (q.answeredAt || existing.answeredAt),
+              answerDates: mergedDates
+            });
           }
         }
         const merged = Array.from(existingMap.values());

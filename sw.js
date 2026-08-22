@@ -1,4 +1,4 @@
-const CACHE = "kenchikushi-v18";
+const CACHE = "kenchikushi-v19";
 const ASSETS = ["/", "/index.html", "/manifest.json"];
 
 self.addEventListener("install", e => {
@@ -16,6 +16,21 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
+  const url = e.request.url;
+  // 問題データ(.json)は常に最新を取りに行く（network-first）。更新が即反映されるように。
+  if (url.endsWith(".json")) {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res.ok && url.startsWith(self.location.origin)) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => caches.match(e.request))  // オフライン時のみキャッシュにフォールバック
+    );
+    return;
+  }
+  // それ以外（HTML/画像等）はキャッシュ優先
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
@@ -25,7 +40,11 @@ self.addEventListener("fetch", e => {
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return res;
-      }).catch(() => caches.match("/index.html"));
+      }).catch(() => {
+        // 画像リクエストにindex.htmlを返さない（表示崩れ防止）。ナビゲーションのみHTMLへ
+        if (e.request.mode === "navigate") return caches.match("/index.html");
+        return new Response("", { status: 504 });
+      });
     })
   );
 });

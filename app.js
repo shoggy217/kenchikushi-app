@@ -349,6 +349,53 @@ let _store = null,
   _saveTimer = null,
   _loadPromise = null,
   _rowExists = null;
+// 2つの question_history をマージ（問題単位・フィールド単位）
+const _mergeHistoryEntry = (a, b) => {
+  if (!a) return b;
+  if (!b) return a;
+  const aHist = a.history || [], bHist = b.history || [];
+  const takeB = bHist.length > aHist.length;
+  const dates = Array.from(new Set([...(a.answerDates || []), ...(b.answerDates || [])])).sort();
+  const newer = (x, y) => (x && y) ? (x >= y ? x : y) : (x || y || null);
+  return {
+    history: takeB ? bHist : aHist,
+    lastAnswered: newer(a.lastAnswered, b.lastAnswered),
+    answeredAt: newer(a.answeredAt, b.answeredAt),
+    starred: !!(a.starred || b.starred),
+    bookmarked: !!(a.bookmarked || b.bookmarked),
+    needsCheck: !!(a.needsCheck || b.needsCheck),
+    checkStatus: (b.checkStatus || a.checkStatus || ""),
+    checkNote: (b.checkNote || a.checkNote || ""),
+    answerTimes: takeB ? (b.answerTimes || []) : (a.answerTimes || []),
+    answerDates: dates
+  };
+};
+// store全体をマージ（question_history / logs / xp / goalQ 等）
+const _mergeStore = (local, server) => {
+  if (!server) return local;
+  if (!local) return server;
+  const out = { ...server, ...local };
+  // question_history: 問題単位でマージ
+  const lh = local.question_history || {}, sh = server.question_history || {};
+  const mh = { ...sh };
+  for (const id of Object.keys(lh)) mh[id] = _mergeHistoryEntry(sh[id], lh[id]);
+  out.question_history = mh;
+  // logs: 日付×科目ごとに大きい方（二重計上を避ける）
+  const ll = local.logs || {}, sl = server.logs || {};
+  const ml = { ...sl };
+  for (const d of Object.keys(ll)) {
+    ml[d] = { ...(sl[d] || {}) };
+    for (const k of Object.keys(ll[d])) ml[d][k] = Math.max(ll[d][k] || 0, (sl[d] || {})[k] || 0);
+  }
+  out.logs = ml;
+  // 数値系は大きい方
+  for (const numKey of ["xp"]) {
+    if (typeof local[numKey] === "number" || typeof server[numKey] === "number")
+      out[numKey] = Math.max(local[numKey] || 0, server[numKey] || 0);
+  }
+  return out;
+};
+
 const _loadAll = () => {
   if (_loadPromise) return _loadPromise;
   _loadPromise = (async () => {
@@ -361,7 +408,8 @@ const _loadAll = () => {
       if (res.ok) {
         const rows = await res.json();
         if (rows.length > 0 && rows[0].data) {
-          _store = rows[0].data;
+          // ローカルに未保存の変更がある場合を考慮し、サーバーとマージ
+          _store = _store ? _mergeStore(_store, rows[0].data) : rows[0].data;
           localStorage.setItem("store_v1", JSON.stringify(_store));
         }
       }
@@ -375,9 +423,23 @@ const load = async (key, fb) => {
   const store = await _loadAll();
   return store[key] !== undefined ? store[key] : fb;
 };
+
 const _flush = async () => {
   if (!_store) return;
   try {
+    // 保存直前にサーバー最新を取得し、他端末の更新をマージ（端末間競合を防ぐ）
+    try {
+      const latest = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&order=updated_at.desc&limit=1&select=data", {
+        headers: SB_GET_HEADERS
+      });
+      if (latest.ok) {
+        const rows = await latest.json();
+        if (rows.length > 0 && rows[0].data) {
+          _store = _mergeStore(_store, rows[0].data);
+          localStorage.setItem("store_v1", JSON.stringify(_store));
+        }
+      }
+    } catch (e) { /* 取得失敗時はローカルをそのまま書く */ }
     const body = JSON.stringify({
       user_id: USER_ID,
       data: _store,

@@ -1,5 +1,9 @@
-const CACHE = "kenchikushi-v20";
+const CACHE = "kenchikushi-v21";
 const ASSETS = ["/", "/index.html", "/manifest.json"];
+
+self.addEventListener("message", e => {
+  if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();
+});
 
 self.addEventListener("install", e => {
   e.waitUntil(

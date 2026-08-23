@@ -35,5 +35,36 @@
         '<pre style="color:#f87171;padding:20px;font-size:11px;white-space:pre-wrap">'+e.stack+'</pre>';
     }
   </script>
+  <script>
+    // Service Worker 登録＋自動更新
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').then(function (reg) {
+          // 定期的に更新チェック（アプリを開いている間・1時間ごと）
+          setInterval(function () { reg.update(); }, 60 * 60 * 1000);
+          // 起動直後にも更新確認
+          reg.update();
+          // 新しいSWが見つかったら、準備完了後に自動で切り替え
+          reg.addEventListener('updatefound', function () {
+            var nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener('statechange', function () {
+              // 新SWがインストール済み＆既存SWが制御中 = 更新あり
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                nw.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          });
+        }).catch(function () {});
+        // 新SWが有効化されたら一度だけ自動リロードして最新を反映
+        var refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
+      });
+    }
+  </script>
 </body>
 </html>

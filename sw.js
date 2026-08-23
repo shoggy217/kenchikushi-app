@@ -1,4 +1,4 @@
-const CACHE = "kenchikushi-v21";
+const CACHE = "kenchikushi-v22";
 const ASSETS = ["/", "/index.html", "/manifest.json"];
 
 self.addEventListener("message", e => {
@@ -21,6 +21,10 @@ self.addEventListener("activate", e => {
 
 self.addEventListener("fetch", e => {
   const url = e.request.url;
+  // GET以外(POST等)は一切キャッシュせず素通し（AI呼び出し等が壊れないように）
+  if (e.request.method !== "GET") return;
+  // 外部ドメイン（Supabase Edge Function・API等）もSWは介入しない
+  if (!url.startsWith(self.location.origin)) return;
   // 問題データ(.json)は常に最新を取りに行く（network-first）。更新が即反映されるように。
   if (url.endsWith(".json")) {
     e.respondWith(

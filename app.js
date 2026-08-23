@@ -2426,9 +2426,14 @@ function QuizTab(_ref10) {
     const totalSec = sessionConf.count * sessionConf.secPerQ;
     const remaining = Math.max(0, totalSec - timedSec);
     const perQ = sessionConf.secPerQ;
-    const elapsedThisQ = perQ > 0 ? timedSec % perQ : 0;
-    const remainingThisQ = perQ > 0 ? Math.max(0, perQ - elapsedThisQ) : null;
-    const isOver = perQ > 0 && elapsedThisQ >= perQ;
+    // この問題で実際に費やした秒数（制限でループしない実経過）
+    const _paused = sessionStartRef._pausedElapsed || 0;
+    const _live = sessionStartRef.current ? Math.floor((Date.now() - sessionStartRef.current) / 1000) : 0;
+    const actualThisQ = _paused + _live;
+    const elapsedThisQ = perQ > 0 ? Math.min(actualThisQ, perQ) : 0;
+    const remainingThisQ = perQ > 0 ? Math.max(0, perQ - actualThisQ) : null;
+    const isOver = perQ > 0 && actualThisQ >= perQ;
+    const overSec = isOver ? actualThisQ - perQ : 0;
     const isWarning = remainingThisQ !== null && remainingThisQ <= 10 && !isOver;
     const color = isOver ? "#F87171" : isWarning ? "#FBBF24" : "#5B9FFF";
     const bg = isOver ? "rgba(248,113,113,0.08)" : isWarning ? "rgba(251,191,36,0.08)" : "rgba(91,159,255,0.08)";
@@ -2461,12 +2466,14 @@ function QuizTab(_ref10) {
         color,
         fontVariantNumeric: "tabular-nums"
       }
-    }, String(Math.floor(remainingThisQ / 60)).padStart(2, "0"), ":", String(remainingThisQ % 60).padStart(2, "0")), isOver && /*#__PURE__*/React.createElement("div", {
+    }, isOver
+      ? "+" + String(Math.floor(overSec / 60)).padStart(2, "0") + ":" + String(overSec % 60).padStart(2, "0")
+      : String(Math.floor(remainingThisQ / 60)).padStart(2, "0") + ":" + String(remainingThisQ % 60).padStart(2, "0")), isOver && /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 9,
         color: "#F87171"
       }
-    }, "\u6642\u9593\u8D85\u904E")), /*#__PURE__*/React.createElement("div", {
+    }, "\u6642\u9593\u8D85\u904E\u4E2D")), /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
         gap: 8,

@@ -1630,6 +1630,10 @@ function QuizTab(_ref10) {
     _useState34 = _slicedToArray(_useState33, 2),
     sessionConf = _useState34[0],
     setSessionConf = _useState34[1]; // {count, secPerQ} or null
+  const _useStateSkip = useState([]),
+    _useStateSkip2 = _slicedToArray(_useStateSkip, 2),
+    skipQueue = _useStateSkip2[0],
+    setSkipQueue = _useStateSkip2[1]; // スキップした問題ID(セッション最後に再出題)
   const _useState35 = useState(0),
     _useState36 = _slicedToArray(_useState35, 2),
     timedSec = _useState36[0],
@@ -1792,7 +1796,14 @@ function QuizTab(_ref10) {
   }, [questions]);
 
   // pool変化でqがずれないようIDで固定
-  const poolQ = pool[idx % Math.max(pool.length, 1)];
+  // pool一巡後(idx>=pool.length)はスキップキューの問題を順に出す
+  let poolQ;
+  if (pool.length && idx >= pool.length && skipQueue.length) {
+    const sid = skipQueue[(idx - pool.length) % skipQueue.length];
+    poolQ = questions.find(qq => qq.id === sid) || pool[idx % Math.max(pool.length, 1)];
+  } else {
+    poolQ = pool[idx % Math.max(pool.length, 1)];
+  }
   const q = currentQId ? questions.find(qq => qq.id === currentQId) || poolQ : poolQ;
   const subj_ = SUBJECTS.find(s => s.id === q?.subject) || SUBJECTS[0];
   function reset(newSubj, newMode) {
@@ -1868,16 +1879,9 @@ function QuizTab(_ref10) {
   // セッションタイマー
   useEffect(() => {
     if (sessionConf && sessionConf.secPerQ > 0 && !timedDone && !paused) {
-      const limit = sessionConf.count * sessionConf.secPerQ;
+      // 時間切れでも自動終了せず、タイマーは走り続ける(超過分は表示のみ)
       timedRef.current = setInterval(() => {
-        setTimedSec(s => {
-          if (s + 1 >= limit) {
-            clearInterval(timedRef.current);
-            setTimedDone(true);
-            return limit;
-          }
-          return s + 1;
-        });
+        setTimedSec(s => s + 1);
       }, 1000);
     } else {
       clearInterval(timedRef.current);
@@ -1892,6 +1896,7 @@ function QuizTab(_ref10) {
   }, [idx]);
   const startSession = conf => {
     setSessionConf(conf);
+    setSkipQueue([]);
     setTimedSec(0);
     setTimedDone(false);
     setTimedResult(null);
@@ -1953,6 +1958,7 @@ function QuizTab(_ref10) {
   const resetSession = () => {
     clearInterval(timedRef.current);
     setSessionConf(null);
+    setSkipQueue([]);
     setTimedSec(0);
     setTimedDone(false);
     setTimedResult(null);
@@ -1969,6 +1975,25 @@ function QuizTab(_ref10) {
     sessionStartRef._pausedElapsed = 0;
   };
 
+  // スキップ: 解答せず次へ。飛ばした問題はセッション最後に再出題する
+  const skip = () => {
+    if (q && !skipQueue.includes(q.id)) setSkipQueue(prev => [...prev, q.id]);
+    saveElapsed(true);
+    setCurrentQId(null);
+    setIdx(i => i + 1);
+    setSel(null);
+    setDone(false);
+    setAiHint("");
+    setShowHint(false);
+    setKnowledge("");
+    setKnowledgeLoading(false);
+    setKnowledgeSkipped(false);
+    setMemo("");
+    setMemoEditing(false);
+    setAiQuestion("");
+    setAiAnswer("");
+    setAiQLoading(false);
+  };
   const next = () => {
     // 先に経過時間を保存してからタイマーをリセット（saveElapsed(true)が内部でリセットも行う）
     saveElapsed(true); // 1問終えるたびに経過時間を保存
@@ -1977,6 +2002,7 @@ function QuizTab(_ref10) {
       finishSession();
       return;
     }
+    if (q && skipQueue.includes(q.id)) setSkipQueue(prev => prev.filter(x => x !== q.id));
     setCurrentQId(null); // 次の問題はpoolから取得
     setIdx(i => i + 1);
     setSel(null);
@@ -2797,7 +2823,21 @@ function QuizTab(_ref10) {
         color: "#F87171"
       }
     }, "\u2717"));
-  })), done && /*#__PURE__*/React.createElement("div", {
+  })), !done && /*#__PURE__*/React.createElement("button", {
+    onClick: skip,
+    style: {
+      width: "100%",
+      marginTop: 12,
+      padding: "12px",
+      borderRadius: 12,
+      background: "rgba(255,255,255,0.04)",
+      color: "rgba(255,255,255,0.5)",
+      fontSize: 13,
+      fontWeight: 600,
+      border: "0.5px solid rgba(255,255,255,0.1)",
+      cursor: "pointer"
+    }
+  }, "\u30B9\u30AD\u30C3\u30D7 \u23ED"), done && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 20,
       paddingTop: 20,

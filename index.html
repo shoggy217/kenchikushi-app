@@ -18,6 +18,9 @@
     ::-webkit-scrollbar{display:none}
     input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
   </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
   <div id="root">
@@ -65,6 +68,41 @@
         });
       });
     }
+  </script>
+  <script>
+  // KaTeX 自動描画: React再描画のたびにDOMを走査し、未処理の数式(\\(...\\) / \\[...\\])を描画する。
+  // 区切りは \\( \\) と \\[ \\] のみ($は金額表記と誤爆するため使わない)。
+  (function(){
+    function renderAll(){
+      if (!window.renderMathInElement) return;
+      var root = document.getElementById('root');
+      if (!root) return;
+      try {
+        window.renderMathInElement(root, {
+          delimiters: [
+            { left: "\\[", right: "\\]", display: true },
+            { left: "\\(", right: "\\)", display: false }
+          ],
+          throwOnError: false,
+          ignoredClasses: ["katex"]
+        });
+      } catch(e) {}
+    }
+    var timer = null;
+    function schedule(){ if (timer) clearTimeout(timer); timer = setTimeout(renderAll, 120); }
+    function start(){
+      var root = document.getElementById('root');
+      if (!root || !window.MutationObserver) return;
+      var mo = new MutationObserver(schedule);
+      mo.observe(root, { childList: true, subtree: true });
+      schedule();
+    }
+    if (document.readyState === "complete" || document.readyState === "interactive") {
+      window.addEventListener("load", start);
+    } else {
+      window.addEventListener("DOMContentLoaded", start);
+    }
+  })();
   </script>
 </body>
 </html>

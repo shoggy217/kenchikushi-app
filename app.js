@@ -2454,7 +2454,7 @@ function QuizTab(_ref10) {
     const perQ = sessionConf.secPerQ;
     // この問題で実際に費やした秒数（制限でループしない実経過）
     const _paused = sessionStartRef._pausedElapsed || 0;
-    const _live = sessionStartRef.current ? Math.floor((Date.now() - sessionStartRef.current) / 1000) : 0;
+    const _live = (!paused && sessionStartRef.current) ? Math.floor((Date.now() - sessionStartRef.current) / 1000) : 0;
     const actualThisQ = _paused + _live;
     const elapsedThisQ = perQ > 0 ? Math.min(actualThisQ, perQ) : 0;
     const remainingThisQ = perQ > 0 ? Math.max(0, perQ - actualThisQ) : null;
@@ -2506,7 +2506,20 @@ function QuizTab(_ref10) {
         alignItems: "center"
       }
     }, /*#__PURE__*/React.createElement("button", {
-      onClick: () => setPaused(p => !p),
+      onClick: () => setPaused(p => {
+        if (!p) {
+          // 停止する: これまでの実経過を_pausedElapsedに確定し、実時間計測を止める
+          if (sessionStartRef.current) {
+            const el = Math.floor((Date.now() - sessionStartRef.current) / 1000);
+            sessionStartRef._pausedElapsed = (sessionStartRef._pausedElapsed || 0) + el;
+            sessionStartRef.current = null;
+          }
+        } else {
+          // 再開する: 実時間計測を再スタート（未解答のときのみ）
+          if (!done) sessionStartRef.current = Date.now();
+        }
+        return !p;
+      }),
       style: {
         fontSize: 11,
         color: paused ? color : "rgba(255,255,255,0.5)",

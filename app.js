@@ -4983,6 +4983,11 @@ function NotesTab() {
     _useState112 = _slicedToArray(_useState111, 2),
     draft = _useState112[0],
     setDraft = _useState112[1];
+  const _useStateOpen = useState({}),
+    _useStateOpen2 = _slicedToArray(_useStateOpen, 2),
+    openCh = _useStateOpen2[0],
+    setOpenCh = _useStateOpen2[1];
+  const toggleCh = id => setOpenCh(prev => ({ ...prev, [id]: !prev[id] }));
   const _useState113 = useState(true),
     _useState114 = _slicedToArray(_useState113, 2),
     loading = _useState114[0],
@@ -5079,18 +5084,22 @@ function NotesTab() {
         flex: 1
       }
     }, /*#__PURE__*/React.createElement("div", {
+      onClick: ch.textbook ? () => toggleCh(ch.id) : undefined,
       style: {
         display: "flex",
         alignItems: "center",
         gap: 8,
-        flexWrap: "wrap"
+        flexWrap: "wrap",
+        cursor: ch.textbook ? "pointer" : "default"
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 13,
         fontWeight: 500
       }
-    }, ch.name), /*#__PURE__*/React.createElement("span", {
+    }, /*#__PURE__*/React.createElement("span", {
+      style: { marginRight: 6, fontSize: 10, color: "rgba(181,123,255,0.8)", display: "inline-block", width: 10 }
+    }, ch.textbook ? (openCh[ch.id] ? "\u25BC" : "\u25B6") : ""), ch.name), /*#__PURE__*/React.createElement("span", {
       style: {
         fontSize: 10,
         color: "rgba(255,255,255,0.25)",
@@ -5119,7 +5128,7 @@ function NotesTab() {
         borderRadius: 6,
         flexShrink: 0
       }
-    }, memo ? "編集" : "+ 追加")), ch.textbook && !isEditing && /*#__PURE__*/React.createElement("div", {
+    }, memo ? "編集" : "+ 追加")), ch.textbook && !isEditing && openCh[ch.id] && /*#__PURE__*/React.createElement("div", {
       style: {
         marginBottom: 10,
         padding: "10px 12px",

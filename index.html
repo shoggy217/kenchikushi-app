@@ -17,10 +17,33 @@
     input,textarea,select{outline:none}
     ::-webkit-scrollbar{display:none}
     input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+    /* ノートタブ Markdown表示 */
+    .note-md{overflow-x:auto}
+    .note-md h1,.note-md h2,.note-md h3,.note-md h4{color:#fff;line-height:1.4;margin:14px 0 8px}
+    .note-md h1{font-size:16px;font-weight:700;border-bottom:1px solid rgba(181,123,255,0.3);padding-bottom:5px}
+    .note-md h2{font-size:14px;font-weight:700;color:rgba(181,123,255,0.95)}
+    .note-md h3{font-size:13px;font-weight:600;color:rgba(181,123,255,0.85)}
+    .note-md h4{font-size:12px;font-weight:600}
+    .note-md p{margin:6px 0}
+    .note-md ul,.note-md ol{margin:6px 0 6px 18px}
+    .note-md li{margin:3px 0}
+    .note-md strong{color:#fff;font-weight:700}
+    .note-md em{color:rgba(255,220,150,0.95);font-style:normal}
+    .note-md code{background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:4px;font-size:11px}
+    .note-md blockquote{margin:8px 0;padding:8px 12px;background:rgba(181,123,255,0.08);border-left:3px solid rgba(181,123,255,0.5);border-radius:6px}
+    .note-md blockquote p{margin:3px 0}
+    .note-md table{border-collapse:collapse;width:100%;margin:10px 0;font-size:11px}
+    .note-md th,.note-md td{border:1px solid rgba(255,255,255,0.18);padding:6px 8px;text-align:left;vertical-align:top}
+    .note-md th{background:rgba(181,123,255,0.18);color:#fff;font-weight:700;white-space:nowrap}
+    .note-md td{color:rgba(255,255,255,0.82)}
+    .note-md tr:nth-child(even) td{background:rgba(255,255,255,0.03)}
+    .note-md hr{border:none;border-top:1px solid rgba(255,255,255,0.12);margin:12px 0}
+    .note-md a{color:rgba(120,180,255,0.9)}
   </style>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@16.0.0/lib/marked.umd.js"></script>
 </head>
 <body>
   <div id="root">

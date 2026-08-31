@@ -1619,6 +1619,11 @@ function QuizTab(_ref10) {
     _useState32 = _slicedToArray(_useState31, 2),
     course = _useState32[0],
     setCourse = _useState32[1]; // normal / srs / date
+  // 出題順: random(シャッフル) / seq(No.順・未着手優先)。localStorageに永続化
+  const _useStateORD = useState((typeof localStorage !== "undefined" && localStorage.getItem("quizOrder")) || "random"),
+    _useStateORD2 = _slicedToArray(_useStateORD, 2),
+    order = _useStateORD2[0],
+    setOrder = _useStateORD2[1];
   // 日付別復習: 選択された日付(YYYY-MM-DD)。ホームから initialReviewDate で初期化
   const _useStateRD = useState(_ref10.initialReviewDate || null),
     _useStateRD2 = _slicedToArray(_useStateRD, 2),
@@ -1771,8 +1776,12 @@ function QuizTab(_ref10) {
       return Object.keys(g).map(Number).sort((a, b) => a - b)
         .reduce((acc, p) => acc.concat(shuffle(g[p])), []);
     };
+    // No.順(未解答→解答済みの順、各内はNo.昇順)。要復習は考慮しない純粋な順番。
+    const byNo = (a, b) => (a.no || 0) - (b.no || 0) || String(a.id).localeCompare(String(b.id));
     const solvedToday = arr.filter(q => q.lastAnswered === today);
-    const notSolvedToday = orderByPriority(arr.filter(q => q.lastAnswered !== today), priority);
+    const notSolvedToday = order === "seq"
+      ? arr.filter(q => q.lastAnswered !== today).sort(byNo)
+      : orderByPriority(arr.filter(q => q.lastAnswered !== today), priority);
     // SRSモードの場合は今日が出題日の問題のみ
     if (course === "srs") {
       // 一度以上解いた問題のうち、今日が出題日のもの
@@ -1802,8 +1811,10 @@ function QuizTab(_ref10) {
       if (subj !== "all") joArr = joArr.filter(q => q.subject === subj);
       return orderByPriority(joArr, priority);
     }
-    return [...notSolvedToday, ...shuffle(solvedToday)];
-  }, [questions, subj, mode, course, reviewDate]);
+    return order === "seq"
+      ? [...notSolvedToday, ...solvedToday.sort(byNo)]
+      : [...notSolvedToday, ...shuffle(solvedToday)];
+  }, [questions, subj, mode, course, reviewDate, order]);
 
   // 日付別復習: 「解いた日付 -> 問題数」の集計マップ
   const answerDateCounts = useMemo(() => {
@@ -2147,6 +2158,32 @@ function QuizTab(_ref10) {
           color: course === id ? "#5B9FFF" : "rgba(255,255,255,0.5)"
         }
       }, label);
+    })),
+    (course === "normal" || course === "jomon") && /*#__PURE__*/React.createElement("div", {
+      style: { display: "flex", gap: 8 }
+    }, [["random", "🎲 ランダム"], ["seq", "🔢 順番"]].map(_refORD => {
+      let _refORD2 = _slicedToArray(_refORD, 2),
+        oid = _refORD2[0],
+        olabel = _refORD2[1];
+      return /*#__PURE__*/React.createElement("button", {
+        key: oid,
+        onClick: () => {
+          setOrder(oid);
+          if (typeof localStorage !== "undefined") localStorage.setItem("quizOrder", oid);
+          resetSession();
+        },
+        style: {
+          flex: 1,
+          padding: "8px",
+          borderRadius: 10,
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: "pointer",
+          background: order === oid ? "rgba(52,211,153,0.15)" : "rgba(255,255,255,0.04)",
+          border: order === oid ? "1px solid rgba(52,211,153,0.4)" : "1px solid rgba(255,255,255,0.08)",
+          color: order === oid ? "#34D399" : "rgba(255,255,255,0.5)"
+        }
+      }, olabel);
     })), course === "date" && /*#__PURE__*/React.createElement(DateReviewCalendar, {
       dateCounts: answerDateCounts,
       selected: reviewDate,

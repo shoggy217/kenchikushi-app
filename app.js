@@ -1755,9 +1755,24 @@ function QuizTab(_ref10) {
       if (last3.every(x => x === "○") && last3.length >= 3) return 3;
       return 2;
     };
+    // priority毎にグループ化し、各グループ内はシャッフル(毎回同じ順の固定を防ぐ)。
+    // これで「要復習はやや前・その他もまんべんなく」を両立する。
+    const shuffle = a => {
+      const r = [...a];
+      for (let i = r.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const t = r[i]; r[i] = r[j]; r[j] = t;
+      }
+      return r;
+    };
+    const orderByPriority = (list, prio) => {
+      const g = {};
+      list.forEach(q => { const p = prio(q); (g[p] = g[p] || []).push(q); });
+      return Object.keys(g).map(Number).sort((a, b) => a - b)
+        .reduce((acc, p) => acc.concat(shuffle(g[p])), []);
+    };
     const solvedToday = arr.filter(q => q.lastAnswered === today);
-    const notSolvedToday = arr.filter(q => q.lastAnswered !== today);
-    notSolvedToday.sort((a, b) => priority(a) - priority(b));
+    const notSolvedToday = orderByPriority(arr.filter(q => q.lastAnswered !== today), priority);
     // SRSモードの場合は今日が出題日の問題のみ
     if (course === "srs") {
       // 一度以上解いた問題のうち、今日が出題日のもの
@@ -1766,31 +1781,28 @@ function QuizTab(_ref10) {
       const notDoneToday = due.filter(q => q.lastAnswered !== todayStr());
       const doneToday = due.filter(q => q.lastAnswered === todayStr());
       // 要復習を優先
-      const priority = q => {
+      const srsPriority = q => {
         const last3 = (q.history || []).slice(-3);
         if (last3.filter(x => x === "×").length >= 2) return 0;
         return 1;
       };
-      notDoneToday.sort((a, b) => priority(a) - priority(b));
-      return [...notDoneToday, ...doneToday];
+      return [...orderByPriority(notDoneToday, srsPriority), ...shuffle(doneToday)];
     }
     // 日付別復習: 選択日に解いた問題のみ（answerDatesに含まれるもの）
     if (course === "date") {
       if (!reviewDate) return [];
       let dArr = questions.filter(q => (q.answerDates || []).includes(reviewDate));
       if (subj !== "all") dArr = dArr.filter(q => q.subject === subj);
-      // 要復習(直近×2回以上)を先頭へ
-      dArr.sort((a, b) => priority(a) - priority(b));
-      return dArr;
+      // 要復習(直近×2回以上)を先頭へ・同順位はシャッフル
+      return orderByPriority(dArr, priority);
     }
     // 条文クイズ: refs(参照条文)がある問題のみ
     if (course === "jomon") {
-      const joArr = [...questions].filter(q => q.refs && q.refs.trim().length > 0);
-      if (subj !== "all") joArr.filter(q => q.subject === subj);
-      joArr.sort((a, b) => priority(a) - priority(b));
-      return joArr;
+      let joArr = [...questions].filter(q => q.refs && q.refs.trim().length > 0);
+      if (subj !== "all") joArr = joArr.filter(q => q.subject === subj);
+      return orderByPriority(joArr, priority);
     }
-    return [...notSolvedToday, ...solvedToday];
+    return [...notSolvedToday, ...shuffle(solvedToday)];
   }, [questions, subj, mode, course, reviewDate]);
 
   // 日付別復習: 「解いた日付 -> 問題数」の集計マップ

@@ -1178,6 +1178,134 @@ function SectionTitle(_ref3) {
   }, children);
 }
 
+
+// ── PROGRESS MATRIX ─────────────────────────────────────────
+const SUBJECT_LABELS = { houki:"\u6cd5\u898f", sekou:"\u65bd\u5de5", keikaku:"\u8a08\u753b", kankyo:"\u74b0\u5883", kouzou:"\u69cb\u9020" };
+
+function accuracyColor(hist) {
+  // hist: array of "\u25cb"/"\u00d7". returns bg color by correct ratio.
+  if (!hist || hist.length === 0) return "rgba(255,255,255,0.05)"; // \u672a\u89e3\u7b54
+  const c = hist.filter(x => x === "\u25cb").length;
+  const r = c / hist.length;
+  if (r >= 0.8) return "rgba(52,211,153,0.55)";   // \u7dd1
+  if (r >= 0.5) return "rgba(251,191,36,0.5)";    // \u9ec4
+  return "rgba(248,113,113,0.5)";                 // \u8d64
+}
+
+function ProgressMatrix(_refPM) {
+  let questions = _refPM.questions,
+      onJump = _refPM.onJump;
+  const subjects = ["houki","sekou","keikaku","kankyo","kouzou"];
+  const _pmState = useState(subjects[0]),
+        _pmState2 = _slicedToArray(_pmState, 2),
+        subj = _pmState2[0],
+        setSubj = _pmState2[1];
+
+  const data = useMemo(() => {
+    const qs = (questions || []).filter(q => q.subject === subj);
+    const years = Array.from(new Set(qs.map(q => q.year))).sort();
+    const nos = Array.from(new Set(qs.map(q => q.no))).sort((a,b) => a-b);
+    const map = {};
+    qs.forEach(q => { map[q.year + "|" + q.no] = q; });
+    // stats
+    let solved = 0, total = qs.length;
+    qs.forEach(q => { if ((q.history || []).length) solved++; });
+    return { years, nos, map, solved, total };
+  }, [questions, subj]);
+
+  // \u554f\u984c\u756a\u53f7\u306f\u5e74\u5ea6\u6bce\u306b1\u304b\u3089\u632f\u308a\u76f4\u3059(\u5e74\u5ea6\u5185No.)\u3067\u306f\u306a\u304f\u3001\u901a\u3057no\u3092\u4f7f\u3046\u3068\u884c\u304c\u591a\u3059\u304e\u308b\u306e\u3067\u3001
+  // \u5e74\u5ea6\u3054\u3068\u306b\u305d\u306e\u5e74\u306e\u554f\u984c\u3092\u7e26\u306b\u4e26\u3079\u308b\u5f62\u5f0f\u306b\u3059\u308b\u3002\u5217=\u5e74\u5ea6\u3001\u884c=\u305d\u306e\u5217\u306eN\u756a\u76ee\u3002
+  const byYear = useMemo(() => {
+    const m = {};
+    (questions || []).filter(q => q.subject === subj).forEach(q => {
+      (m[q.year] = m[q.year] || []).push(q);
+    });
+    Object.keys(m).forEach(y => m[y].sort((a,b) => a-b === 0 ? 0 : (a.no-b.no)));
+    return m;
+  }, [questions, subj]);
+
+  const maxRows = Math.max(1, ...data.years.map(y => (byYear[y] || []).length));
+  const CELL = 32, GAP = 3;
+
+  return /*#__PURE__*/React.createElement(Card, null,
+    /*#__PURE__*/React.createElement(SectionTitle, null, "\u554f\u984c\u4e00\u89a7\uff08\u89e3\u7b54\u72b6\u6cc1\uff09"),
+    // subject selector
+    /*#__PURE__*/React.createElement("div", { style:{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap" } },
+      subjects.map(sid => /*#__PURE__*/React.createElement("button", {
+        key: sid,
+        onClick: () => setSubj(sid),
+        style: {
+          padding:"6px 12px", borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer",
+          background: subj===sid ? "rgba(91,159,255,0.18)" : "rgba(255,255,255,0.04)",
+          border: subj===sid ? "1px solid rgba(91,159,255,0.4)" : "1px solid rgba(255,255,255,0.08)",
+          color: subj===sid ? "#5B9FFF" : "rgba(255,255,255,0.4)"
+        }
+      }, SUBJECT_LABELS[sid]))
+    ),
+    // summary line
+    /*#__PURE__*/React.createElement("div", { style:{ fontSize:12, color:"rgba(255,255,255,0.5)", marginBottom:10 } },
+      data.total > 0
+        ? "\u89e3\u7b54\u6e08 " + data.solved + " / " + data.total + "\u554f\uff08\u672a\u89e3\u7b54 " + (data.total - data.solved) + "\uff09"
+        : "\u767b\u9332\u306a\u3057"
+    ),
+    // legend
+    /*#__PURE__*/React.createElement("div", { style:{ display:"flex", gap:10, marginBottom:12, fontSize:10, color:"rgba(255,255,255,0.4)", flexWrap:"wrap" } },
+      [["rgba(52,211,153,0.55)","\u6b63\u89e3\u7387\u9ad8"],["rgba(251,191,36,0.5)","\u4e2d"],["rgba(248,113,113,0.5)","\u4f4e"],["rgba(255,255,255,0.05)","\u672a\u89e3\u7b54"]].map((pair,i) =>
+        /*#__PURE__*/React.createElement("div", { key:i, style:{ display:"flex", alignItems:"center", gap:4 } },
+          /*#__PURE__*/React.createElement("div", { style:{ width:12, height:12, borderRadius:3, background:pair[0] } }),
+          pair[1]
+        )
+      ),
+      /*#__PURE__*/React.createElement("div", { style:{ display:"flex", alignItems:"center", gap:4 } },
+        /*#__PURE__*/React.createElement("span", { style:{ color:"#5B9FFF", fontWeight:700 } }, "\u2022"), "\u56f3\u3042\u308a")
+    ),
+    // matrix (horizontal scroll)
+    data.total === 0
+      ? null
+      : /*#__PURE__*/React.createElement("div", { style:{ overflowX:"auto", paddingBottom:4 } },
+          /*#__PURE__*/React.createElement("div", { style:{ display:"inline-flex", gap:GAP } },
+            data.years.map(y => {
+              const col = byYear[y] || [];
+              return /*#__PURE__*/React.createElement("div", { key:y, style:{ display:"flex", flexDirection:"column", gap:GAP, flexShrink:0 } },
+                // year header
+                /*#__PURE__*/React.createElement("div", {
+                  style:{ height:18, fontSize:10, fontWeight:700, color:"rgba(255,255,255,0.5)", textAlign:"center", width:CELL }
+                }, y),
+                // cells for this year
+                col.map(q => {
+                  const hist = q.history || [];
+                  const hasFig = q.hasFig || (q.figImg && q.figImg.length) || (q.explainImg && q.explainImg.length);
+                  const solvedCell = hist.length > 0;
+                  return /*#__PURE__*/React.createElement("div", {
+                    key: q.id,
+                    onClick: () => onJump && onJump(q),
+                    title: q.year + " No." + q.no + (hist.length ? " (" + hist.filter(x=>x==="\u25cb").length + "/" + hist.length + "\u56de\u6b63\u89e3)" : " \u672a\u89e3\u7b54"),
+                    style: {
+                      width:CELL, height:CELL, borderRadius:5, position:"relative", cursor:"pointer",
+                      background: accuracyColor(hist),
+                      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                      lineHeight:1,
+                      color: solvedCell ? "#0d1117" : "rgba(255,255,255,0.3)"
+                    }
+                  },
+                    /*#__PURE__*/React.createElement("span", {
+                      style:{ fontSize:8, fontWeight:600, opacity: solvedCell ? 0.7 : 0.9 }
+                    }, q.no),
+                    solvedCell ? /*#__PURE__*/React.createElement("span", {
+                      style:{ fontSize:12, fontWeight:800, marginTop:1 }
+                    }, hist.length) : null,
+                    hasFig ? /*#__PURE__*/React.createElement("span", {
+                      style:{ position:"absolute", top:2, right:3, fontSize:9, lineHeight:1, color: solvedCell ? "#0d1117" : "#5B9FFF" }
+                    }, "\u2022") : null
+                  );
+                })
+              );
+            })
+          )
+        )
+  );
+}
+
 // ── HOME TAB ───────────────────────────────────────────────
 function HomeTab(_ref4) {
   let streak = _ref4.streak,
@@ -3440,7 +3568,10 @@ function LogTab(_ref21) {
       flexDirection: "column",
       gap: 16
     }
-  }, (() => {
+  }, /*#__PURE__*/React.createElement(ProgressMatrix, {
+    questions: questions,
+    onJump: null
+  }), (() => {
     // JST基準で今日から16週前の月曜日を起点に計算
     const todayJST = nowJST();
     const todayDateStr = todayStr();

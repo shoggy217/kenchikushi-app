@@ -1278,7 +1278,7 @@ function ProgressMatrix(_refPM) {
                 // cells for this year
                 col.map(q => {
                   const hist = q.history || [];
-                  const hasFig = q.hasFig || (q.figImg && q.figImg.length) || (q.explainImg && q.explainImg.length);
+                  const hasFig = q.hasFig || (q.figImg && q.figImg.length);
                   const solvedCell = hist.length > 0;
                   return /*#__PURE__*/React.createElement("div", {
                     key: q.id,

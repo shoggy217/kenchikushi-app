@@ -1200,6 +1200,10 @@ function ProgressMatrix(_refPM) {
         _pmState2 = _slicedToArray(_pmState, 2),
         subj = _pmState2[0],
         setSubj = _pmState2[1];
+  const _pmView = useState(null),
+        _pmView2 = _slicedToArray(_pmView, 2),
+        viewQ = _pmView2[0],
+        setViewQ = _pmView2[1];
 
   const data = useMemo(() => {
     const qs = (questions || []).filter(q => q.subject === subj);
@@ -1227,7 +1231,7 @@ function ProgressMatrix(_refPM) {
   const maxRows = Math.max(1, ...data.years.map(y => (byYear[y] || []).length));
   const CELL = 32, GAP = 3;
 
-  return /*#__PURE__*/React.createElement(Card, null,
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Card, null,
     /*#__PURE__*/React.createElement(SectionTitle, null, "\u554f\u984c\u4e00\u89a7\uff08\u89e3\u7b54\u72b6\u6cc1\uff09"),
     // subject selector
     /*#__PURE__*/React.createElement("div", { style:{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap" } },
@@ -1278,7 +1282,7 @@ function ProgressMatrix(_refPM) {
                   const solvedCell = hist.length > 0;
                   return /*#__PURE__*/React.createElement("div", {
                     key: q.id,
-                    onClick: () => onJump && onJump(q),
+                    onClick: () => { setViewQ(q); if (onJump) onJump(q); },
                     title: q.year + " No." + q.no + (hist.length ? " (" + hist.filter(x=>x==="\u25cb").length + "/" + hist.length + "\u56de\u6b63\u89e3)" : " \u672a\u89e3\u7b54"),
                     style: {
                       width:CELL, height:CELL, borderRadius:5, position:"relative", cursor:"pointer",
@@ -1303,10 +1307,42 @@ function ProgressMatrix(_refPM) {
             })
           )
         )
+  ),
+  // 問題閲覧モーダル（マスタップで開く）
+  viewQ && /*#__PURE__*/React.createElement("div", {
+    onClick: () => setViewQ(null),
+    style: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 12px", overflowY: "auto" }
+  }, /*#__PURE__*/React.createElement("div", {
+    onClick: e => e.stopPropagation(),
+    style: { background: "#1a1a1a", borderRadius: 16, padding: 18, maxWidth: 560, width: "100%", border: "0.5px solid rgba(255,255,255,0.1)" }
+  },
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } },
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)" } }, viewQ.id, viewQ.year ? " (" + viewQ.year + "-" + viewQ.no + ")" : "", viewQ.rank ? " [" + viewQ.rank + "]" : "", (viewQ.history && viewQ.history.length) ? "  \u2713" + viewQ.history.filter(x=>x==="\u25cb").length + "/" + viewQ.history.length : "  \u672a\u89e3\u7b54"),
+      /*#__PURE__*/React.createElement("button", { onClick: () => setViewQ(null), style: { background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, width: 28, height: 28, color: "#fff", fontSize: 16, cursor: "pointer" } }, "\u00D7")
+    ),
+    (viewQ.qPage || viewQ.tbPage) && /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" } },
+      viewQ.qPage && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: "#5B9FFF", background: "rgba(91,159,255,0.12)", padding: "2px 8px", borderRadius: 6 } }, "\u554F\u96C6 p." + viewQ.qPage),
+      viewQ.tbPage && /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: "#34D399", background: "rgba(52,211,153,0.12)", padding: "2px 8px", borderRadius: 6 } }, "\u6559\u79D1\u66F8 p." + viewQ.tbPage)
+    ),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 14, fontWeight: 500, lineHeight: 1.6, marginBottom: 12, whiteSpace: "pre-wrap" } }, viewQ.q),
+    (viewQ.opts || []).map((opt, i) => /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: { padding: "8px 12px", marginBottom: 6, borderRadius: 6, fontSize: 13, lineHeight: 1.5,
+        background: viewQ.correct === i ? "rgba(52,211,153,0.12)" : "rgba(255,255,255,0.02)",
+        border: "0.5px solid " + (viewQ.correct === i ? "rgba(52,211,153,0.35)" : "rgba(255,255,255,0.06)"),
+        color: viewQ.correct === i ? "#34D399" : "rgba(255,255,255,0.75)" }
+    }, /*#__PURE__*/React.createElement("strong", null, (i + 1) + ". "), opt, viewQ.correct === i && /*#__PURE__*/React.createElement("span", { style: { marginLeft: 6, fontSize: 11 } }, "\u2190 \u6B63\u7B54"))),
+    viewQ.figImg && /*#__PURE__*/React.createElement("div", { style: { background: "#fff", borderRadius: 8, padding: 8, marginTop: 10, textAlign: "center" } }, /*#__PURE__*/React.createElement("img", { src: viewQ.figImg, alt: "\u56F3", style: { maxWidth: "100%", height: "auto", borderRadius: 4 }, loading: "lazy" })),
+    viewQ.svg && /*#__PURE__*/React.createElement("div", { style: { background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 12, marginTop: 10, maxHeight: 340, overflow: "auto" }, dangerouslySetInnerHTML: { __html: viewQ.svg } }),
+    viewQ.explain && /*#__PURE__*/React.createElement("div", { style: { marginTop: 12, paddingTop: 12, borderTop: "0.5px solid rgba(255,255,255,0.07)" } },
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)", marginBottom: 6 } }, "\u89E3\u8AAC"),
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, lineHeight: 1.7, color: "rgba(255,255,255,0.65)", whiteSpace: "pre-wrap" } }, viewQ.explain)
+    ),
+    viewQ.explainImg && /*#__PURE__*/React.createElement("div", { style: { background: "#fff", borderRadius: 8, padding: 8, marginTop: 10, textAlign: "center" } }, /*#__PURE__*/React.createElement("img", { src: viewQ.explainImg, alt: "\u89E3\u8AAC\u56F3", style: { maxWidth: "100%", height: "auto", borderRadius: 4 }, loading: "lazy" })),
+    viewQ.refs && /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 10 } }, "\u53C2\u7167: " + viewQ.refs)
+  ))
   );
 }
-
-// ── HOME TAB ───────────────────────────────────────────────
 function HomeTab(_ref4) {
   let streak = _ref4.streak,
     todayMin = _ref4.todayMin,

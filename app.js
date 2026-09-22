@@ -158,6 +158,10 @@ const isDueToday = q => {
 const fmtMD = d => `${d.getMonth() + 1}/${d.getDate()}`;
 // 問題データは questions/*.json からfetchする
 const QUESTION_FILES = ["houki", "sekou", "kouzou", "kankyo", "keikaku"];
+// 直近本試験(インプット期は既定で除外・直前期に出題)
+const RECENT_YEARS = new Set(["R06", "R07", "R08"]);
+const getStudyPhase = () => { try { return (typeof localStorage !== "undefined" && localStorage.getItem("studyPhase")) || "input"; } catch (e) { return "input"; } };
+const getChokuzenScope = () => { try { return (typeof localStorage !== "undefined" && localStorage.getItem("chokuzenScope")) || "recent3"; } catch (e) { return "recent3"; } };
 const loadAllQuestions = async () => {
   const results = await Promise.allSettled(
     QUESTION_FILES.map(s => fetch(`${s}.json`).then(r => r.ok ? r.json() : []))
@@ -1788,6 +1792,14 @@ function QuizTab(_ref10) {
     _useStateORD2 = _slicedToArray(_useStateORD, 2),
     order = _useStateORD2[0],
     setOrder = _useStateORD2[1];
+  // 学習フェーズ(input=インプット期/chokuzen=直前期)と直前期の範囲。管理タブから変更→イベントで同期
+  const [studyPhase, setStudyPhase] = useState(getStudyPhase());
+  const [chokuzenScope, setChokuzenScope] = useState(getChokuzenScope());
+  useEffect(() => {
+    const _sync = () => { setStudyPhase(getStudyPhase()); setChokuzenScope(getChokuzenScope()); };
+    if (typeof window !== "undefined") window.addEventListener("studyPhaseChanged", _sync);
+    return () => { if (typeof window !== "undefined") window.removeEventListener("studyPhaseChanged", _sync); };
+  }, []);
   // 日付別復習: 選択された日付(YYYY-MM-DD)。ホームから initialReviewDate で初期化
   const _useStateRD = useState(_ref10.initialReviewDate || null),
     _useStateRD2 = _slicedToArray(_useStateRD, 2),
@@ -1916,6 +1928,15 @@ function QuizTab(_ref10) {
       const r = (q.history || []).slice(-3);
       return r.filter(x => x === "×").length >= 2;
     });else if (mode === "starred") arr = arr.filter(q => q.starred);else if (mode === "bookmark") arr = arr.filter(q => q.bookmarked);else if (mode === "nofig") arr = arr.filter(q => !q.hasFig);else if (mode === "untried") arr = arr.filter(q => !q.history || !q.history.length);
+    // フェーズ別の年度フィルタ: インプット期は直近3年を除外 / 直前期は範囲に応じて出題。
+    // starred・bookmarkは明示選択なので年度で絞らない。SRS/日付/条文コースはarrを使わず影響なし。
+    if (mode !== "starred" && mode !== "bookmark") {
+      if (studyPhase === "chokuzen") {
+        if (chokuzenScope !== "all") arr = arr.filter(q => RECENT_YEARS.has(q.year));
+      } else {
+        arr = arr.filter(q => !RECENT_YEARS.has(q.year));
+      }
+    }
     const priority = q => {
       const h = q.history || [];
       if (!h.length) return 1;
@@ -1978,7 +1999,7 @@ function QuizTab(_ref10) {
     return order === "seq"
       ? [...notSolvedToday, ...solvedToday.sort(byNo)]
       : [...notSolvedToday, ...shuffle(solvedToday)];
-  }, [questions, subj, mode, course, reviewDate, order]);
+  }, [questions, subj, mode, course, reviewDate, order, studyPhase, chokuzenScope]);
 
   // 日付別復習: 「解いた日付 -> 問題数」の集計マップ
   const answerDateCounts = useMemo(() => {
@@ -4550,6 +4571,31 @@ function ManageTab(_ref30) {
     ioMsg = _useState100[0],
     setIoMsg = _useState100[1];
 
+  // 学習フェーズ(出題範囲)の設定
+  const [studyPhase, setStudyPhase] = useState(getStudyPhase());
+  const [chokuzenScope, setChokuzenScope] = useState(getChokuzenScope());
+  const _emitPhase = () => { try { if (typeof window !== "undefined") window.dispatchEvent(new Event("studyPhaseChanged")); } catch (e) {} };
+  const applyPhase = p => { try { localStorage.setItem("studyPhase", p); } catch (e) {} setStudyPhase(p); _emitPhase(); };
+  const applyScope = s => { try { localStorage.setItem("chokuzenScope", s); } catch (e) {} setChokuzenScope(s); _emitPhase(); };
+  const phaseBtn = (label, active, onClick) => /*#__PURE__*/React.createElement("button", {
+    onClick,
+    style: { flex: 1, padding: "11px", borderRadius: 10, border: active ? "1px solid #5B9FFF" : "0.5px solid rgba(255,255,255,0.15)", background: active ? "rgba(91,159,255,0.15)" : "rgba(255,255,255,0.04)", color: active ? "#5B9FFF" : "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 600, cursor: "pointer" }
+  }, label);
+  const phaseCard = /*#__PURE__*/React.createElement("div", {
+    style: { background: "rgba(255,255,255,0.05)", borderRadius: 16, padding: 20 }
+  },
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 15, fontWeight: 500, marginBottom: 4 } }, "\u5B66\u7FD2\u30D5\u30A7\u30FC\u30BA\uFF08\u51FA\u984C\u7BC4\u56F2\uFF09"),
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 14, lineHeight: 1.7 } }, "\u30A4\u30F3\u30D7\u30C3\u30C8\u671F\u306FH23\u301CR02\u306E\u307F\u51FA\u984C\u3057\u3001\u76F4\u8FD13\u5E74\uFF08R6\u301CR8\uFF09\u306F\u9664\u5916\u3057\u307E\u3059\u3002\u76F4\u524D\u671F\u306B\u5207\u308A\u66FF\u3048\u308B\u3068\u672C\u8A66\u9A13\uFF08R6\u301CR8\uFF09\u304C\u51FA\u984C\u3055\u308C\u307E\u3059\u3002", /*#__PURE__*/React.createElement("br", null), "\u203B\u65E2\u306B\u89E3\u3044\u305F\u554F\u984C\u306E\u5FA9\u7FD2\uFF08SRS\uFF09\u30FB\u30B9\u30BF\u30FC/\u30D6\u30C3\u30AF\u30DE\u30FC\u30AF\u306B\u306F\u5F71\u97FF\u3057\u307E\u305B\u3093\u3002"),
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: studyPhase === "chokuzen" ? 12 : 0 } },
+      phaseBtn("\u30A4\u30F3\u30D7\u30C3\u30C8\u671F\uFF08H23\u301CR02\uFF09", studyPhase !== "chokuzen", () => applyPhase("input")),
+      phaseBtn("\u76F4\u524D\u671F\uFF08R6\u301CR8\uFF09", studyPhase === "chokuzen", () => applyPhase("chokuzen"))
+    ),
+    studyPhase === "chokuzen" && /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 10 } },
+      phaseBtn("R6\u301CR8\u306E\u307F", chokuzenScope !== "all", () => applyScope("recent3")),
+      phaseBtn("\u5168\u5E74\u5EA6", chokuzenScope === "all", () => applyScope("all"))
+    )
+  );
+
   // データをJSONファイルとして保存
 
   const exportCSV = () => {
@@ -4714,7 +4760,7 @@ function ManageTab(_ref30) {
       flexDirection: "column",
       gap: 16
     }
-  }, /*#__PURE__*/React.createElement("div", {
+  }, phaseCard, /*#__PURE__*/React.createElement("div", {
     style: {
       background: "rgba(255,255,255,0.05)",
       borderRadius: 16,

@@ -906,7 +906,7 @@ function App() {
       minHeight: "100vh",
       color: "#fff",
       fontFamily: "'Noto Sans JP',-apple-system,BlinkMacSystemFont,sans-serif",
-      paddingBottom: 80,
+      paddingBottom: "calc(96px + env(safe-area-inset-bottom))",
       fontSize: isPC ? "115%" : "100%"
     }
   }, /*#__PURE__*/React.createElement("div", {
@@ -4496,9 +4496,11 @@ function RegisteredList(_refRL) {
   const _rl1 = useState("houki"), _rl1b = _slicedToArray(_rl1, 2), rlSubj = _rl1b[0], setRlSubj = _rl1b[1];
   const _rl2 = useState(null), _rl2b = _slicedToArray(_rl2, 2), rlOpen = _rl2b[0], setRlOpen = _rl2b[1];
   const _rl3 = useState(""), _rl3b = _slicedToArray(_rl3, 2), rlSearch = _rl3b[0], setRlSearch = _rl3b[1];
+  const _rl4 = useState("all"), _rl4b = _slicedToArray(_rl4, 2), rlYear = _rl4b[0], setRlYear = _rl4b[1];
 
   const list = questions
     .filter(q => q.subject === rlSubj)
+    .filter(q => rlYear === "all" || q.year === rlYear)
     .filter(q => !rlSearch || (q.q || "").includes(rlSearch) || (q.id || "").includes(rlSearch) || (q.year || "").includes(rlSearch) || (q.refs || "").includes(rlSearch) || (q.topic || "").includes(rlSearch))
     .sort((a, b) => {
       const pa = parseInt(a.qPage) || 9999, pb = parseInt(b.qPage) || 9999;
@@ -4518,7 +4520,7 @@ function RegisteredList(_refRL) {
         const on = rlSubj === s.id;
         return /*#__PURE__*/React.createElement("button", {
           key: s.id,
-          onClick: () => { setRlSubj(s.id); setRlOpen(null); },
+          onClick: () => { setRlSubj(s.id); setRlYear("all"); setRlOpen(null); },
           style: {
             padding: "6px 12px", borderRadius: 10,
             background: on ? s.bg : "rgba(255,255,255,0.04)",
@@ -4529,6 +4531,19 @@ function RegisteredList(_refRL) {
         }, s.name + " " + cnt);
       })
     ),
+    (() => {
+      const _yrs = Array.from(new Set(questions.filter(q => q.subject === rlSubj).map(q => q.year).filter(Boolean))).sort();
+      return /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" } },
+        ["all"].concat(_yrs).map(y => {
+          const on = rlYear === y;
+          return /*#__PURE__*/React.createElement("button", {
+            key: y,
+            onClick: () => { setRlYear(y); setRlOpen(null); },
+            style: { padding: "5px 10px", borderRadius: 8, background: on ? "rgba(91,159,255,0.18)" : "rgba(255,255,255,0.04)", border: on ? "1px solid #5B9FFF" : "1px solid rgba(255,255,255,0.1)", color: on ? "#5B9FFF" : "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }
+          }, y === "all" ? "全年度" : y);
+        })
+      );
+    })(),
     // 検索
     /*#__PURE__*/React.createElement("input", {
       value: rlSearch, onChange: e => setRlSearch(e.target.value),

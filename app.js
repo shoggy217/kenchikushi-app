@@ -4130,6 +4130,7 @@ function HistoryEditor(_ref29) {
     _useState90 = _slicedToArray(_useState89, 2),
     search = _useState90[0],
     setSearch = _useState90[1];
+  const [heCollapsed, setHeCollapsed] = useState(true);
   const _useState91 = useState(null),
     _useState92 = _slicedToArray(_useState91, 2),
     expanded = _useState92[0],
@@ -4209,12 +4210,14 @@ function HistoryEditor(_ref29) {
       padding: 20
     }
   }, /*#__PURE__*/React.createElement("div", {
+    onClick: () => setHeCollapsed(!heCollapsed),
     style: {
       fontSize: 15,
       fontWeight: 500,
-      marginBottom: 4
+      marginBottom: 4,
+      cursor: "pointer"
     }
-  }, "\u56DE\u7B54\u5C65\u6B74\u306E\u4FEE\u6B63"), /*#__PURE__*/React.createElement("div", {
+  }, (heCollapsed ? "▸ " : "▾ "), "\u56DE\u7B54\u5C65\u6B74\u306E\u4FEE\u6B63"), !heCollapsed && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 12,
       color: "rgba(255,255,255,0.4)",
@@ -4487,7 +4490,7 @@ function HistoryEditor(_ref29) {
         cursor: "pointer"
       }
     }, "\u5C65\u6B74\u3092\u30EA\u30BB\u30C3\u30C8"))));
-  })));
+  }))));
 }
 
 // ── 登録内容チェック（科目別・全文表示） ──────────────────
@@ -4497,6 +4500,7 @@ function RegisteredList(_refRL) {
   const _rl2 = useState(null), _rl2b = _slicedToArray(_rl2, 2), rlOpen = _rl2b[0], setRlOpen = _rl2b[1];
   const _rl3 = useState(""), _rl3b = _slicedToArray(_rl3, 2), rlSearch = _rl3b[0], setRlSearch = _rl3b[1];
   const _rl4 = useState("all"), _rl4b = _slicedToArray(_rl4, 2), rlYear = _rl4b[0], setRlYear = _rl4b[1];
+  const [rlCollapsed, setRlCollapsed] = useState(true);
 
   const list = questions
     .filter(q => q.subject === rlSubj)
@@ -4511,8 +4515,8 @@ function RegisteredList(_refRL) {
   return /*#__PURE__*/React.createElement("div", {
     style: { background: "rgba(255,255,255,0.04)", borderRadius: 16, padding: 20, marginBottom: 16 }
   },
-    /*#__PURE__*/React.createElement("div", { style: { fontSize: 15, fontWeight: 700, marginBottom: 4 } }, "\uD83D\uDCCB \u767B\u9332\u5185\u5BB9\u30C1\u30A7\u30C3\u30AF"),
-    /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 12 } }, "\u554F\u984C\u30FB\u9078\u629E\u80A2\u30FB\u6B63\u7B54\u30FB\u89E3\u8AAC\u3092\u5168\u6587\u8868\u793A\u3057\u3066\u3001\u554F\u984C\u96C6\u3068\u306E\u4E00\u81F4\u3092\u78BA\u8A8D\u3067\u304D\u307E\u3059"),
+    /*#__PURE__*/React.createElement("div", { onClick: () => setRlCollapsed(!rlCollapsed), style: { fontSize: 15, fontWeight: 700, marginBottom: rlCollapsed ? 0 : 4, cursor: "pointer" } }, (rlCollapsed ? "▸ " : "▾ "), "\uD83D\uDCCB \u767B\u9332\u5185\u5BB9\u30C1\u30A7\u30C3\u30AF"),
+    !rlCollapsed && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 12 } }, "\u554F\u984C\u30FB\u9078\u629E\u80A2\u30FB\u6B63\u7B54\u30FB\u89E3\u8AAC\u3092\u5168\u6587\u8868\u793A\u3057\u3066\u3001\u554F\u984C\u96C6\u3068\u306E\u4E00\u81F4\u3092\u78BA\u8A8D\u3067\u304D\u307E\u3059"),
     // 科目タブ
     /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" } },
       SUBJECTS.map(s => {
@@ -4596,6 +4600,7 @@ function RegisteredList(_refRL) {
         );
       })
     )
+  )
   );
 }
 

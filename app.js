@@ -900,10 +900,9 @@ function App() {
     icon: "🔍",
     label: "検索"
   }];
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("style", null, PULSE_STYLE), /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("style", null, PULSE_STYLE + "html,body{background:#080C14;margin:0;padding:0;}"), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#080C14",
-      minHeight: "100dvh",
       color: "#fff",
       fontFamily: "'Noto Sans JP',-apple-system,BlinkMacSystemFont,sans-serif",
       paddingBottom: "calc(56px + env(safe-area-inset-bottom))",

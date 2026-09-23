@@ -182,19 +182,21 @@ function _webpToPng(blob) {
     img.src = url;
   });
 }
-async function _copyQuestion(q, btn) {
-  const done = (msg) => { btn.textContent = msg; setTimeout(() => { btn.textContent = "📋 コピー"; }, 1600); };
+async function _copyText(q, btn) {
   const t = _qShareText(q);
-  if (q.figImg && typeof ClipboardItem !== "undefined" && navigator.clipboard && navigator.clipboard.write) {
-    try {
-      const textBlob = new Blob([t], { type: "text/plain" });
-      const pngPromise = fetch(q.figImg).then(r => r.blob()).then(_webpToPng);
-      await navigator.clipboard.write([new ClipboardItem({ "text/plain": textBlob, "image/png": pngPromise })]);
-      return done("✓ コピーしました（テキスト＋図）");
-    } catch (e) {}
-  }
-  try { await navigator.clipboard.writeText(t); done("✓ コピーしました"); }
-  catch (e) { done("コピー失敗"); }
+  try { await navigator.clipboard.writeText(t); btn.textContent = "✓ コピーしました"; }
+  catch (e) { btn.textContent = "コピー失敗"; }
+  setTimeout(() => { btn.textContent = "📋 コピー"; }, 1600);
+}
+async function _copyFigure(q, btn) {
+  const reset = () => setTimeout(() => { btn.textContent = "🖼 図をコピー"; }, 1600);
+  if (!q.figImg) return;
+  try {
+    if (typeof ClipboardItem === "undefined" || !navigator.clipboard || !navigator.clipboard.write) throw new Error("noimg");
+    const pngPromise = fetch(q.figImg).then(r => r.blob()).then(_webpToPng);
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": pngPromise })]);
+    btn.textContent = "✓ 図をコピーしました"; reset();
+  } catch (e) { btn.textContent = "コピー失敗"; reset(); }
 }
 
 const loadAllQuestions = async () => {
@@ -3181,7 +3183,7 @@ function QuizTab(_ref10) {
       color: "rgba(91,159,255,0.8)",
       marginBottom: 10
     }
-  }, "\uD83D\uDCD6 ", q.refs), /*#__PURE__*/React.createElement("button", { onClick: function(e){ _copyQuestion(q, e.currentTarget); }, style:{width:"100%",padding:"10px",borderRadius:8,background:"rgba(91,159,255,0.12)",color:"#5B9FFF",fontSize:13,fontWeight:600,border:"0.5px solid rgba(91,159,255,0.25)",cursor:"pointer",marginBottom:10} }, "📋 コピー"), /*#__PURE__*/React.createElement("button", { onClick: () => toggleNeedsCheck(q.id), style:{width:"100%",padding:"10px",borderRadius:8,background: q.checkStatus ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",color: q.checkStatus ? "#FBBF24" : "rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,border: q.checkStatus ? "0.5px solid rgba(251,191,36,0.4)" : "0.5px solid rgba(255,255,255,0.1)",cursor:"pointer",marginBottom:10} }, q.checkStatus ? "🚩 要確認マーク済み（タップで解除）" : "🚩 この問題に要確認マークを付ける"), (() => {
+  }, "\uD83D\uDCD6 ", q.refs), /*#__PURE__*/React.createElement("button", { onClick: function(e){ _copyText(q, e.currentTarget); }, style:{width:"100%",padding:"10px",borderRadius:8,background:"rgba(91,159,255,0.12)",color:"#5B9FFF",fontSize:13,fontWeight:600,border:"0.5px solid rgba(91,159,255,0.25)",cursor:"pointer",marginBottom:10} }, "📋 コピー"), q.figImg && /*#__PURE__*/React.createElement("button", { onClick: function(e){ _copyFigure(q, e.currentTarget); }, style:{width:"100%",padding:"10px",borderRadius:8,background:"rgba(52,211,153,0.12)",color:"#34D399",fontSize:13,fontWeight:600,border:"0.5px solid rgba(52,211,153,0.25)",cursor:"pointer",marginBottom:10} }, "🖼 図をコピー"), /*#__PURE__*/React.createElement("button", { onClick: () => toggleNeedsCheck(q.id), style:{width:"100%",padding:"10px",borderRadius:8,background: q.checkStatus ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",color: q.checkStatus ? "#FBBF24" : "rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,border: q.checkStatus ? "0.5px solid rgba(251,191,36,0.4)" : "0.5px solid rgba(255,255,255,0.1)",cursor:"pointer",marginBottom:10} }, q.checkStatus ? "🚩 要確認マーク済み（タップで解除）" : "🚩 この問題に要確認マークを付ける"), (() => {
     const related = questions.filter(x => x.subject === q.subject && x.topic === q.topic && x.id !== q.id).sort((a,b) => (a.id||"").localeCompare(b.id||""));
     if (related.length === 0) return null;
     return /*#__PURE__*/React.createElement("div", { style: { marginBottom: 10, padding: "10px 12px", borderRadius: 8, background: "rgba(139,92,246,0.08)", border: "0.5px solid rgba(139,92,246,0.25)" } },

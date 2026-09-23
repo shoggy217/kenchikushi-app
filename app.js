@@ -4553,7 +4553,7 @@ function RegisteredList(_refRL) {
     /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 10 } }, list.length + "\u554F"),
     list.length === 0 && /*#__PURE__*/React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,0.3)", textAlign: "center", padding: "16px 0" } }, "\u767B\u9332\u3055\u308C\u305F\u554F\u984C\u306F\u3042\u308A\u307E\u305B\u3093"),
     // リスト
-    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, maxHeight: "60vh", overflowY: "auto", paddingRight: 4 } },
       list.map(q => {
         const open = rlOpen === q.id;
         return /*#__PURE__*/React.createElement("div", { key: q.id, style: { background: "rgba(255,255,255,0.03)", borderRadius: 12, border: "0.5px solid rgba(255,255,255,0.07)" } },

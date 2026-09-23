@@ -162,6 +162,59 @@ const QUESTION_FILES = ["houki", "sekou", "kouzou", "kankyo", "keikaku"];
 const RECENT_YEARS = new Set(["R06", "R07", "R08"]);
 const getStudyPhase = () => { try { return (typeof localStorage !== "undefined" && localStorage.getItem("studyPhase")) || "input"; } catch (e) { return "input"; } };
 const getChokuzenScope = () => { try { return (typeof localStorage !== "undefined" && localStorage.getItem("chokuzenScope")) || "recent3"; } catch (e) { return "recent3"; } };
+function _qShareText(q) {
+  const plain = s => (s || "").replace(/<[^>]+>/g, "");
+  return "【問題】" + (q.year ? " (" + q.year + "-" + q.no + ")" : "") + "\n" + q.q + "\n\n【選択肢】\n" + (q.opts || []).map((o, i) => (i + 1) + ". " + o).join("\n") + "\n\n【正答】" + (q.correct + 1) + "番\n\n【解説】\n" + plain(q.explain) + (q.refs ? "\n\n【参照】" + q.refs : "");
+}
+function _webpToPng(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = function () {
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0);
+      c.toBlob(function (b) { URL.revokeObjectURL(url); b ? resolve(b) : reject(new Error("toBlob")); }, "image/png");
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("imgload")); };
+    img.src = url;
+  });
+}
+async function _shareQuestion(q, btn) {
+  const done = (msg) => { btn.textContent = msg; setTimeout(() => { btn.textContent = "\uD83D\uDCE4 \u5171\u6709 / \u30B3\u30D4\u30FC"; }, 1600); };
+  const t = _qShareText(q);
+  let file = null;
+  if (q.figImg) {
+    try { const blob = await fetch(q.figImg).then(r => r.blob()); file = new File([blob], (q.id || "figure") + ".webp", { type: blob.type || "image/webp" }); } catch (e) { file = null; }
+  }
+  try {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ text: t, files: [file] }); return done("\u2713 \u5171\u6709\u3057\u307E\u3057\u305F"); }
+      await navigator.share({ text: t }); return done("\u2713 \u5171\u6709\u3057\u307E\u3057\u305F");
+    }
+  } catch (e) { if (e && e.name === "AbortError") return done("\u30AD\u30E3\u30F3\u30BB\u30EB"); }
+  try { await navigator.clipboard.writeText(t); done(q.figImg ? "\u2713 \u30C6\u30AD\u30B9\u30C8\u3092\u30B3\u30D4\u30FC\uFF08\u56F3\u306F\uD83D\uDDBC\u3067\uFF09" : "\u2713 \u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F"); } catch (e) { done("\u30B3\u30D4\u30FC\u5931\u6557"); }
+}
+async function _copyFigure(q, btn) {
+  const reset = () => setTimeout(() => { btn.textContent = "\uD83D\uDDBC \u56F3\u3092\u30B3\u30D4\u30FC"; }, 1600);
+  if (!q.figImg) return;
+  try {
+    if (typeof ClipboardItem === "undefined" || !navigator.clipboard || !navigator.clipboard.write) throw new Error("noimg");
+    const pngPromise = fetch(q.figImg).then(r => r.blob()).then(_webpToPng);
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": pngPromise })]);
+    btn.textContent = "\u2713 \u56F3\u3092\u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F"; reset();
+  } catch (e) {
+    try {
+      const blob = await fetch(q.figImg).then(r => r.blob());
+      const file = new File([blob], (q.id || "figure") + ".webp", { type: blob.type || "image/webp" });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); btn.textContent = "\u2713 \u5171\u6709\u3057\u307E\u3057\u305F"; reset(); return; }
+    } catch (_) {}
+    btn.textContent = "\u30B3\u30D4\u30FC\u5931\u6557"; reset();
+  }
+}
+
 const loadAllQuestions = async () => {
   const results = await Promise.allSettled(
     QUESTION_FILES.map(s => fetch(`${s}.json`).then(r => r.ok ? r.json() : []))
@@ -3146,7 +3199,7 @@ function QuizTab(_ref10) {
       color: "rgba(91,159,255,0.8)",
       marginBottom: 10
     }
-  }, "\uD83D\uDCD6 ", q.refs), /*#__PURE__*/React.createElement("button", { onClick: function(e){ var b=e.currentTarget; var plain=function(s){return (s||"").replace(/<[^>]+>/g,"");}; var t="【問題】"+(q.year?" ("+q.year+"-"+q.no+")":"")+"\n"+q.q+"\n\n【選択肢】\n"+(q.opts||[]).map(function(o,i){return (i+1)+". "+o;}).join("\n")+"\n\n【正答】"+(q.correct+1)+"番\n\n【解説】\n"+plain(q.explain)+(q.refs?"\n\n【参照】"+q.refs:""); navigator.clipboard.writeText(t).then(function(){b.textContent="✓ コピーしました";setTimeout(function(){b.textContent="📋 問題・解説をコピー";},1500);}); }, style:{width:"100%",padding:"10px",borderRadius:8,background:"rgba(91,159,255,0.12)",color:"#5B9FFF",fontSize:13,fontWeight:600,border:"0.5px solid rgba(91,159,255,0.25)",cursor:"pointer",marginBottom:10} }, "📋 問題・解説をコピー"), /*#__PURE__*/React.createElement("button", { onClick: () => toggleNeedsCheck(q.id), style:{width:"100%",padding:"10px",borderRadius:8,background: q.checkStatus ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",color: q.checkStatus ? "#FBBF24" : "rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,border: q.checkStatus ? "0.5px solid rgba(251,191,36,0.4)" : "0.5px solid rgba(255,255,255,0.1)",cursor:"pointer",marginBottom:10} }, q.checkStatus ? "🚩 要確認マーク済み（タップで解除）" : "🚩 この問題に要確認マークを付ける"), (() => {
+  }, "\uD83D\uDCD6 ", q.refs), /*#__PURE__*/React.createElement("button", { onClick: function(e){ _shareQuestion(q, e.currentTarget); }, style:{width:"100%",padding:"10px",borderRadius:8,background:"rgba(91,159,255,0.12)",color:"#5B9FFF",fontSize:13,fontWeight:600,border:"0.5px solid rgba(91,159,255,0.25)",cursor:"pointer",marginBottom:10} }, "📤 共有 / コピー"), q.figImg && /*#__PURE__*/React.createElement("button", { onClick: function(e){ _copyFigure(q, e.currentTarget); }, style:{width:"100%",padding:"10px",borderRadius:8,background:"rgba(52,211,153,0.12)",color:"#34D399",fontSize:13,fontWeight:600,border:"0.5px solid rgba(52,211,153,0.25)",cursor:"pointer",marginBottom:10} }, "🖼 図をコピー"), /*#__PURE__*/React.createElement("button", { onClick: () => toggleNeedsCheck(q.id), style:{width:"100%",padding:"10px",borderRadius:8,background: q.checkStatus ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.04)",color: q.checkStatus ? "#FBBF24" : "rgba(255,255,255,0.5)",fontSize:13,fontWeight:600,border: q.checkStatus ? "0.5px solid rgba(251,191,36,0.4)" : "0.5px solid rgba(255,255,255,0.1)",cursor:"pointer",marginBottom:10} }, q.checkStatus ? "🚩 要確認マーク済み（タップで解除）" : "🚩 この問題に要確認マークを付ける"), (() => {
     const related = questions.filter(x => x.subject === q.subject && x.topic === q.topic && x.id !== q.id).sort((a,b) => (a.id||"").localeCompare(b.id||""));
     if (related.length === 0) return null;
     return /*#__PURE__*/React.createElement("div", { style: { marginBottom: 10, padding: "10px 12px", borderRadius: 8, background: "rgba(139,92,246,0.08)", border: "0.5px solid rgba(139,92,246,0.25)" } },

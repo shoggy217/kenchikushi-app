@@ -900,7 +900,7 @@ function App() {
     icon: "🔍",
     label: "検索"
   }];
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("style", null, PULSE_STYLE + "html,body{background:#080C14;margin:0;padding:0;height:100%;overflow:hidden;overscroll-behavior:none;}"), /*#__PURE__*/React.createElement("div", {
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("style", null, PULSE_STYLE + "html,body{background:#080C14;margin:0;padding:0;height:100%;overscroll-behavior:none;}body{overflow:hidden;}"), /*#__PURE__*/React.createElement("div", {
     style: {
       background: "#080C14",
       color: "#fff",

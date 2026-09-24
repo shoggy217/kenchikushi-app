@@ -905,6 +905,9 @@ function App() {
       background: "#080C14",
       color: "#fff",
       fontFamily: "'Noto Sans JP',-apple-system,BlinkMacSystemFont,sans-serif",
+      height: "100dvh",
+      overflowY: "auto",
+      WebkitOverflowScrolling: "touch",
       paddingBottom: "calc(56px + env(safe-area-inset-bottom))",
       fontSize: isPC ? "115%" : "100%"
     }

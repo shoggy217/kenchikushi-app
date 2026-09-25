@@ -213,16 +213,49 @@ const TEXTBOOK_MAP = {
 
 
 // ── 学習スケジュール ─────────────────────────────────────
-const STUDY_SCHEDULE = {
-  monthSubject: {
-    "2026-08": "houki", "2026-09": "sekou", "2026-10": "keikaku",
-    "2026-11": "kankyo", "2026-12": "kouzou",
-    "2027-01": "all", "2027-02": "all", "2027-03": "all",
-    "2027-04": "all", "2027-05": "all", "2027-06": "all", "2027-07": "all"
-  },
-  weekdayTarget: 5,
-  holidayTarget: 20,
+// 新プラン：全問4周・日別フェーズ（設定はここに集約）
+const SUBJECT_TOTAL = { keikaku: 263, kankyo: 260, houki: 390, kouzou: 340, sekou: 325 };
+const GRAND_TOTAL = 1578;
+const STUDY_PLAN = {
+  examGoal: "2027-04-25",
+  phases: [
+    { id: "lap1-houki",   lap: 1,    subject: "houki",   start: "2026-09-28", end: "2026-10-11", weekday: 10, weekend: 35 },
+    { id: "lap1-kozo",    lap: 1,    subject: "kouzou",  start: "2026-10-12", end: "2026-11-01", weekday: 10, weekend: 35 },
+    { id: "lap1-seko",    lap: 1,    subject: "sekou",   start: "2026-11-02", end: "2026-11-22", weekday: 10, weekend: 35 },
+    { id: "lap1-keikaku", lap: 1,    subject: "keikaku", start: "2026-11-23", end: "2026-12-06", weekday: 10, weekend: 40 },
+    { id: "lap1-kankyo",  lap: 1,    subject: "kankyo",  start: "2026-12-07", end: "2026-12-20", weekday: 10, weekend: 40 },
+    { id: "buffer",       lap: null, subject: null,      start: "2026-12-21", end: "2027-01-04", weekday: 0,  weekend: 0,  note: "遅れ回収用の予備期間" },
+    { id: "lap2",         lap: 2,    subject: "all",     start: "2027-01-05", end: "2027-02-14", weekday: 25, weekend: 70 },
+    { id: "lap3",         lap: 3,    subject: "all",     start: "2027-02-15", end: "2027-03-21", weekday: 30, weekend: 85 },
+    { id: "lap4",         lap: 4,    subject: "all",     start: "2027-03-22", end: "2027-04-25", weekday: 30, weekend: 85 },
+    { id: "final",        lap: null, subject: "all",     start: "2027-04-26", end: "2027-06-30", weekday: 30, weekend: 60, note: "総仕上げ（弱点重点）", weakFocus: true }
+  ],
+  lapSubjectOrder: ["houki", "kouzou", "sekou", "keikaku", "kankyo"],
+  checkpoints: [
+    { date: "2026-10-04", cumulative: 267,  label: "法規 264/390" },
+    { date: "2026-10-11", cumulative: 393,  label: "法規 完了" },
+    { date: "2026-10-18", cumulative: 506,  label: "構造 115/340" },
+    { date: "2026-10-25", cumulative: 619,  label: "構造 228/340" },
+    { date: "2026-11-01", cumulative: 731,  label: "構造 完了" },
+    { date: "2026-11-08", cumulative: 839,  label: "施工 108/325" },
+    { date: "2026-11-15", cumulative: 947,  label: "施工 216/325" },
+    { date: "2026-11-22", cumulative: 1056, label: "施工 完了" },
+    { date: "2026-11-29", cumulative: 1188, label: "計画 132/263" },
+    { date: "2026-12-06", cumulative: 1319, label: "計画 完了" },
+    { date: "2026-12-13", cumulative: 1449, label: "環境・設備 131/260" },
+    { date: "2026-12-20", cumulative: 1578, label: "1周目 完了" },
+    { date: "2027-01-24", lapProgress: 790,  lap: 2, label: "2周目 半分" },
+    { date: "2027-02-14", lapProgress: 1578, lap: 2, label: "2周目 完了" },
+    { date: "2027-03-07", lapProgress: 950,  lap: 3, label: "3周目 約6割" },
+    { date: "2027-03-21", lapProgress: 1578, lap: 3, label: "3周目 完了" },
+    { date: "2027-04-11", lapProgress: 950,  lap: 4, label: "4周目 約6割" },
+    { date: "2027-04-25", lapProgress: 1578, lap: 4, label: "4周目 完了" }
+  ]
 };
+// 日付(YYYY-MM-DD)→該当フェーズ
+const planPhase = ds => STUDY_PLAN.phases.find(p => ds >= p.start && ds <= p.end) || null;
+// 周N達成数（N回以上解いた問題数）
+const lapDone = (qs, n) => qs.filter(q => (q.history || []).length >= n).length;
 
 // ── 問題集目次(法規) p番号は問題解説集のページ ──────────────
 const CHAPTERS = {
@@ -1410,8 +1443,10 @@ function HomeTab(_ref4) {
   const _todayKeyN = _todayDateN.toISOString().slice(0, 10);
   const _monthKeyN = _todayKeyN.slice(0, 7);
   const _isWeekend = _todayDateN.getDay() === 0 || _todayDateN.getDay() === 6;
-  const _todayTarget = _isWeekend ? STUDY_SCHEDULE.holidayTarget : STUDY_SCHEDULE.weekdayTarget;
-  const _curSubjId = STUDY_SCHEDULE.monthSubject[_monthKeyN] || "all";
+  const _planPh = planPhase(_todayKeyN);
+  const _isBuffer = !!(_planPh && _planPh.weekday === 0 && _planPh.weekend === 0);
+  const _todayTarget = _planPh ? (_isWeekend ? _planPh.weekend : _planPh.weekday) : 0;
+  const _curSubjId = _planPh ? (_planPh.subject || "all") : "all";
   const _curSubj = _curSubjId === "all" ? { name: "\u5168\u79D1\u76EE", color: "#5B9FFF" } : (SUBJECTS.find(s => s.id === _curSubjId) || { name: _curSubjId, color: "#5B9FFF" });
   const handleNormaDone = async () => {
     const newDone = !todayDone;
@@ -1504,27 +1539,71 @@ function HomeTab(_ref4) {
   }).filter(s => s.qs > 0);
   // フェーズ計算
   const _phases = [
-    { label: "F1 インプット", start: "2026-08", end: "2026-11", color: "#5B9FFF" },
-    { label: "F2 反復強化",   start: "2026-12", end: "2027-03", color: "#A78BFA" },
-    { label: "F3 総仕上げ",   start: "2027-04", end: "2027-07", color: "#34D399" }
+    { label: "1周目",     start: "2026-09", end: "2026-12", color: "#5B9FFF" },
+    { label: "2〜4周目",  start: "2027-01", end: "2027-04", color: "#A78BFA" },
+    { label: "総仕上げ",  start: "2027-05", end: "2027-06", color: "#34D399" }
   ];
-  const _totalStart = new Date("2026-08-01");
-  const _totalEnd = new Date("2027-07-25");
+  const _totalStart = new Date("2026-09-01");
+  const _totalEnd = new Date("2027-06-30");
   const _totalDays = (_totalEnd - _totalStart) / 86400000;
   const _elapsed = Math.max(0, (nowJST() - _totalStart) / 86400000);
   const _overallPct = Math.min(100, _elapsed / _totalDays * 100);
   const _curPhaseIdx = _phases.findIndex(p => _monthKeyN >= p.start && _monthKeyN <= p.end);
   const _curPhase = _phases[_curPhaseIdx >= 0 ? _curPhaseIdx : 0];
   const _scheduleMonths = [
-    { month: "2026-08", label: "8月", subj: "\u6CD5\u898F" },
-    { month: "2026-09", label: "9\u6708", subj: "\u65BD\u5DE5" },
-    { month: "2026-10", label: "10\u6708", subj: "\u8A08\u753B" },
-    { month: "2026-11", label: "11\u6708", subj: "\u74B0\u5883" },
-    { month: "2026-12", label: "12\u6708", subj: "\u69CB\u9020" },
-    { month: "2027-01", label: "1\u301C3\u6708", subj: "\u5168\u79D1\u76EE\u53CD\u5FA9" },
-    { month: "2027-04", label: "4\u301C7\u6708", subj: "\u7DCF\u4ED5\u4E0A\u3052" },
+    { month: "2026-09", label: "9月",  subj: "法規" },
+    { month: "2026-10", label: "10月", subj: "法規→構造" },
+    { month: "2026-11", label: "11月", subj: "構造→施工→計画" },
+    { month: "2026-12", label: "12月", subj: "計画→環境→1周完了" },
+    { month: "2027-01", label: "1月",  subj: "2周目" },
+    { month: "2027-02", label: "2月",  subj: "2→3周目" },
+    { month: "2027-03", label: "3月",  subj: "3周目" },
+    { month: "2027-04", label: "4月",  subj: "4周目→完了" },
   ];
   const _upcomingMonths = _scheduleMonths.filter(m => m.month >= _monthKeyN).slice(0, 5);
+  // 周回進捗（N回以上解いた問題数）
+  const _lapCounts = [1, 2, 3, 4].map(n => lapDone(questions, n));
+  const _curLap = _planPh && _planPh.lap ? _planPh.lap : 1;
+  // 今週の目標とのズレ：直近の過去チェックポイントと実績を比較
+  const _pastCkpts = STUDY_PLAN.checkpoints.filter(c => c.date <= _todayKeyN);
+  const _lastCkpt = _pastCkpts.length ? _pastCkpts[_pastCkpts.length - 1] : null;
+  const _ckptLap = _lastCkpt ? (_lastCkpt.lap || 1) : 1;
+  const _ckptTarget = _lastCkpt ? (_lastCkpt.cumulative != null ? _lastCkpt.cumulative : _lastCkpt.lapProgress) : 0;
+  const _ckptActual = _lapCounts[_ckptLap - 1];
+  const _deviation = _ckptActual - _ckptTarget;
+  const _behind = _deviation < 0 ? -_deviation : 0;
+  let _alert;
+  if (!_lastCkpt) _alert = { type: "ok", msg: "スケジュール開始前（9/28〜）" };
+  else if (_behind === 0) _alert = { type: "ok", msg: _deviation > 0 ? "+" + _deviation + "問 先行 ✓" : "オンペース ✓" };
+  else if (_behind <= 30) _alert = { type: "warn", msg: _behind + "問 遅れ ─ 今週の土日で回収" };
+  else if (_behind >= 120) _alert = { type: "bad", msg: _behind + "問 遅れ ─ 年末の予備期間で吸収（2周目開始1/5は固定）" };
+  else _alert = { type: "warn", msg: _behind + "問 遅れ ─ 土日で挽回を" };
+  const _alertColor = _alert.type === "ok" ? "#34D399" : _alert.type === "bad" ? "#F87171" : "#FBBF24";
+  const _alertBg = _alert.type === "ok" ? "rgba(52,211,153,0.1)" : _alert.type === "bad" ? "rgba(248,113,113,0.12)" : "rgba(251,191,36,0.12)";
+  const _alertBd = _alert.type === "ok" ? "rgba(52,211,153,0.3)" : _alert.type === "bad" ? "rgba(248,113,113,0.3)" : "rgba(251,191,36,0.3)";
+  const _progressCard = /*#__PURE__*/React.createElement(Card, null,
+    /*#__PURE__*/React.createElement(SectionTitle, null, "進捗とペース"),
+    /*#__PURE__*/React.createElement("div", { style: { padding: "10px 12px", borderRadius: 10, marginBottom: 12, background: _alertBg, border: "0.5px solid " + _alertBd } },
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 3 } }, "今週の目標とのズレ" + (_lastCkpt ? "（基準: " + _lastCkpt.label + "）" : "")),
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 15, fontWeight: 600, color: _alertColor } }, _alert.msg)
+    ),
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+      [1, 2, 3, 4].map(function (n) {
+        const done = _lapCounts[n - 1];
+        const pct = Math.min(100, Math.round(done / GRAND_TOTAL * 100));
+        const isCur = n === _curLap;
+        return /*#__PURE__*/React.createElement("div", { key: n },
+          /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 } },
+            /*#__PURE__*/React.createElement("span", { style: { color: isCur ? "#fff" : "rgba(255,255,255,0.5)", fontWeight: isCur ? 700 : 400 } }, n + "周目" + (isCur ? " ●" : "")),
+            /*#__PURE__*/React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontVariantNumeric: "tabular-nums" } }, done + " / " + GRAND_TOTAL + "問 (" + pct + "%)")
+          ),
+          /*#__PURE__*/React.createElement("div", { style: { height: 5, background: "rgba(255,255,255,0.07)", borderRadius: 99 } },
+            /*#__PURE__*/React.createElement("div", { style: { height: "100%", width: pct + "%", background: pct >= 100 ? "#34D399" : (isCur ? "#5B9FFF" : "rgba(255,255,255,0.25)"), borderRadius: 99 } })
+          )
+        );
+      })
+    )
+  );
 
   return /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } },
     /*#__PURE__*/React.createElement("button", {
@@ -1560,8 +1639,8 @@ function HomeTab(_ref4) {
     /*#__PURE__*/React.createElement(SectionTitle, null, "\u4ECA\u65E5\u306E\u30CE\u30EB\u30DE"),
     /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: todayDone ? "rgba(52,211,153,0.1)" : "rgba(91,159,255,0.08)", borderRadius: 10, border: "0.5px solid " + (todayDone ? "rgba(52,211,153,0.3)" : "rgba(91,159,255,0.2)"), marginBottom: 10 } },
       /*#__PURE__*/React.createElement("div", null,
-        /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 3 } }, "\u4ECA\u6708: ", _curSubj.name),
-        /*#__PURE__*/React.createElement("div", { style: { fontSize: 17, fontWeight: 600, color: todayDone ? "#34D399" : "#fff" } }, todayDone ? "\u2713 \u9054\u6210\uFF01" : (_isWeekend ? "\u4F11\u65E5" : "\u5E73\u65E5") + " " + _todayTarget + "\u554F")
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 3 } }, _isBuffer ? "予備期間（回収用）" : "対象: " + _curSubj.name),
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 17, fontWeight: 600, color: todayDone ? "#34D399" : "#fff" } }, todayDone ? "\u2713 \u9054\u6210\uFF01" : (_isBuffer ? "予備期間" : (_isWeekend ? "\u4F11\u65E5" : "\u5E73\u65E5") + " " + _todayTarget + "\u554F"))
       ),
       /*#__PURE__*/React.createElement("button", { onClick: handleNormaDone, style: { width: 40, height: 40, borderRadius: "50%", border: "2px solid " + (todayDone ? "#34D399" : "rgba(255,255,255,0.25)"), background: todayDone ? "#34D399" : "transparent", color: todayDone ? "#000" : "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } }, todayDone ? "\u2713" : "")
     ),
@@ -1574,6 +1653,7 @@ function HomeTab(_ref4) {
     ),
     /*#__PURE__*/React.createElement("div", { style: { fontSize: 10, color: "rgba(255,255,255,0.2)", textAlign: "right" } }, "\u7E70\u308A\u8D8A\u3057\u306A\u3057 \u2014 \u30B5\u30DC\u3063\u305F\u65E5\u306F\u8A18\u9332\u306B\u6B8B\u308A\u307E\u3059")
   ),
+  _progressCard,
   /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } },
     /*#__PURE__*/React.createElement(Card, null,
       /*#__PURE__*/React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 8 } }, "\uD83D\uDD25 \u9023\u7D9A\u65E5\u6570"),

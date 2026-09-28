@@ -262,6 +262,7 @@ function SketchArea(props) {
   const canvasRef = useRef(null);
   const sessRef = useRef([]);      // 今回の書き込み（保存しない）
   const drawRef = useRef(null);
+  const undoRef = useRef([]);
   const [drawMode, setDrawMode] = useState(false);
   const [tool, setTool] = useState("pen");   // pen | eraser
   const [penColor, setPenColor] = useState("#FF4D4D");
@@ -314,6 +315,8 @@ function SketchArea(props) {
   const onDown = e => {
     if (!drawMode) return;
     e.preventDefault();
+    undoRef.current.push(sessRef.current.slice());
+    if (undoRef.current.length > 40) undoRef.current.shift();
     try { canvasRef.current.setPointerCapture(e.pointerId); } catch (_) {}
     if (tool === "eraser") { drawRef.current = { erasing: true }; eraseAt(ptOf(e)); return; }
     drawRef.current = { pts: [ptOf(e)], color: penColor }; redraw();
@@ -329,13 +332,15 @@ function SketchArea(props) {
     if (!drawRef.current.erasing && drawRef.current.pts && drawRef.current.pts.length >= 1) sessRef.current = sessRef.current.concat([drawRef.current]);
     drawRef.current = null; redraw();
   };
-  const clearAll = () => { sessRef.current = []; drawRef.current = null; redraw(); };
+  const clearAll = () => { undoRef.current.push(sessRef.current.slice()); sessRef.current = []; drawRef.current = null; redraw(); };
+  const undo = () => { if (undoRef.current.length) { sessRef.current = undoRef.current.pop(); drawRef.current = null; redraw(); } };
   const tb = (label, active, onClick) => /*#__PURE__*/React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: active ? "1px solid #5B9FFF" : "0.5px solid rgba(255,255,255,0.15)", background: active ? "rgba(91,159,255,0.22)" : "rgba(255,255,255,0.05)", color: active ? "#5B9FFF" : "rgba(255,255,255,0.6)", fontFamily: "inherit" } }, label);
   return /*#__PURE__*/React.createElement("div", { style: { marginBottom: 4 } },
     /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap", alignItems: "center" } },
       tb(drawMode ? "✏️ 書く: ON" : "✏️ 書く", drawMode, () => setDrawMode(v => !v)),
       drawMode ? tb("ペン", tool === "pen", () => setTool("pen")) : null,
       drawMode ? tb("消しゴム", tool === "eraser", () => setTool("eraser")) : null,
+      drawMode ? tb("↩ 戻す", false, undo) : null,
       drawMode ? tb("全消し", false, clearAll) : null,
       drawMode ? /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 5, alignItems: "center" } },
         ["#111", "#FF4D4D", "#4D9FFF", "#FFD84D", "#FFFFFF"].map(function (col) {
@@ -345,11 +350,11 @@ function SketchArea(props) {
       ) : null,
       drawMode ? /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "rgba(91,159,255,0.7)" } }, "書いたメモは保存されません") : null
     ),
-    /*#__PURE__*/React.createElement("div", { ref: wrapRef, style: { position: "relative" } },
+    /*#__PURE__*/React.createElement("div", { ref: wrapRef, onContextMenu: e => drawMode && e.preventDefault(), style: { position: "relative", userSelect: drawMode ? "none" : "auto", WebkitUserSelect: drawMode ? "none" : "auto", WebkitTouchCallout: drawMode ? "none" : "default" } },
       props.children,
       /*#__PURE__*/React.createElement("canvas", {
-        ref: canvasRef, onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp,
-        style: { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", zIndex: 5, pointerEvents: drawMode ? "auto" : "none", touchAction: drawMode ? "none" : "auto", cursor: drawMode ? "crosshair" : "default", background: drawMode ? "rgba(91,159,255,0.03)" : "transparent", borderRadius: 8 }
+        ref: canvasRef, onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp, onContextMenu: e => e.preventDefault(),
+        style: { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", zIndex: 5, pointerEvents: drawMode ? "auto" : "none", touchAction: drawMode ? "none" : "auto", userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none", cursor: drawMode ? "crosshair" : "default", background: drawMode ? "rgba(91,159,255,0.03)" : "transparent", borderRadius: 8 }
       })
     )
   );

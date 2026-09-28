@@ -259,97 +259,101 @@ const lapDone = (qs, n) => qs.filter(q => (q.history || []).length >= n).length;
 // ── 手書きキャンバス v1（ペン=描く / 指=選択・スクロール、問題ごと保存、既定は非表示） ──
 function SketchArea(props) {
   const qid = props.qid;
-  const store = props.sketchStore || {};
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
   const baseRef = useRef([]);      // 保存済み（既定は非表示）
-  const sessRef = useRef([]);      // 今回の書き込み（常に表示）
+  const sessRef = useRef([]);      // 今回の書き込み
   const drawRef = useRef(null);
   const saveTimer = useRef(null);
-  const [tool, setTool] = useState("pen");     // pen | eraser | off
+  const [drawMode, setDrawMode] = useState(false);
+  const [tool, setTool] = useState("pen");   // pen | eraser
   const [showPrev, setShowPrev] = useState(false);
   const fit = () => {
     const c = canvasRef.current, w = wrapRef.current;
     if (!c || !w) return;
     const r = w.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return;
     const dpr = window.devicePixelRatio || 1;
-    c.width = Math.max(1, Math.round(r.width * dpr));
-    c.height = Math.max(1, Math.round(r.height * dpr));
+    c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr);
     c.style.width = r.width + "px"; c.style.height = r.height + "px";
     c.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
   };
   const drawOne = (ctx, st, color) => {
     if (!st.pts || st.pts.length === 0) return;
-    ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.strokeStyle = color; ctx.lineWidth = 2.4; ctx.lineJoin = "round"; ctx.lineCap = "round";
     ctx.beginPath();
     for (let i = 0; i < st.pts.length; i++) { const p = st.pts[i]; if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); }
+    if (st.pts.length === 1) { const p = st.pts[0]; ctx.arc(p.x, p.y, 1.2, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); }
     ctx.stroke();
   };
   const redraw = () => {
     const c = canvasRef.current; if (!c) return;
-    const ctx = c.getContext("2d");
-    const dpr = window.devicePixelRatio || 1;
+    const ctx = c.getContext("2d"); const dpr = window.devicePixelRatio || 1;
     ctx.clearRect(0, 0, c.width / dpr, c.height / dpr);
-    if (showPrev) baseRef.current.forEach(st => drawOne(ctx, st, "rgba(255,176,77,0.8)"));
+    if (showPrev) baseRef.current.forEach(st => drawOne(ctx, st, "rgba(255,176,77,0.85)"));
     sessRef.current.forEach(st => drawOne(ctx, st, "#111"));
     if (drawRef.current && drawRef.current.pts) drawOne(ctx, drawRef.current, "#111");
   };
   useEffect(() => {
     baseRef.current = (props.sketchStore && props.sketchStore[qid]) || [];
-    sessRef.current = []; drawRef.current = null; setShowPrev(false);
+    sessRef.current = []; drawRef.current = null; setShowPrev(false); setDrawMode(false);
     setTimeout(() => { fit(); redraw(); }, 0);
   }, [qid]);
   useEffect(() => {
-    fit(); redraw();
+    const t = setTimeout(() => { fit(); redraw(); }, 0);
     const onR = () => { fit(); redraw(); };
     window.addEventListener("resize", onR);
-    return () => { window.removeEventListener("resize", onR); if (saveTimer.current) clearTimeout(saveTimer.current); };
+    return () => { clearTimeout(t); window.removeEventListener("resize", onR); if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, []);
-  useEffect(() => { redraw(); }, [showPrev]);
+  useEffect(() => { const t = setTimeout(() => { fit(); redraw(); }, 0); return () => clearTimeout(t); }, [showPrev, drawMode]);
   const ptOf = e => { const r = canvasRef.current.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
   const scheduleSave = () => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => { if (props.saveSketch) props.saveSketch(qid, baseRef.current.concat(sessRef.current)); }, 900);
   };
   const eraseAt = p => {
-    const hit = st => (st.pts || []).some(u => Math.abs(u.x - p.x) < 13 && Math.abs(u.y - p.y) < 13);
+    const hit = st => (st.pts || []).some(u => Math.abs(u.x - p.x) < 14 && Math.abs(u.y - p.y) < 14);
     const before = sessRef.current.length + baseRef.current.length;
     sessRef.current = sessRef.current.filter(st => !hit(st));
     baseRef.current = baseRef.current.filter(st => !hit(st));
     if (sessRef.current.length + baseRef.current.length !== before) { redraw(); scheduleSave(); }
   };
   const onDown = e => {
-    if (tool === "off") return;
-    if (e.pointerType !== "pen") return;   // 指・マウスは素通り
+    if (!drawMode) return;
     e.preventDefault();
+    try { canvasRef.current.setPointerCapture(e.pointerId); } catch (_) {}
     if (tool === "eraser") { drawRef.current = { erasing: true }; eraseAt(ptOf(e)); return; }
     drawRef.current = { pts: [ptOf(e)] }; redraw();
   };
   const onMove = e => {
-    if (!drawRef.current || e.pointerType !== "pen") return;
+    if (!drawMode || !drawRef.current) return;
     e.preventDefault();
     if (drawRef.current.erasing) { eraseAt(ptOf(e)); return; }
     drawRef.current.pts.push(ptOf(e)); redraw();
   };
   const onUp = () => {
     if (!drawRef.current) return;
-    if (!drawRef.current.erasing && drawRef.current.pts && drawRef.current.pts.length > 1) sessRef.current = sessRef.current.concat([drawRef.current]);
+    if (!drawRef.current.erasing && drawRef.current.pts && drawRef.current.pts.length >= 1) sessRef.current = sessRef.current.concat([drawRef.current]);
     drawRef.current = null; redraw(); scheduleSave();
   };
   const clearAll = () => { sessRef.current = []; baseRef.current = []; setShowPrev(false); redraw(); if (props.saveSketch) props.saveSketch(qid, []); };
-  const tb = (label, active, onClick) => /*#__PURE__*/React.createElement("button", { onClick, style: { padding: "4px 9px", borderRadius: 8, fontSize: 12, cursor: "pointer", border: active ? "1px solid #5B9FFF" : "0.5px solid rgba(255,255,255,0.15)", background: active ? "rgba(91,159,255,0.25)" : "rgba(20,26,38,0.85)", color: active ? "#5B9FFF" : "rgba(255,255,255,0.6)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" } }, label);
   const hasPrev = ((props.sketchStore && props.sketchStore[qid]) || []).length > 0;
-  return /*#__PURE__*/React.createElement("div", {
-    ref: wrapRef, onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp,
-    style: { position: "relative", touchAction: "auto" }
-  },
-    props.children,
-    /*#__PURE__*/React.createElement("canvas", { ref: canvasRef, style: { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 5 } }),
-    /*#__PURE__*/React.createElement("div", { onPointerDown: e => e.stopPropagation(), style: { position: "absolute", top: 2, right: 2, display: "flex", gap: 4, zIndex: 6 } },
-      tb("✏️", tool === "pen", () => setTool(tool === "pen" ? "off" : "pen")),
-      tb("消", tool === "eraser", () => setTool(tool === "eraser" ? "off" : "eraser")),
-      tb("全消", false, clearAll),
-      hasPrev ? tb(showPrev ? "前回●" : "前回", showPrev, () => setShowPrev(v => !v)) : null
+  const tb = (label, active, onClick) => /*#__PURE__*/React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: active ? "1px solid #5B9FFF" : "0.5px solid rgba(255,255,255,0.15)", background: active ? "rgba(91,159,255,0.22)" : "rgba(255,255,255,0.05)", color: active ? "#5B9FFF" : "rgba(255,255,255,0.6)", fontFamily: "inherit" } }, label);
+  return /*#__PURE__*/React.createElement("div", { style: { marginBottom: 4 } },
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap", alignItems: "center" } },
+      tb(drawMode ? "✏️ 書く: ON" : "✏️ 書く", drawMode, () => setDrawMode(v => !v)),
+      drawMode ? tb("ペン", tool === "pen", () => setTool("pen")) : null,
+      drawMode ? tb("消しゴム", tool === "eraser", () => setTool("eraser")) : null,
+      drawMode ? tb("全消し", false, clearAll) : null,
+      hasPrev ? tb(showPrev ? "前回●" : "前回のメモ", showPrev, () => setShowPrev(v => !v)) : null,
+      drawMode ? /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "rgba(91,159,255,0.7)" } }, "問題の上に手書きできます") : null
+    ),
+    /*#__PURE__*/React.createElement("div", { ref: wrapRef, style: { position: "relative" } },
+      props.children,
+      /*#__PURE__*/React.createElement("canvas", {
+        ref: canvasRef, onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp,
+        style: { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", zIndex: 5, pointerEvents: drawMode ? "auto" : "none", touchAction: drawMode ? "none" : "auto", cursor: drawMode ? "crosshair" : "default", background: drawMode ? "rgba(91,159,255,0.03)" : "transparent", borderRadius: 8 }
+      })
     )
   );
 }

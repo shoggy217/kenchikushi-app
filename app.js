@@ -2151,6 +2151,7 @@ function QuizTab(_ref10) {
     if (conds.includes("starred")) arr = arr.filter(q => q.starred);
     if (conds.includes("bookmark")) arr = arr.filter(q => q.bookmarked);
     if (conds.includes("nofig")) arr = arr.filter(q => !q.hasFig);
+    if (conds.includes("hasfig")) arr = arr.filter(q => q.hasFig);
     if (conds.includes("untried")) arr = arr.filter(q => !q.history || !q.history.length);
     // フェーズ別の年度フィルタ: インプット期は直近3年を除外 / 直前期は範囲に応じて出題。
     // starred・bookmarkは明示選択なので年度で絞らない。SRS/日付/条文コースはarrを使わず影響なし。
@@ -3729,7 +3730,7 @@ function FilterBar(_ref18) {
       paddingBottom: 4,
       scrollbarWidth: "none"
     }
-  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null], ["bookmark", "🔖", "#5B9FFF"], ["nofig", "図なし", null]].map(_ref19 => {
+  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null], ["bookmark", "🔖", "#5B9FFF"], ["nofig", "図なし", null], ["hasfig", "図あり", null]].map(_ref19 => {
     let _ref20 = _slicedToArray(_ref19, 3),
       v = _ref20[0],
       l = _ref20[1],

@@ -264,6 +264,7 @@ function SketchArea(props) {
   const drawRef = useRef(null);
   const [drawMode, setDrawMode] = useState(false);
   const [tool, setTool] = useState("pen");   // pen | eraser
+  const [penColor, setPenColor] = useState("#FF4D4D");
   const fit = () => {
     const c = canvasRef.current, w = wrapRef.current;
     if (!c || !w) return;
@@ -286,8 +287,8 @@ function SketchArea(props) {
     const c = canvasRef.current; if (!c) return;
     const ctx = c.getContext("2d"); const dpr = window.devicePixelRatio || 1;
     ctx.clearRect(0, 0, c.width / dpr, c.height / dpr);
-    sessRef.current.forEach(st => drawOne(ctx, st, "#111"));
-    if (drawRef.current && drawRef.current.pts) drawOne(ctx, drawRef.current, "#111");
+    sessRef.current.forEach(st => drawOne(ctx, st, st.color || "#111"));
+    if (drawRef.current && drawRef.current.pts) drawOne(ctx, drawRef.current, drawRef.current.color || "#111");
   };
   // 問題が変わったら白紙に戻す（保存も復元もしない＝毎回まっさら）
   useEffect(() => {
@@ -315,7 +316,7 @@ function SketchArea(props) {
     e.preventDefault();
     try { canvasRef.current.setPointerCapture(e.pointerId); } catch (_) {}
     if (tool === "eraser") { drawRef.current = { erasing: true }; eraseAt(ptOf(e)); return; }
-    drawRef.current = { pts: [ptOf(e)] }; redraw();
+    drawRef.current = { pts: [ptOf(e)], color: penColor }; redraw();
   };
   const onMove = e => {
     if (!drawMode || !drawRef.current) return;
@@ -336,6 +337,12 @@ function SketchArea(props) {
       drawMode ? tb("ペン", tool === "pen", () => setTool("pen")) : null,
       drawMode ? tb("消しゴム", tool === "eraser", () => setTool("eraser")) : null,
       drawMode ? tb("全消し", false, clearAll) : null,
+      drawMode ? /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 5, alignItems: "center" } },
+        ["#111", "#FF4D4D", "#4D9FFF", "#FFD84D", "#FFFFFF"].map(function (col) {
+          const on = tool === "pen" && penColor === col;
+          return /*#__PURE__*/React.createElement("button", { key: col, onClick: () => { setPenColor(col); setTool("pen"); }, "aria-label": "色", style: { width: 22, height: 22, borderRadius: "50%", background: col, cursor: "pointer", padding: 0, boxSizing: "border-box", border: on ? "2px solid #5B9FFF" : "1px solid rgba(255,255,255,0.35)", boxShadow: on ? "0 0 0 2px rgba(91,159,255,0.35)" : "none" } });
+        })
+      ) : null,
       drawMode ? /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "rgba(91,159,255,0.7)" } }, "書いたメモは保存されません") : null
     ),
     /*#__PURE__*/React.createElement("div", { ref: wrapRef, style: { position: "relative" } },

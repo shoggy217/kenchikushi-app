@@ -2622,7 +2622,7 @@ function QuizTab(_ref10) {
       questions: questions,
       subj: subj,
       mode: mode,
-      reset: reset
+      reset: reset, conds: conds, toggleCond: toggleCond
     }), course !== "date" && /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 14,
@@ -2818,7 +2818,7 @@ function QuizTab(_ref10) {
     questions: questions,
     subj: subj,
     mode: mode,
-    reset: reset
+    reset: reset, conds: conds, toggleCond: toggleCond
   }), /*#__PURE__*/React.createElement(Card, {
     style: {
       textAlign: "center",
@@ -2916,7 +2916,7 @@ function QuizTab(_ref10) {
     questions: questions,
     subj: subj,
     mode: mode,
-    reset: reset
+    reset: reset, conds: conds, toggleCond: toggleCond
   }), sessionConf && !timedDone && (() => {
     const totalSec = sessionConf.count * sessionConf.secPerQ;
     const remaining = Math.max(0, totalSec - timedSec);
@@ -3682,7 +3682,9 @@ function FilterBar(_ref18) {
   let questions = _ref18.questions,
     subj = _ref18.subj,
     mode = _ref18.mode,
-    reset = _ref18.reset;
+    reset = _ref18.reset,
+    conds = _ref18.conds || [],
+    toggleCond = _ref18.toggleCond || (function () {});
   const pillStyle = (active, color) => ({
     padding: "6px 14px",
     borderRadius: 99,

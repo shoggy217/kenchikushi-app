@@ -258,16 +258,12 @@ const planPhase = ds => STUDY_PLAN.phases.find(p => ds >= p.start && ds <= p.end
 const lapDone = (qs, n) => qs.filter(q => (q.history || []).length >= n).length;
 // ── 手書きキャンバス v1（ペン=描く / 指=選択・スクロール、問題ごと保存、既定は非表示） ──
 function SketchArea(props) {
-  const qid = props.qid;
   const wrapRef = useRef(null);
   const canvasRef = useRef(null);
-  const baseRef = useRef([]);      // 保存済み（既定は非表示）
-  const sessRef = useRef([]);      // 今回の書き込み
+  const sessRef = useRef([]);      // 今回の書き込み（保存しない）
   const drawRef = useRef(null);
-  const saveTimer = useRef(null);
   const [drawMode, setDrawMode] = useState(false);
   const [tool, setTool] = useState("pen");   // pen | eraser
-  const [showPrev, setShowPrev] = useState(false);
   const fit = () => {
     const c = canvasRef.current, w = wrapRef.current;
     if (!c || !w) return;
@@ -290,33 +286,29 @@ function SketchArea(props) {
     const c = canvasRef.current; if (!c) return;
     const ctx = c.getContext("2d"); const dpr = window.devicePixelRatio || 1;
     ctx.clearRect(0, 0, c.width / dpr, c.height / dpr);
-    if (showPrev) baseRef.current.forEach(st => drawOne(ctx, st, "rgba(255,176,77,0.85)"));
     sessRef.current.forEach(st => drawOne(ctx, st, "#111"));
     if (drawRef.current && drawRef.current.pts) drawOne(ctx, drawRef.current, "#111");
   };
+  // 問題が変わったら白紙に戻す（保存も復元もしない＝毎回まっさら）
   useEffect(() => {
-    baseRef.current = (props.sketchStore && props.sketchStore[qid]) || [];
-    sessRef.current = []; drawRef.current = null; setShowPrev(false); setDrawMode(false);
+    sessRef.current = []; drawRef.current = null; setDrawMode(false);
     setTimeout(() => { fit(); redraw(); }, 0);
-  }, [qid]);
+  }, [props.qid]);
   useEffect(() => {
     const t = setTimeout(() => { fit(); redraw(); }, 0);
     const onR = () => { fit(); redraw(); };
     window.addEventListener("resize", onR);
-    return () => { clearTimeout(t); window.removeEventListener("resize", onR); if (saveTimer.current) clearTimeout(saveTimer.current); };
+    let ro = null;
+    try { ro = new ResizeObserver(() => { fit(); redraw(); }); if (wrapRef.current) ro.observe(wrapRef.current); } catch (_) {}
+    return () => { clearTimeout(t); window.removeEventListener("resize", onR); if (ro) ro.disconnect(); };
   }, []);
-  useEffect(() => { const t = setTimeout(() => { fit(); redraw(); }, 0); return () => clearTimeout(t); }, [showPrev, drawMode]);
+  useEffect(() => { const t = setTimeout(() => { fit(); redraw(); }, 0); return () => clearTimeout(t); }, [drawMode]);
   const ptOf = e => { const r = canvasRef.current.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
-  const scheduleSave = () => {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => { if (props.saveSketch) props.saveSketch(qid, baseRef.current.concat(sessRef.current)); }, 900);
-  };
   const eraseAt = p => {
     const hit = st => (st.pts || []).some(u => Math.abs(u.x - p.x) < 14 && Math.abs(u.y - p.y) < 14);
-    const before = sessRef.current.length + baseRef.current.length;
+    const before = sessRef.current.length;
     sessRef.current = sessRef.current.filter(st => !hit(st));
-    baseRef.current = baseRef.current.filter(st => !hit(st));
-    if (sessRef.current.length + baseRef.current.length !== before) { redraw(); scheduleSave(); }
+    if (sessRef.current.length !== before) redraw();
   };
   const onDown = e => {
     if (!drawMode) return;
@@ -334,10 +326,9 @@ function SketchArea(props) {
   const onUp = () => {
     if (!drawRef.current) return;
     if (!drawRef.current.erasing && drawRef.current.pts && drawRef.current.pts.length >= 1) sessRef.current = sessRef.current.concat([drawRef.current]);
-    drawRef.current = null; redraw(); scheduleSave();
+    drawRef.current = null; redraw();
   };
-  const clearAll = () => { sessRef.current = []; baseRef.current = []; setShowPrev(false); redraw(); if (props.saveSketch) props.saveSketch(qid, []); };
-  const hasPrev = ((props.sketchStore && props.sketchStore[qid]) || []).length > 0;
+  const clearAll = () => { sessRef.current = []; drawRef.current = null; redraw(); };
   const tb = (label, active, onClick) => /*#__PURE__*/React.createElement("button", { onClick, style: { padding: "6px 12px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: active ? "1px solid #5B9FFF" : "0.5px solid rgba(255,255,255,0.15)", background: active ? "rgba(91,159,255,0.22)" : "rgba(255,255,255,0.05)", color: active ? "#5B9FFF" : "rgba(255,255,255,0.6)", fontFamily: "inherit" } }, label);
   return /*#__PURE__*/React.createElement("div", { style: { marginBottom: 4 } },
     /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap", alignItems: "center" } },
@@ -345,8 +336,7 @@ function SketchArea(props) {
       drawMode ? tb("ペン", tool === "pen", () => setTool("pen")) : null,
       drawMode ? tb("消しゴム", tool === "eraser", () => setTool("eraser")) : null,
       drawMode ? tb("全消し", false, clearAll) : null,
-      hasPrev ? tb(showPrev ? "前回●" : "前回のメモ", showPrev, () => setShowPrev(v => !v)) : null,
-      drawMode ? /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "rgba(91,159,255,0.7)" } }, "問題の上に手書きできます") : null
+      drawMode ? /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "rgba(91,159,255,0.7)" } }, "書いたメモは保存されません") : null
     ),
     /*#__PURE__*/React.createElement("div", { ref: wrapRef, style: { position: "relative" } },
       props.children,
@@ -2021,9 +2011,6 @@ function QuizTab(_ref10) {
     if (typeof window !== "undefined") window.addEventListener("studyPhaseChanged", _sync);
     return () => { if (typeof window !== "undefined") window.removeEventListener("studyPhaseChanged", _sync); };
   }, []);
-  const [sketchStore, setSketchStore] = useState({});
-  useEffect(() => { load("sketches", {}).then(v => setSketchStore(v || {})).catch(() => {}); }, []);
-  const saveSketch = (qid, strokes) => { setSketchStore(prev => { const next = Object.assign({}, prev, { [qid]: strokes }); save("sketches", next); return next; }); };
   // 日付別復習: 選択された日付(YYYY-MM-DD)。ホームから initialReviewDate で初期化
   const _useStateRD = useState(_ref10.initialReviewDate || null),
     _useStateRD2 = _slicedToArray(_useStateRD, 2),
@@ -3175,7 +3162,7 @@ function QuizTab(_ref10) {
     style: {
       color: q.starred ? "#FBBF24" : "rgba(255,255,255,0.2)"
     }
-  }, "\u2605")))), /*#__PURE__*/React.createElement(SketchArea, { qid: q.id, sketchStore: sketchStore, saveSketch: saveSketch }, /*#__PURE__*/React.createElement("div", {
+  }, "\u2605")))), /*#__PURE__*/React.createElement(SketchArea, { qid: q.id }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 15,
       lineHeight: 1.75,
@@ -3195,7 +3182,7 @@ function QuizTab(_ref10) {
     alt: "図",
     style: { maxWidth: "100%", height: "auto", borderRadius: 4 },
     loading: "lazy"
-  }))), !done && /*#__PURE__*/React.createElement("div", {
+  })), !done && /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 16
     }
@@ -3301,7 +3288,7 @@ function QuizTab(_ref10) {
         color: "#F87171"
       }
     }, "\u2717"));
-  })), !done && /*#__PURE__*/React.createElement("button", {
+  }))), !done && /*#__PURE__*/React.createElement("button", {
     onClick: skip,
     style: {
       width: "100%",

@@ -2000,7 +2000,11 @@ function QuizTab(_ref10) {
   const _useState29 = useState("AB"),
     _useState30 = _slicedToArray(_useState29, 2),
     mode = _useState30[0],
-    setMode = _useState30[1]; // AB A all weak starred untried
+    setMode = _useState30[1]; // AB A all (難易度=単一)
+  const _condsState = useState([]),
+    _condsState2 = _slicedToArray(_condsState, 2),
+    conds = _condsState2[0],
+    setConds = _condsState2[1]; // 状態フィルタ(複数AND): weak starred bookmark nofig untried
   const _useState31 = useState("normal"),
     _useState32 = _slicedToArray(_useState31, 2),
     course = _useState32[0],
@@ -2142,13 +2146,15 @@ function QuizTab(_ref10) {
     const today = todayStr();
     let arr = [...questions];
     if (subj !== "all") arr = arr.filter(q => q.subject === subj);
-    if (mode === "AB") arr = arr.filter(q => !q.rank || q.rank === "A" || q.rank === "B");else if (mode === "A") arr = arr.filter(q => q.rank === "A");else if (mode === "weak") arr = arr.filter(q => {
-      const r = (q.history || []).slice(-3);
-      return r.filter(x => x === "×").length >= 2;
-    });else if (mode === "starred") arr = arr.filter(q => q.starred);else if (mode === "bookmark") arr = arr.filter(q => q.bookmarked);else if (mode === "nofig") arr = arr.filter(q => !q.hasFig);else if (mode === "untried") arr = arr.filter(q => !q.history || !q.history.length);
+    if (mode === "AB") arr = arr.filter(q => !q.rank || q.rank === "A" || q.rank === "B");else if (mode === "A") arr = arr.filter(q => q.rank === "A");
+    if (conds.includes("weak")) arr = arr.filter(q => { const r = (q.history || []).slice(-3); return r.filter(x => x === "×").length >= 2; });
+    if (conds.includes("starred")) arr = arr.filter(q => q.starred);
+    if (conds.includes("bookmark")) arr = arr.filter(q => q.bookmarked);
+    if (conds.includes("nofig")) arr = arr.filter(q => !q.hasFig);
+    if (conds.includes("untried")) arr = arr.filter(q => !q.history || !q.history.length);
     // フェーズ別の年度フィルタ: インプット期は直近3年を除外 / 直前期は範囲に応じて出題。
     // starred・bookmarkは明示選択なので年度で絞らない。SRS/日付/条文コースはarrを使わず影響なし。
-    if (mode !== "starred" && mode !== "bookmark") {
+    if (!conds.includes("starred") && !conds.includes("bookmark")) {
       if (studyPhase === "chokuzen") {
         if (chokuzenScope !== "all") arr = arr.filter(q => RECENT_YEARS.has(q.year));
       } else {
@@ -2217,7 +2223,7 @@ function QuizTab(_ref10) {
     return order === "seq"
       ? [...notSolvedToday, ...solvedToday.sort(byNo)]
       : [...notSolvedToday, ...shuffle(solvedToday)];
-  }, [questions, subj, mode, course, reviewDate, order, studyPhase, chokuzenScope]);
+  }, [questions, subj, mode, conds, course, reviewDate, order, studyPhase, chokuzenScope]);
 
   // 日付別復習: 「解いた日付 -> 問題数」の集計マップ
   const answerDateCounts = useMemo(() => {
@@ -2255,6 +2261,10 @@ function QuizTab(_ref10) {
       correct: 0,
       total: 0
     });
+  }
+  function toggleCond(v) {
+    setConds(prev => prev.includes(v) ? prev.filter(m => m !== v) : prev.concat([v]));
+    reset();
   }
   const pick = i => {
     if (done) return;
@@ -3722,14 +3732,16 @@ function FilterBar(_ref18) {
       v = _ref20[0],
       l = _ref20[1],
       c = _ref20[2];
+    const _isRank = v === "AB" || v === "A" || v === "all";
+    const _active = _isRank ? mode === v : conds.includes(v);
     return /*#__PURE__*/React.createElement("button", {
       key: v,
       style: {
-        ...pillStyle(mode === v, c),
+        ...pillStyle(_active, c),
         fontSize: 11,
         padding: "5px 12px"
       },
-      onClick: () => reset(undefined, v)
+      onClick: () => _isRank ? reset(undefined, v) : toggleCond(v)
     }, l);
   })));
 }

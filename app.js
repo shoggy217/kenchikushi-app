@@ -256,6 +256,103 @@ const STUDY_PLAN = {
 const planPhase = ds => STUDY_PLAN.phases.find(p => ds >= p.start && ds <= p.end) || null;
 // 周N達成数（N回以上解いた問題数）
 const lapDone = (qs, n) => qs.filter(q => (q.history || []).length >= n).length;
+// ── 手書きキャンバス v1（ペン=描く / 指=選択・スクロール、問題ごと保存、既定は非表示） ──
+function SketchArea(props) {
+  const qid = props.qid;
+  const store = props.sketchStore || {};
+  const wrapRef = useRef(null);
+  const canvasRef = useRef(null);
+  const baseRef = useRef([]);      // 保存済み（既定は非表示）
+  const sessRef = useRef([]);      // 今回の書き込み（常に表示）
+  const drawRef = useRef(null);
+  const saveTimer = useRef(null);
+  const [tool, setTool] = useState("pen");     // pen | eraser | off
+  const [showPrev, setShowPrev] = useState(false);
+  const fit = () => {
+    const c = canvasRef.current, w = wrapRef.current;
+    if (!c || !w) return;
+    const r = w.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    c.width = Math.max(1, Math.round(r.width * dpr));
+    c.height = Math.max(1, Math.round(r.height * dpr));
+    c.style.width = r.width + "px"; c.style.height = r.height + "px";
+    c.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  const drawOne = (ctx, st, color) => {
+    if (!st.pts || st.pts.length === 0) return;
+    ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.beginPath();
+    for (let i = 0; i < st.pts.length; i++) { const p = st.pts[i]; if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); }
+    ctx.stroke();
+  };
+  const redraw = () => {
+    const c = canvasRef.current; if (!c) return;
+    const ctx = c.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+    ctx.clearRect(0, 0, c.width / dpr, c.height / dpr);
+    if (showPrev) baseRef.current.forEach(st => drawOne(ctx, st, "rgba(255,176,77,0.8)"));
+    sessRef.current.forEach(st => drawOne(ctx, st, "#111"));
+    if (drawRef.current && drawRef.current.pts) drawOne(ctx, drawRef.current, "#111");
+  };
+  useEffect(() => {
+    baseRef.current = (props.sketchStore && props.sketchStore[qid]) || [];
+    sessRef.current = []; drawRef.current = null; setShowPrev(false);
+    setTimeout(() => { fit(); redraw(); }, 0);
+  }, [qid]);
+  useEffect(() => {
+    fit(); redraw();
+    const onR = () => { fit(); redraw(); };
+    window.addEventListener("resize", onR);
+    return () => { window.removeEventListener("resize", onR); if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, []);
+  useEffect(() => { redraw(); }, [showPrev]);
+  const ptOf = e => { const r = canvasRef.current.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  const scheduleSave = () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => { if (props.saveSketch) props.saveSketch(qid, baseRef.current.concat(sessRef.current)); }, 900);
+  };
+  const eraseAt = p => {
+    const hit = st => (st.pts || []).some(u => Math.abs(u.x - p.x) < 13 && Math.abs(u.y - p.y) < 13);
+    const before = sessRef.current.length + baseRef.current.length;
+    sessRef.current = sessRef.current.filter(st => !hit(st));
+    baseRef.current = baseRef.current.filter(st => !hit(st));
+    if (sessRef.current.length + baseRef.current.length !== before) { redraw(); scheduleSave(); }
+  };
+  const onDown = e => {
+    if (tool === "off") return;
+    if (e.pointerType !== "pen") return;   // 指・マウスは素通り
+    e.preventDefault();
+    if (tool === "eraser") { drawRef.current = { erasing: true }; eraseAt(ptOf(e)); return; }
+    drawRef.current = { pts: [ptOf(e)] }; redraw();
+  };
+  const onMove = e => {
+    if (!drawRef.current || e.pointerType !== "pen") return;
+    e.preventDefault();
+    if (drawRef.current.erasing) { eraseAt(ptOf(e)); return; }
+    drawRef.current.pts.push(ptOf(e)); redraw();
+  };
+  const onUp = () => {
+    if (!drawRef.current) return;
+    if (!drawRef.current.erasing && drawRef.current.pts && drawRef.current.pts.length > 1) sessRef.current = sessRef.current.concat([drawRef.current]);
+    drawRef.current = null; redraw(); scheduleSave();
+  };
+  const clearAll = () => { sessRef.current = []; baseRef.current = []; setShowPrev(false); redraw(); if (props.saveSketch) props.saveSketch(qid, []); };
+  const tb = (label, active, onClick) => /*#__PURE__*/React.createElement("button", { onClick, style: { padding: "4px 9px", borderRadius: 8, fontSize: 12, cursor: "pointer", border: active ? "1px solid #5B9FFF" : "0.5px solid rgba(255,255,255,0.15)", background: active ? "rgba(91,159,255,0.25)" : "rgba(20,26,38,0.85)", color: active ? "#5B9FFF" : "rgba(255,255,255,0.6)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" } }, label);
+  const hasPrev = ((props.sketchStore && props.sketchStore[qid]) || []).length > 0;
+  return /*#__PURE__*/React.createElement("div", {
+    ref: wrapRef, onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp,
+    style: { position: "relative", touchAction: "auto" }
+  },
+    props.children,
+    /*#__PURE__*/React.createElement("canvas", { ref: canvasRef, style: { position: "absolute", left: 0, top: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 5 } }),
+    /*#__PURE__*/React.createElement("div", { onPointerDown: e => e.stopPropagation(), style: { position: "absolute", top: 2, right: 2, display: "flex", gap: 4, zIndex: 6 } },
+      tb("✏️", tool === "pen", () => setTool(tool === "pen" ? "off" : "pen")),
+      tb("消", tool === "eraser", () => setTool(tool === "eraser" ? "off" : "eraser")),
+      tb("全消", false, clearAll),
+      hasPrev ? tb(showPrev ? "前回●" : "前回", showPrev, () => setShowPrev(v => !v)) : null
+    )
+  );
+}
 
 // ── 問題集目次(法規) p番号は問題解説集のページ ──────────────
 const CHAPTERS = {
@@ -1920,6 +2017,9 @@ function QuizTab(_ref10) {
     if (typeof window !== "undefined") window.addEventListener("studyPhaseChanged", _sync);
     return () => { if (typeof window !== "undefined") window.removeEventListener("studyPhaseChanged", _sync); };
   }, []);
+  const [sketchStore, setSketchStore] = useState({});
+  useEffect(() => { load("sketches", {}).then(v => setSketchStore(v || {})).catch(() => {}); }, []);
+  const saveSketch = (qid, strokes) => { setSketchStore(prev => { const next = Object.assign({}, prev, { [qid]: strokes }); save("sketches", next); return next; }); };
   // 日付別復習: 選択された日付(YYYY-MM-DD)。ホームから initialReviewDate で初期化
   const _useStateRD = useState(_ref10.initialReviewDate || null),
     _useStateRD2 = _slicedToArray(_useStateRD, 2),
@@ -3071,7 +3171,7 @@ function QuizTab(_ref10) {
     style: {
       color: q.starred ? "#FBBF24" : "rgba(255,255,255,0.2)"
     }
-  }, "\u2605")))), /*#__PURE__*/React.createElement("div", {
+  }, "\u2605")))), /*#__PURE__*/React.createElement(SketchArea, { qid: q.id, sketchStore: sketchStore, saveSketch: saveSketch }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 15,
       lineHeight: 1.75,
@@ -3091,7 +3191,7 @@ function QuizTab(_ref10) {
     alt: "図",
     style: { maxWidth: "100%", height: "auto", borderRadius: 4 },
     loading: "lazy"
-  })), !done && /*#__PURE__*/React.createElement("div", {
+  }))), !done && /*#__PURE__*/React.createElement("div", {
     style: {
       marginBottom: 16
     }

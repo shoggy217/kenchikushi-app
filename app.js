@@ -551,6 +551,7 @@ const _mergeHistoryEntry = (a, b) => {
     checkStatus: (b.checkStatus || a.checkStatus || ""),
     checkNote: (b.checkNote || a.checkNote || ""),
     answerTimes: takeB ? (b.answerTimes || []) : (a.answerTimes || []),
+    timedOut: Math.max(a.timedOut || 0, b.timedOut || 0),
     answerDates: dates
   };
 };
@@ -817,6 +818,7 @@ function App() {
         checkStatus: histData[q.id]?.checkStatus || q.checkStatus || ((histData[q.id]?.needsCheck || q.needsCheck) ? "flagged" : ""),
         checkNote: histData[q.id]?.checkNote || q.checkNote || "",
         answerTimes: histData[q.id]?.answerTimes || q.answerTimes || [],
+        timedOut: histData[q.id]?.timedOut || q.timedOut || 0,
         answerDates: (histData[q.id]?.answerDates && histData[q.id].answerDates.length) ? histData[q.id].answerDates : (q.answerDates && q.answerDates.length ? q.answerDates : ((histData[q.id]?.lastAnswered || q.lastAnswered) ? [histData[q.id]?.lastAnswered || q.lastAnswered] : []))
       }));
 
@@ -884,6 +886,7 @@ function App() {
           checkStatus: q.checkStatus || "",
           checkNote: q.checkNote || "",
           answerTimes: q.answerTimes || [],
+          timedOut: q.timedOut || 0,
           answerDates: (q.answerDates && q.answerDates.length) ? q.answerDates : (q.lastAnswered ? [q.lastAnswered] : [])
         };
       }
@@ -930,6 +933,7 @@ function App() {
             checkStatus: q.checkStatus || "",
             checkNote: q.checkNote || "",
             answerTimes: q.answerTimes || [],
+            timedOut: q.timedOut || 0,
             answerDates: (q.answerDates && q.answerDates.length) ? q.answerDates : (q.lastAnswered ? [q.lastAnswered] : [])
           };
         }
@@ -1273,6 +1277,7 @@ function App() {
               checkStatus: histData[q.id]?.checkStatus || q.checkStatus || ((histData[q.id]?.needsCheck || q.needsCheck) ? "flagged" : ""),
               checkNote: histData[q.id]?.checkNote || q.checkNote || "",
               answerTimes: histData[q.id]?.answerTimes || q.answerTimes || [],
+              timedOut: histData[q.id]?.timedOut || q.timedOut || 0,
               answerDates: (histData[q.id]?.answerDates && histData[q.id].answerDates.length) ? histData[q.id].answerDates : (q.answerDates && q.answerDates.length ? q.answerDates : ((histData[q.id]?.lastAnswered || q.lastAnswered) ? [histData[q.id]?.lastAnswered || q.lastAnswered] : []))
             }));
             const mergedMap = new Map(merged.map(q => [q.id, q]));
@@ -2091,6 +2096,8 @@ function QuizTab(_ref10) {
     _useState52 = _slicedToArray(_useState51, 2),
     done = _useState52[0],
     setDone = _useState52[1];
+  const [timedOutQ, setTimedOutQ] = useState(false);
+  const qStartRef = useRef(0);
   const _useState53 = useState({
       correct: 0,
       total: 0
@@ -2315,6 +2322,16 @@ function QuizTab(_ref10) {
     // 回答直後に知識まとめを自動生成
     generateKnowledge(i, correct, q);
   };
+  const handleTimeUp = () => {
+    if (done || !q) return;
+    setCurrentQId(q.id);
+    setSel(null); setDone(true); setTimedOutQ(true);
+    if (sessionStartRef.current) { const el = Math.floor((Date.now() - sessionStartRef.current) / 1000); sessionStartRef._pausedElapsed = (sessionStartRef._pausedElapsed || 0) + el; sessionStartRef.current = null; }
+    const qSec = sessionStartRef._pausedElapsed || 0;
+    const upd = questions.map(qq => qq.id !== q.id ? qq : { ...qq, timedOut: (qq.timedOut || 0) + 1, answerTimes: [...(qq.answerTimes || []), qSec].slice(-5) });
+    setQuestions(upd); saveHistory(upd);
+    generateKnowledge(-1, false, q);
+  };
   const generateKnowledge = async (selectedIdx, wasCorrect, question) => {
     setKnowledgeLoading(true);
     const textbookContext = question.subject === "sekou" ? `\n\n【教科書の記述】\n${TEXTBOOK_MAP.sekou_ch1}` : question.textbook ? `\n\n【教科書の記述】\n${question.textbook}` : "";
@@ -2340,9 +2357,14 @@ function QuizTab(_ref10) {
   // 問題が変わるたびにタイマーを次の問題の開始点にリセット
   useEffect(() => {
     if (sessionConf && sessionConf.secPerQ > 0) {
-      setTimedSec(s => Math.ceil(s / sessionConf.secPerQ) * sessionConf.secPerQ);
+      setTimedSec(s => { const snapped = Math.ceil(s / sessionConf.secPerQ) * sessionConf.secPerQ; qStartRef.current = snapped; return snapped; });
     }
+    setTimedOutQ(false);
   }, [idx]);
+  useEffect(() => {
+    if (!sessionConf || !sessionConf.secPerQ || done || paused || timedDone) return;
+    if (timedSec >= qStartRef.current + sessionConf.secPerQ) handleTimeUp();
+  }, [timedSec]);
   const startSession = conf => {
     setSessionConf(conf);
     setSkipQueue([]);
@@ -3325,7 +3347,7 @@ function QuizTab(_ref10) {
       border: "0.5px solid rgba(255,255,255,0.1)",
       cursor: "pointer"
     }
-  }, "\u30B9\u30AD\u30C3\u30D7 \u23ED"), done && /*#__PURE__*/React.createElement("div", {
+  }, "\u30B9\u30AD\u30C3\u30D7 \u23ED"), timedOutQ && /*#__PURE__*/React.createElement("div", { style: { background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.4)", borderRadius: 10, padding: "10px 14px", marginBottom: 12, color: "#FBBF24", fontSize: 14, fontWeight: 600 } }, "\u23F0 時間切れ ― 答えと解説を確認しましょう"), done && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 20,
       paddingTop: 20,

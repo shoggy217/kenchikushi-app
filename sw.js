@@ -1,4 +1,4 @@
-const CACHE = "kenchikushi-v59";
+const CACHE = "kenchikushi-v60";
 const ASSETS = ["/", "/index.html", "/manifest.json"];
 
 self.addEventListener("message", e => {

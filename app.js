@@ -145,6 +145,7 @@ const getSrsNextDate = q => {
   for (let i = h.length - 1; i >= 0; i--) {
     if (h[i] === "○") streak++;else break;
   }
+  if (q.unsure) streak = Math.min(streak, 1);
   const interval = SRS_INTERVALS[Math.min(streak, SRS_INTERVALS.length - 1)];
   const last = new Date(q.lastAnswered);
   last.setDate(last.getDate() + interval);
@@ -552,6 +553,8 @@ const _mergeHistoryEntry = (a, b) => {
     checkNote: (b.checkNote || a.checkNote || ""),
     answerTimes: takeB ? (b.answerTimes || []) : (a.answerTimes || []),
     timedOut: Math.max(a.timedOut || 0, b.timedOut || 0),
+    unsure: ((b.answeredAt || "") >= (a.answeredAt || "")) ? !!b.unsure : !!a.unsure,
+    unsureCount: Math.max(a.unsureCount || 0, b.unsureCount || 0),
     answerDates: dates
   };
 };
@@ -887,6 +890,8 @@ function App() {
           checkNote: q.checkNote || "",
           answerTimes: q.answerTimes || [],
           timedOut: q.timedOut || 0,
+          unsure: !!q.unsure,
+          unsureCount: q.unsureCount || 0,
           answerDates: (q.answerDates && q.answerDates.length) ? q.answerDates : (q.lastAnswered ? [q.lastAnswered] : [])
         };
       }
@@ -934,6 +939,8 @@ function App() {
             checkNote: q.checkNote || "",
             answerTimes: q.answerTimes || [],
             timedOut: q.timedOut || 0,
+            unsure: !!q.unsure,
+            unsureCount: q.unsureCount || 0,
             answerDates: (q.answerDates && q.answerDates.length) ? q.answerDates : (q.lastAnswered ? [q.lastAnswered] : [])
           };
         }
@@ -2165,6 +2172,7 @@ function QuizTab(_ref10) {
     if (subj !== "all") arr = arr.filter(q => q.subject === subj);
     if (mode === "AB") arr = arr.filter(q => !q.rank || q.rank === "A" || q.rank === "B");else if (mode === "A") arr = arr.filter(q => q.rank === "A");
     if (conds.includes("weak")) arr = arr.filter(q => { const r = (q.history || []).slice(-3); return r.filter(x => x === "×").length >= 2; });
+    if (conds.includes("unsure")) arr = arr.filter(q => q.unsure);
     if (conds.includes("starred")) arr = arr.filter(q => q.starred);
     if (conds.includes("bookmark")) arr = arr.filter(q => q.bookmarked);
     if (conds.includes("nofig")) arr = arr.filter(q => !q.hasFig);
@@ -2184,6 +2192,7 @@ function QuizTab(_ref10) {
       if (!h.length) return 1;
       const last3 = h.slice(-3);
       if (last3.filter(x => x === "×").length >= 2) return 0;
+      if (q.unsure) return 1;
       if (last3.every(x => x === "○") && last3.length >= 3) return 3;
       return 2;
     };
@@ -2308,6 +2317,7 @@ function QuizTab(_ref10) {
     const updatedQuestions = questions.map(qq => qq.id !== q.id ? qq : {
       ...qq,
       history: [...(qq.history || []), correct ? "○" : "×"].slice(-10),
+      unsure: false,
       lastAnswered: todayStr(),
       // 解答した正確な日時（YYYY-MM-DD HH:MM:SS JST）。同日内の並べ替えに使う
       answeredAt: nowStamp(),
@@ -2406,6 +2416,11 @@ function QuizTab(_ref10) {
     await save("logs", newLogs);
   };
 
+  const toggleUnsure = (qId) => {
+    const updated = questions.map(qq => qq.id !== qId ? qq : { ...qq, unsure: !qq.unsure, unsureCount: Math.max(0, (qq.unsureCount || 0) + (qq.unsure ? -1 : 1)) });
+    setQuestions(updated);
+    saveHistory(updated);
+  };
   const toggleBookmark = async (qId) => {
     const updated = questions.map(qq => qq.id !== qId ? qq : { ...qq, bookmarked: !qq.bookmarked });
     setQuestions(updated);
@@ -3388,7 +3403,21 @@ function QuizTab(_ref10) {
       fontSize: 12,
       color: sel === q.correct ? "#34D399" : "#F87171"
     }
-  }, sel === q.correct ? `+${XP_PER_CORRECT} XP ✓` : `+${XP_PER_WRONG} XP ✗`)), q.explain && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, sel === q.correct ? `+${XP_PER_CORRECT} XP ✓` : `+${XP_PER_WRONG} XP ✗`)), sel === q.correct && /*#__PURE__*/React.createElement("button", {
+    onClick: () => toggleUnsure(q.id),
+    style: {
+      marginLeft: 8,
+      marginBottom: 16,
+      padding: "4px 12px",
+      borderRadius: 99,
+      fontSize: 12,
+      cursor: "pointer",
+      border: "1px solid rgba(251,191,36,0.5)",
+      background: q.unsure ? "#FBBF24" : "transparent",
+      color: q.unsure ? "#1a1a1a" : "#FBBF24",
+      fontWeight: q.unsure ? 700 : 400
+    }
+  }, q.unsure ? "△ 迷った（記録済）" : "△ 迷った"), q.explain && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 11,
       color: "rgba(255,255,255,0.3)",
@@ -3777,7 +3806,7 @@ function FilterBar(_ref18) {
       paddingBottom: 4,
       scrollbarWidth: "none"
     }
-  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null], ["bookmark", "🔖", "#5B9FFF"], ["nofig", "図なし", null], ["hasfig", "図あり", null]].map(_ref19 => {
+  }, [["AB", "A・B優先", null], ["A", "Aのみ", null], ["all", "全難易度", null], ["weak", "要復習", "#F87171"], ["unsure", "△迷った", "#FBBF24"], ["starred", "★", "#FBBF24"], ["untried", "未着手", null], ["bookmark", "🔖", "#5B9FFF"], ["nofig", "図なし", null], ["hasfig", "図あり", null]].map(_ref19 => {
     let _ref20 = _slicedToArray(_ref19, 3),
       v = _ref20[0],
       l = _ref20[1],

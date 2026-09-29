@@ -2050,6 +2050,11 @@ function QuizTab(_ref10) {
     _useState34 = _slicedToArray(_useState33, 2),
     sessionConf = _useState34[0],
     setSessionConf = _useState34[1]; // {count, secPerQ} or null
+  // 演習設定の選択状態(ボタンで選ぶだけ、開始は「演習開始」ボタン)
+  const [pickCount, setPickCount] = useState(null); // null = 自動(10問 or 全問)
+  const [pickSec, setPickSec] = useState(() => {
+    try { const v = typeof localStorage !== "undefined" ? localStorage.getItem("quizSecPerQ") : null; return v !== null ? Number(v) : 120; } catch (e) { return 120; }
+  });
   const _useStateSkip = useState([]),
     _useStateSkip2 = _slicedToArray(_useStateSkip, 2),
     skipQueue = _useStateSkip2[0],
@@ -2567,6 +2572,8 @@ function QuizTab(_ref10) {
       sec: 0
     }];
     const COUNT_OPTIONS = [5, 10, 20, 30].filter(n => n <= avail).concat(avail > 30 ? [avail] : []);
+    // 選択中の問題数(未選択・範囲外なら 10問 or 全問)
+    const selCount = pickCount !== null && pickCount <= avail && COUNT_OPTIONS.includes(pickCount) ? pickCount : Math.min(10, avail);
     return /*#__PURE__*/React.createElement("div", {
       style: {
         display: "flex",
@@ -2683,18 +2690,15 @@ function QuizTab(_ref10) {
     }, "🎯 本番シミュレーション（25問／60分）"),
     COUNT_OPTIONS.map(n => /*#__PURE__*/React.createElement("button", {
       key: n,
-      onClick: () => startSession({
-        count: n,
-        secPerQ: 120
-      }),
+      onClick: () => setPickCount(n),
       style: {
         flex: 1,
         minWidth: 60,
         padding: "12px 8px",
         borderRadius: 12,
-        background: "rgba(91,159,255,0.1)",
-        border: "1px solid rgba(91,159,255,0.25)",
-        color: "#5B9FFF",
+        background: selCount === n ? "rgba(91,159,255,0.3)" : "rgba(91,159,255,0.06)",
+        border: selCount === n ? "2px solid #5B9FFF" : "1px solid rgba(91,159,255,0.2)",
+        color: selCount === n ? "#FFFFFF" : "#5B9FFF",
         fontSize: 14,
         fontWeight: 600,
         cursor: "pointer"
@@ -2716,16 +2720,16 @@ function QuizTab(_ref10) {
         sec = _ref13.sec;
       return /*#__PURE__*/React.createElement("button", {
         key: sec,
-        onClick: () => startSession({
-          count: Math.min(10, avail),
-          secPerQ: sec
-        }),
+        onClick: () => {
+          setPickSec(sec);
+          try { if (typeof localStorage !== "undefined") localStorage.setItem("quizSecPerQ", String(sec)); } catch (e) {}
+        },
         style: {
           padding: "12px 16px",
           borderRadius: 12,
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.1)",
-          color: sec === 120 ? "#5B9FFF" : "rgba(255,255,255,0.6)",
+          background: pickSec === sec ? "rgba(91,159,255,0.2)" : "rgba(255,255,255,0.04)",
+          border: pickSec === sec ? "2px solid #5B9FFF" : "1px solid rgba(255,255,255,0.1)",
+          color: pickSec === sec ? "#FFFFFF" : "rgba(255,255,255,0.6)",
           fontSize: 13,
           cursor: "pointer",
           textAlign: "left",
@@ -2739,7 +2743,22 @@ function QuizTab(_ref10) {
           color: "rgba(91,159,255,0.6)"
         }
       }, "\u30C7\u30D5\u30A9\u30EB\u30C8"));
-    }))));
+    })), /*#__PURE__*/React.createElement("button", {
+      disabled: avail === 0,
+      onClick: () => { if (avail > 0) startSession({ count: selCount, secPerQ: pickSec }); },
+      style: {
+        width: "100%",
+        marginTop: 20,
+        padding: "14px",
+        borderRadius: 12,
+        background: avail > 0 ? "#5B9FFF" : "rgba(255,255,255,0.08)",
+        border: "none",
+        color: "#FFFFFF",
+        fontSize: 15,
+        fontWeight: 700,
+        cursor: avail > 0 ? "pointer" : "default"
+      }
+    }, "\u25B6 \u6F14\u7FD2\u958B\u59CB\uFF08", selCount === avail ? "\u5168" : selCount, "\u554F / ", pickSec > 0 ? (pickSec % 60 === 0 ? pickSec / 60 + "\u5206" : pickSec / 60 + "\u5206") : "\u5236\u9650\u306A\u3057", "\uFF09")));
   }
 
   // 結果画面

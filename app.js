@@ -156,6 +156,29 @@ const isDueToday = q => {
   const next = getSrsNextDate(q);
   return !next || next <= todayStr();
 };
+// テキストをクリップボードへコピー（iOS PWAの旧環境向けフォールバック付き）
+const copyText = async text => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (e) {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch (e2) {
+      return false;
+    }
+  }
+};
 const fmtMD = d => `${d.getMonth() + 1}/${d.getDate()}`;
 // 問題データは questions/*.json からfetchする
 const QUESTION_FILES = ["houki", "sekou", "kouzou", "kankyo", "keikaku"];
@@ -3204,6 +3227,15 @@ function QuizTab(_ref10) {
       gap: 10
     }
   }, /*#__PURE__*/React.createElement("button", {
+    onClick: async e => {
+      const el = e.currentTarget;
+      const ok = await copyText(q.id);
+      el.textContent = ok ? "\u2713 \u30B3\u30D4\u30FC" : "\u5931\u6557";
+      setTimeout(() => { el.textContent = "ID"; }, 1200);
+    },
+    title: "\u554F\u984CID\u3092\u30B3\u30D4\u30FC",
+    style: { background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 4, cursor: "pointer", fontSize: 10, lineHeight: 1, color: "rgba(255,255,255,0.45)", padding: "3px 6px", letterSpacing: "0.05em", whiteSpace: "nowrap" }
+  }, "ID"), /*#__PURE__*/React.createElement("button", {
     onClick: () => toggleBookmark(q.id),
     title: q.bookmarked ? "ブックマーク解除" : "ブックマーク",
     style: { background: "none", border: "none", cursor: "pointer", fontSize: 16, lineHeight: 1, opacity: q.bookmarked ? 1 : 0.2, transition: "opacity 0.15s", padding: 0 }

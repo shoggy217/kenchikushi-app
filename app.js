@@ -101,12 +101,21 @@ const toMinutes = val => Math.floor(val / 60);
 const toSeconds = val => val;
 const dayTotalSec = dayLog => Object.values(dayLog || {}).reduce((a, v) => a + v, 0);
 const dayTotalMin = dayLog => Math.floor(dayTotalSec(dayLog) / 60);
+// 1日の区切り（JST）。この時刻より前は前日の実績としてカウントする
+const DAY_START_HOUR = 3;
 const todayStr = () => {
   const d = new Date();
-  d.setTime(d.getTime() + 9 * 60 * 60 * 1000);
+  d.setTime(d.getTime() + (9 - DAY_START_HOUR) * 60 * 60 * 1000);
   return d.toISOString().slice(0, 10);
 };
+// 日付判定用（DAY_START_HOUR 分ずらしたJST）
 const nowJST = () => {
+  const d = new Date();
+  d.setTime(d.getTime() + (9 - DAY_START_HOUR) * 60 * 60 * 1000);
+  return d;
+};
+// 時計表示用（実際のJST）
+const realNowJST = () => {
   const d = new Date();
   d.setTime(d.getTime() + 9 * 60 * 60 * 1000);
   return d;
@@ -795,7 +804,7 @@ function App() {
   // 時計(JST) - 1秒ごとに更新
   useEffect(() => {
     const tick = () => {
-      const d = nowJST();
+      const d = realNowJST();
       const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
       const dd = String(d.getUTCDate()).padStart(2, "0");
       const hh = String(d.getUTCHours()).padStart(2, "0");

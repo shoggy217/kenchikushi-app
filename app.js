@@ -248,7 +248,8 @@ const TEXTBOOK_MAP = {
 // ── 学習スケジュール ─────────────────────────────────────
 // 新プラン：全問4周・日別フェーズ（設定はここに集約）
 const SUBJECT_TOTAL = { keikaku: 263, kankyo: 260, houki: 390, kouzou: 340, sekou: 325 };
-const GRAND_TOTAL = 1578;
+// 学習計画の対象問題数（直近本試験 R06〜R08 は直前期に回すため除外）
+const GRAND_TOTAL = 1203;
 const STUDY_PLAN = {
   examGoal: "2027-04-25",
   phases: [
@@ -265,30 +266,30 @@ const STUDY_PLAN = {
   ],
   lapSubjectOrder: ["houki", "kouzou", "sekou", "keikaku", "kankyo"],
   checkpoints: [
-    { date: "2026-10-04", cumulative: 267,  label: "法規 264/390" },
-    { date: "2026-10-11", cumulative: 393,  label: "法規 完了" },
-    { date: "2026-10-18", cumulative: 506,  label: "構造 115/340" },
-    { date: "2026-10-25", cumulative: 619,  label: "構造 228/340" },
-    { date: "2026-11-01", cumulative: 731,  label: "構造 完了" },
-    { date: "2026-11-08", cumulative: 839,  label: "施工 108/325" },
-    { date: "2026-11-15", cumulative: 947,  label: "施工 216/325" },
-    { date: "2026-11-22", cumulative: 1056, label: "施工 完了" },
-    { date: "2026-11-29", cumulative: 1188, label: "計画 132/263" },
-    { date: "2026-12-06", cumulative: 1319, label: "計画 完了" },
-    { date: "2026-12-13", cumulative: 1449, label: "環境・設備 131/260" },
-    { date: "2026-12-20", cumulative: 1578, label: "1周目 完了" },
-    { date: "2027-01-24", lapProgress: 790,  lap: 2, label: "2周目 半分" },
-    { date: "2027-02-14", lapProgress: 1578, lap: 2, label: "2周目 完了" },
-    { date: "2027-03-07", lapProgress: 950,  lap: 3, label: "3周目 約6割" },
-    { date: "2027-03-21", lapProgress: 1578, lap: 3, label: "3周目 完了" },
-    { date: "2027-04-11", lapProgress: 950,  lap: 4, label: "4周目 約6割" },
-    { date: "2027-04-25", lapProgress: 1578, lap: 4, label: "4周目 完了" }
+    { date: "2026-10-04", cumulative: 203,  label: "法規 203/300" },
+    { date: "2026-10-11", cumulative: 300,  label: "法規 完了" },
+    { date: "2026-10-18", cumulative: 385,  label: "構造 85/250" },
+    { date: "2026-10-25", cumulative: 468,  label: "構造 168/250" },
+    { date: "2026-11-01", cumulative: 550,  label: "構造 完了" },
+    { date: "2026-11-08", cumulative: 633,  label: "施工 83/250" },
+    { date: "2026-11-15", cumulative: 716,  label: "施工 166/250" },
+    { date: "2026-11-22", cumulative: 800,  label: "施工 完了" },
+    { date: "2026-11-29", cumulative: 902,  label: "計画 102/203" },
+    { date: "2026-12-06", cumulative: 1003, label: "計画 完了" },
+    { date: "2026-12-13", cumulative: 1104, label: "環境・設備 101/200" },
+    { date: "2026-12-20", cumulative: 1203, label: "1周目 完了" },
+    { date: "2027-01-24", lapProgress: 602,  lap: 2, label: "2周目 半分" },
+    { date: "2027-02-14", lapProgress: 1203, lap: 2, label: "2周目 完了" },
+    { date: "2027-03-07", lapProgress: 724,  lap: 3, label: "3周目 約6割" },
+    { date: "2027-03-21", lapProgress: 1203, lap: 3, label: "3周目 完了" },
+    { date: "2027-04-11", lapProgress: 724,  lap: 4, label: "4周目 約6割" },
+    { date: "2027-04-25", lapProgress: 1203, lap: 4, label: "4周目 完了" }
   ]
 };
 // 日付(YYYY-MM-DD)→該当フェーズ
 const planPhase = ds => STUDY_PLAN.phases.find(p => ds >= p.start && ds <= p.end) || null;
 // 周N達成数（N回以上解いた問題数）
-const lapDone = (qs, n) => qs.filter(q => (q.history || []).length >= n).length;
+const lapDone = (qs, n) => qs.filter(q => !RECENT_YEARS.has(q.year) && (q.history || []).length >= n).length;
 // ── 手書きキャンバス v1（ペン=描く / 指=選択・スクロール、問題ごと保存、既定は非表示） ──
 function SketchArea(props) {
   const wrapRef = useRef(null);
@@ -1663,7 +1664,7 @@ function HomeTab(_ref4) {
 
   // 科目別1周進捗
   const subjectProgress = SUBJECTS.map(s => {
-    const qs = questions.filter(q => q.subject === s.id);
+    const qs = questions.filter(q => q.subject === s.id && !RECENT_YEARS.has(q.year));
     const done = qs.filter(q => (q.history || []).length > 0).length;
     return {
       ...s,
@@ -2375,7 +2376,19 @@ function QuizTab(_ref10) {
     setSel(null); setDone(true); setTimedOutQ(true);
     if (sessionStartRef.current) { const el = Math.floor((Date.now() - sessionStartRef.current) / 1000); sessionStartRef._pausedElapsed = (sessionStartRef._pausedElapsed || 0) + el; sessionStartRef.current = null; }
     const qSec = sessionStartRef._pausedElapsed || 0;
-    const upd = questions.map(qq => qq.id !== q.id ? qq : { ...qq, timedOut: (qq.timedOut || 0) + 1, answerTimes: [...(qq.answerTimes || []), qSec].slice(-5) });
+    // 時間切れも「1問解いた」として記録（未解答なので×扱い）
+    sessionRef.current = { correct: sessionRef.current.correct, total: sessionRef.current.total + 1 };
+    setSession({ correct: sessionRef.current.correct, total: sessionRef.current.total });
+    const upd = questions.map(qq => qq.id !== q.id ? qq : {
+      ...qq,
+      timedOut: (qq.timedOut || 0) + 1,
+      history: [...(qq.history || []), "×"].slice(-10),
+      unsure: false,
+      lastAnswered: todayStr(),
+      answeredAt: nowStamp(),
+      answerTimes: [...(qq.answerTimes || []), qSec].slice(-5),
+      answerDates: course === "date" ? (qq.answerDates || []) : ((qq.answerDates || []).includes(todayStr()) ? (qq.answerDates || []) : [...(qq.answerDates || []), todayStr()])
+    });
     setQuestions(upd);
     try { saveHistory(upd); } catch (e) {}
     try { generateKnowledge(-1, false, q); } catch (e) {}
@@ -3878,9 +3891,10 @@ function LogTab(_ref21) {
   const today = todayStr();
   const todayLog = logs[today] || {};
   const todayMin = dayTotalMin(todayLog);
-  // 今日解いた問題数（answeredAtの日付が今日、なければlastAnsweredが今日）
+  // 今日解いた問題数（lastAnsweredが今日、なければansweredAtの日付が今日）
   const todaySolvedCount = (questions || []).filter(q => {
-    const day = q.answeredAt ? q.answeredAt.slice(0, 10) : q.lastAnswered;
+    // lastAnsweredは午前3時区切りの日付。answeredAtは実時刻なので補助的に使う
+    const day = q.lastAnswered || (q.answeredAt ? q.answeredAt.slice(0, 10) : null);
     return day === today;
   }).length;
   const hasTodayRecord = dayTotalSec(todayLog) >= 5 || todaySolvedCount > 0;

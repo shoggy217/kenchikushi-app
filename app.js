@@ -665,7 +665,7 @@ const _flush = async () => {
   _flushing = true;
   clearTimeout(_retryTimer);
   const seq = _saveSeq;
-  let ok = false;
+  let ok = false, errMsg = "";
   try {
     // 保存直前にサーバー最新を取得し、他端末の更新をマージ（端末間競合を防ぐ）
     // サーバーを読めなかったときは絶対に書き込まない（空のデータで上書きして履歴を消さないため）
@@ -718,9 +718,10 @@ const _flush = async () => {
     if (_saveSeq === seq) _dirty = false;
   } catch (e) {
     console.error("同期失敗", e);
+    errMsg = (e && e.message) || String(e);
   }
   _flushing = false;
-  _syncStatus(ok ? "ok" : "err");
+  _syncStatus(ok ? "ok" : "err:" + errMsg);
   if (_flushAgain || (ok && _dirty)) { _flushAgain = false; setTimeout(_flush, 300); return; }
   // 失敗したら30秒後に再送（電波が戻れば送られる）
   if (!ok) _retryTimer = setTimeout(_flush, 30000);
@@ -1115,9 +1116,14 @@ function App() {
     window.addEventListener("focus", onVis);
     return () => { document.removeEventListener("visibilitychange", onVis); window.removeEventListener("focus", onVis); };
   }, [loading]);
+  const [syncErr, setSyncErr] = useState("");
   // 送信結果をクラウドマークに反映（失敗時は「!」）
   useEffect(() => {
-    const onSt = ev => { if (ev.detail === "err") setSyncLabel("!"); else setSyncLabel(l => l === "!" ? "☁" : l); };
+    const onSt = ev => {
+      const st = String(ev.detail || "");
+      if (st.startsWith("err")) { setSyncLabel("!"); setSyncErr(st.slice(4) || "不明"); }
+      else { setSyncErr(""); setSyncLabel(l => l === "!" ? "☁" : l); }
+    };
     window.addEventListener("sync-status", onSt);
     return () => window.removeEventListener("sync-status", onSt);
   }, []);
@@ -1419,7 +1425,7 @@ function App() {
       pointerEvents: "none",
       whiteSpace: "nowrap"
     }
-  }, clockStr), /*#__PURE__*/React.createElement("button", {
+  }, clockStr, syncErr ? " ⚠ 同期失敗: " + syncErr : ""), /*#__PURE__*/React.createElement("button", {
     onClick: () => syncNow(true),
     style: {
       position: "fixed",
@@ -5074,6 +5080,18 @@ function ManageTab(_ref30) {
       const blob = new Blob([JSON.stringify(data, null, 2)], {
         type: "application/json"
       });
+      const fname = `kenchikushi_${new Date().toISOString().slice(0, 10)}.json`;
+      // iPhone/iPadは共有シート（AirDrop・ファイルに保存）で書き出す
+      try {
+        const file = new File([blob], fname, { type: "application/json" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file] });
+          setIoMsg("書き出しました ✓");
+          return;
+        }
+      } catch (e) {
+        if (e && e.name === "AbortError") { setIoMsg("キャンセルしました"); return; }
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -5102,18 +5120,8 @@ function ManageTab(_ref30) {
           if (!existing) {
             existingMap.set(q.id, q);
           } else {
-            // historyが多い方を採用し、日付情報もマージ
-            const takeIncoming = (q.history || []).length > (existing.history || []).length;
-            // answerDatesは両者を統合（重複排除・昇順）
-            const mergedDates = Array.from(new Set([...(existing.answerDates || []), ...(q.answerDates || [])])).sort();
-            existingMap.set(q.id, {
-              ...existing,
-              history: takeIncoming ? q.history : existing.history,
-              starred: q.starred || existing.starred,
-              lastAnswered: existing.lastAnswered && existing.lastAnswered >= (q.lastAnswered || "") ? existing.lastAnswered : (q.lastAnswered || existing.lastAnswered),
-              answeredAt: existing.answeredAt && existing.answeredAt >= (q.answeredAt || "") ? existing.answeredAt : (q.answeredAt || existing.answeredAt),
-              answerDates: mergedDates
-            });
+            // 端末間同期と同じルールでマージ（最後に解いた日時が新しい方を採用）
+            existingMap.set(q.id, { ...existing, ..._mergeHistoryEntry(existing, q) });
           }
         }
         const merged = Array.from(existingMap.values());

@@ -567,12 +567,24 @@ let _store = null,
   _saveTimer = null,
   _loadPromise = null,
   _rowExists = null;
+// 同期状態（未送信の変更があるか・送信中か・サーバーの最終更新時刻）
+let _dirty = false,
+  _saveSeq = 0,
+  _flushing = false,
+  _flushAgain = false,
+  _retryTimer = null,
+  _lastServerAt = 0;
+// localStorageの容量超過などで例外が出ても、サーバー送信は止めない
+const _lsSet = v => { try { localStorage.setItem("store_v1", JSON.stringify(v)); } catch (e) { console.warn("localStorage保存失敗", e); } };
+const _syncStatus = st => { try { window.dispatchEvent(new CustomEvent("sync-status", { detail: st })); } catch (e) {} };
 // 2つの question_history をマージ（問題単位・フィールド単位）
 const _mergeHistoryEntry = (a, b) => {
   if (!a) return b;
   if (!b) return a;
   const aHist = a.history || [], bHist = b.history || [];
-  const takeB = bHist.length > aHist.length;
+  // 最後に解いた日時が新しい方を採用（履歴は直近10件で頭打ちのため、長さ比較だと新しい解答が消える）
+  const ta = a.answeredAt || a.lastAnswered || "", tb = b.answeredAt || b.lastAnswered || "";
+  const takeB = ta !== tb ? tb > ta : bHist.length > aHist.length;
   const dates = Array.from(new Set([...(a.answerDates || []), ...(b.answerDates || [])])).sort();
   const newer = (x, y) => (x && y) ? (x >= y ? x : y) : (x || y || null);
   return {
@@ -623,7 +635,7 @@ const _loadAll = () => {
     try {
       const local = localStorage.getItem("store_v1");
       if (local) _store = JSON.parse(local);
-      const res = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&order=updated_at.desc&limit=1&select=data", {
+      const res = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&order=updated_at.desc&limit=1&select=data,updated_at", {
         headers: SB_GET_HEADERS
       });
       if (res.ok) {
@@ -631,7 +643,8 @@ const _loadAll = () => {
         if (rows.length > 0 && rows[0].data) {
           // ローカルに未保存の変更がある場合を考慮し、サーバーとマージ
           _store = _store ? _mergeStore(_store, rows[0].data) : rows[0].data;
-          localStorage.setItem("store_v1", JSON.stringify(_store));
+          _lastServerAt = Date.parse(rows[0].updated_at) || 0;
+          _lsSet(_store);
         }
       }
     } catch (e) {}
@@ -647,6 +660,12 @@ const load = async (key, fb) => {
 
 const _flush = async () => {
   if (!_store) return;
+  // 送信中なら終わってからもう一度送る（同時送信で古い内容が後勝ちしないように）
+  if (_flushing) { _flushAgain = true; return; }
+  _flushing = true;
+  clearTimeout(_retryTimer);
+  const seq = _saveSeq;
+  let ok = false;
   try {
     // 保存直前にサーバー最新を取得し、他端末の更新をマージ（端末間競合を防ぐ）
     try {
@@ -657,30 +676,33 @@ const _flush = async () => {
         const rows = await latest.json();
         if (rows.length > 0 && rows[0].data) {
           _store = _mergeStore(_store, rows[0].data);
-          localStorage.setItem("store_v1", JSON.stringify(_store));
+          _lsSet(_store);
         }
       }
     } catch (e) { /* 取得失敗時はローカルをそのまま書く */ }
+    const nowIso = new Date().toISOString();
     const body = JSON.stringify({
       user_id: USER_ID,
       data: _store,
-      updated_at: new Date().toISOString()
+      updated_at: nowIso
     });
     if (_rowExists === null) {
       const check = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&select=id&limit=1", {
         headers: SB_GET_HEADERS
       });
-      const rows = check.ok ? await check.json() : [];
+      if (!check.ok) throw new Error("check " + check.status);
+      const rows = await check.json();
       _rowExists = rows.length > 0;
     }
+    let res;
     if (_rowExists) {
-      await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID, {
+      res = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID, {
         method: "PATCH",
         headers: SB_MOD_HEADERS,
         body
       });
     } else {
-      await fetch(SUPABASE_URL + "/rest/v1/study_data", {
+      res = await fetch(SUPABASE_URL + "/rest/v1/study_data", {
         method: "POST",
         headers: {
           ...SB_MOD_HEADERS,
@@ -688,16 +710,36 @@ const _flush = async () => {
         },
         body
       });
-      _rowExists = true;
+      if (res.ok) _rowExists = true;
     }
+    if (!res.ok) throw new Error("save " + res.status);
+    ok = true;
+    _lastServerAt = Date.parse(nowIso);
+    // 送信中に新しい変更が入っていなければ「送信済み」
+    if (_saveSeq === seq) _dirty = false;
   } catch (e) {
-    console.error(e);
+    console.error("同期失敗", e);
   }
+  _flushing = false;
+  _syncStatus(ok ? "ok" : "err");
+  if (_flushAgain || (ok && _dirty)) { _flushAgain = false; setTimeout(_flush, 300); return; }
+  // 失敗したら30秒後に再送（電波が戻れば送られる）
+  if (!ok) _retryTimer = setTimeout(_flush, 30000);
 };
+// 未送信の変更があれば今すぐ送る
+const _flushNow = () => { clearTimeout(_saveTimer); if (_dirty) _flush(); };
+if (typeof window !== "undefined") {
+  window.addEventListener("online", _flushNow);
+  // アプリを閉じる・切り替える直前に送る（iPhoneは裏に回るとタイマーが止まるため）
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") _flushNow(); });
+  window.addEventListener("pagehide", _flushNow);
+}
 const save = async (key, val) => {
   if (!_store) _store = {};
   _store[key] = val;
-  localStorage.setItem("store_v1", JSON.stringify(_store));
+  _dirty = true;
+  _saveSeq++;
+  _lsSet(_store);
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(_flush, 800);
 };
@@ -984,6 +1026,102 @@ function App() {
     }, 500);
     return () => clearTimeout(t);
   }, [questions, loading]);
+  // サーバーから最新を取得してマージ（⟳ボタン・アプリ復帰時）
+  const syncNow = async manual => {
+      if (manual) setSyncLabel("⟳");
+      try {
+        // 最新のstudy_dataをSupabaseから取り直し（起動時と同じマージ処理）
+        const [masterQs, res] = await Promise.all([
+          loadAllQuestions(),
+          fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&order=updated_at.desc&limit=1&select=data,updated_at", {
+            headers: SB_GET_HEADERS
+          })
+        ]);
+        if (res.ok) {
+          const rows = await res.json();
+          const srvAt = rows.length > 0 ? (Date.parse(rows[0].updated_at) || 0) : 0;
+          // 自動同期（アプリ復帰時）は、他端末で更新があったときだけ画面に反映する
+          if (rows.length > 0 && rows[0].data && (manual || srvAt > _lastServerAt)) {
+            // サーバーの内容と、この端末の未送信の変更をマージ（上書きしない）
+            _store = _store ? _mergeStore(_store, rows[0].data) : rows[0].data;
+            _lastServerAt = Math.max(_lastServerAt, srvAt);
+            _lsSet(_store);
+            const d = _store;
+
+            const histData = d.question_history || {};
+            const pend = d.claude_pending_questions || [];
+
+            // 問題マスタ(JSON)に履歴をマージ
+            const merged = masterQs.map(q => ({
+              ...q,
+              ...(histData[q.id] || {}),
+              history: (histData[q.id]?.history) || q.history || [],
+              lastAnswered: histData[q.id]?.lastAnswered || q.lastAnswered || null,
+              answeredAt: histData[q.id]?.answeredAt || q.answeredAt || null,
+              starred: histData[q.id]?.starred || q.starred || false,
+              bookmarked: histData[q.id]?.bookmarked || q.bookmarked || false,
+              needsCheck: histData[q.id]?.needsCheck || q.needsCheck || false,
+              checkStatus: histData[q.id]?.checkStatus || q.checkStatus || ((histData[q.id]?.needsCheck || q.needsCheck) ? "flagged" : ""),
+              checkNote: histData[q.id]?.checkNote || q.checkNote || "",
+              answerTimes: histData[q.id]?.answerTimes || q.answerTimes || [],
+              timedOut: histData[q.id]?.timedOut || q.timedOut || 0,
+              answerDates: (histData[q.id]?.answerDates && histData[q.id].answerDates.length) ? histData[q.id].answerDates : (q.answerDates && q.answerDates.length ? q.answerDates : ((histData[q.id]?.lastAnswered || q.lastAnswered) ? [histData[q.id]?.lastAnswered || q.lastAnswered] : []))
+            }));
+            const mergedMap = new Map(merged.map(q => [q.id, q]));
+            for (const pq of pend) {
+              if (!mergedMap.has(pq.id)) mergedMap.set(pq.id, { ...pq, history: [], lastAnswered: null });
+            }
+            // lastAnswered補完（historyありで未設定なら昨日）
+            const ystJST = nowJST();
+            ystJST.setUTCDate(ystJST.getUTCDate() - 1);
+            const yesterdayStr = ystJST.toISOString().slice(0, 10);
+            const fixedQs = Array.from(mergedMap.values()).map(q =>
+              (q.history || []).length > 0 && !q.lastAnswered ? { ...q, lastAnswered: yesterdayStr } : q
+            );
+            setQuestions(fixedQs);
+            setPendingCount(pend.length);
+
+            const lg = d.logs || {};
+            setLogs(lg);
+            if (d.xp !== undefined) setXp(d.xp);
+            if (d.goalQ) setGoalQ(d.goalQ);
+            const normaLog = d.norma_log || {};
+            const todayKey = nowJST().toISOString().slice(0, 10);
+            setTodayDone(normaLog[todayKey] === true);
+            // streak再計算
+            let s = 0, dd = nowJST();
+            while (true) {
+              const k = dd.toISOString().slice(0, 10);
+              const dl = lg[k];
+              if (!dl || dayTotalSec(dl) === 0) break;
+              s++;
+              dd.setUTCDate(dd.getUTCDate() - 1);
+            }
+            setStreak(s);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      setSyncLabel(_dirty ? "!" : "✓");
+      setTimeout(() => setSyncLabel(_dirty ? "!" : "☁"), 2000);
+      // この端末の未送信分があれば送る
+      _flushNow();
+    };
+  // アプリに戻ってきたら他端末の解答を取り込む
+  useEffect(() => {
+    if (loading) return;
+    const onVis = () => { if (document.visibilityState === "visible") syncNow(false); };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onVis);
+    return () => { document.removeEventListener("visibilitychange", onVis); window.removeEventListener("focus", onVis); };
+  }, [loading]);
+  // 送信結果をクラウドマークに反映（失敗時は「!」）
+  useEffect(() => {
+    const onSt = ev => { if (ev.detail === "err") setSyncLabel("!"); else setSyncLabel(l => l === "!" ? "☁" : l); };
+    window.addEventListener("sync-status", onSt);
+    return () => window.removeEventListener("sync-status", onSt);
+  }, []);
   useEffect(() => {
     if (!loading) save("logs", logs);
   }, [logs, loading]);
@@ -1283,82 +1421,7 @@ function App() {
       whiteSpace: "nowrap"
     }
   }, clockStr), /*#__PURE__*/React.createElement("button", {
-    onClick: async () => {
-      setSyncLabel("⟳");
-      try {
-        // 最新のstudy_dataをSupabaseから取り直し（起動時と同じマージ処理）
-        const [masterQs, res] = await Promise.all([
-          loadAllQuestions(),
-          fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&order=updated_at.desc&limit=1&select=data", {
-            headers: SB_GET_HEADERS
-          })
-        ]);
-        if (res.ok) {
-          const rows = await res.json();
-          if (rows.length > 0 && rows[0].data) {
-            const d = rows[0].data;
-            // メモリキャッシュとlocalStorageを最新に更新（以降の自動保存が最新ベースになる）
-            _store = d;
-            localStorage.setItem("store_v1", JSON.stringify(d));
-
-            const histData = d.question_history || {};
-            const pend = d.claude_pending_questions || [];
-
-            // 問題マスタ(JSON)に履歴をマージ
-            const merged = masterQs.map(q => ({
-              ...q,
-              ...(histData[q.id] || {}),
-              history: (histData[q.id]?.history) || q.history || [],
-              lastAnswered: histData[q.id]?.lastAnswered || q.lastAnswered || null,
-              answeredAt: histData[q.id]?.answeredAt || q.answeredAt || null,
-              starred: histData[q.id]?.starred || q.starred || false,
-              bookmarked: histData[q.id]?.bookmarked || q.bookmarked || false,
-              needsCheck: histData[q.id]?.needsCheck || q.needsCheck || false,
-              checkStatus: histData[q.id]?.checkStatus || q.checkStatus || ((histData[q.id]?.needsCheck || q.needsCheck) ? "flagged" : ""),
-              checkNote: histData[q.id]?.checkNote || q.checkNote || "",
-              answerTimes: histData[q.id]?.answerTimes || q.answerTimes || [],
-              timedOut: histData[q.id]?.timedOut || q.timedOut || 0,
-              answerDates: (histData[q.id]?.answerDates && histData[q.id].answerDates.length) ? histData[q.id].answerDates : (q.answerDates && q.answerDates.length ? q.answerDates : ((histData[q.id]?.lastAnswered || q.lastAnswered) ? [histData[q.id]?.lastAnswered || q.lastAnswered] : []))
-            }));
-            const mergedMap = new Map(merged.map(q => [q.id, q]));
-            for (const pq of pend) {
-              if (!mergedMap.has(pq.id)) mergedMap.set(pq.id, { ...pq, history: [], lastAnswered: null });
-            }
-            // lastAnswered補完（historyありで未設定なら昨日）
-            const ystJST = nowJST();
-            ystJST.setUTCDate(ystJST.getUTCDate() - 1);
-            const yesterdayStr = ystJST.toISOString().slice(0, 10);
-            const fixedQs = Array.from(mergedMap.values()).map(q =>
-              (q.history || []).length > 0 && !q.lastAnswered ? { ...q, lastAnswered: yesterdayStr } : q
-            );
-            setQuestions(fixedQs);
-            setPendingCount(pend.length);
-
-            const lg = d.logs || {};
-            setLogs(lg);
-            if (d.xp !== undefined) setXp(d.xp);
-            if (d.goalQ) setGoalQ(d.goalQ);
-            const normaLog = d.norma_log || {};
-            const todayKey = nowJST().toISOString().slice(0, 10);
-            setTodayDone(normaLog[todayKey] === true);
-            // streak再計算
-            let s = 0, dd = nowJST();
-            while (true) {
-              const k = dd.toISOString().slice(0, 10);
-              const dl = lg[k];
-              if (!dl || dayTotalSec(dl) === 0) break;
-              s++;
-              dd.setUTCDate(dd.getUTCDate() - 1);
-            }
-            setStreak(s);
-          }
-        }
-      } catch (e) {
-        console.error(e);
-      }
-      setSyncLabel("✓");
-      setTimeout(() => setSyncLabel("☁"), 2000);
-    },
+    onClick: () => syncNow(true),
     style: {
       position: "fixed",
       top: 14,

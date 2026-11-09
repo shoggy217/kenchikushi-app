@@ -668,18 +668,17 @@ const _flush = async () => {
   let ok = false;
   try {
     // 保存直前にサーバー最新を取得し、他端末の更新をマージ（端末間競合を防ぐ）
-    try {
-      const latest = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&order=updated_at.desc&limit=1&select=data", {
-        headers: SB_GET_HEADERS
-      });
-      if (latest.ok) {
-        const rows = await latest.json();
-        if (rows.length > 0 && rows[0].data) {
-          _store = _mergeStore(_store, rows[0].data);
-          _lsSet(_store);
-        }
-      }
-    } catch (e) { /* 取得失敗時はローカルをそのまま書く */ }
+    // サーバーを読めなかったときは絶対に書き込まない（空のデータで上書きして履歴を消さないため）
+    const latest = await fetch(SUPABASE_URL + "/rest/v1/study_data?user_id=eq." + USER_ID + "&order=updated_at.desc&limit=1&select=data", {
+      headers: SB_GET_HEADERS
+    });
+    if (!latest.ok) throw new Error("read " + latest.status);
+    const latestRows = await latest.json();
+    if (!Array.isArray(latestRows)) throw new Error("read invalid");
+    if (latestRows.length > 0 && latestRows[0].data) {
+      _store = _mergeStore(_store, latestRows[0].data);
+      _lsSet(_store);
+    }
     const nowIso = new Date().toISOString();
     const body = JSON.stringify({
       user_id: USER_ID,
